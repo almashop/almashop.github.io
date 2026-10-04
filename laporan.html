@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Laporan Unit</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        html, body { 
+            margin: 0; padding: 0; 
+            background-color: var(--bg); 
+            color: #333; 
+            height: 100%; 
+            overflow: hidden; 
+        }
+        .container { 
+            max-width: 600px; margin: 0 auto; padding: 15px; 
+            height: 100vh; 
+            height: 100dvh; 
+            display: flex; flex-direction: column; 
+        }
+        
+        .page { display: none; height: 100%; flex-direction: column; }
+        .page.active { display: flex; }
+        
+        h2 { margin: 5px 0 15px 0; font-size: 20px; }
+        h3 { margin: 10px 0 5px 0; font-size: 16px; }
+        .info-text { font-size: 12px; color: #666; margin-bottom: 5px; }
+
+        .card { 
+            background: var(--card-bg); padding: 15px; border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); flex-shrink: 0; 
+        }
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .form-group { flex: 1; display: flex; flex-direction: column; }
+        .form-group.flex-3 { flex: 3; } 
+        .form-group.flex-1 { flex: 1; } 
+        
+        label { margin-bottom: 5px; font-weight: bold; font-size: 13px; }
+        input[type="text"], input[type="number"], select {
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px;
+        }
+        select { text-align: center; cursor: pointer; }
+        select.ok-status { color: var(--success); font-weight: bold; }
+        select.ng-status { color: var(--danger); font-weight: bold; }
+        
+        button {
+            padding: 12px 15px; border: none; border-radius: 5px; font-size: 14px; 
+            cursor: pointer; color: white; font-weight: bold; transition: opacity 0.2s;
+        }
+        button:active { opacity: 0.8; }
+        button:disabled { background-color: #999; cursor: not-allowed; }
+        
+        .btn-primary { background-color: var(--primary); width: 100%; margin-top: 5px; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); }
+        
+        .bottom-action { flex-shrink: 0; padding-top: 10px; padding-bottom: 5px; }
+        .action-buttons { display: flex; gap: 10px; margin-top: 10px; flex-shrink: 0; }
+        .action-buttons button { flex: 1; padding: 15px; font-size: 15px; }
+        
+        .scrollable-area {
+            flex: 1; overflow-y: auto; 
+            margin-top: 5px; padding-right: 5px; padding-bottom: 5px;
+        }
+        
+        .data-list { list-style: none; padding: 0; margin: 0; }
+        .data-item {
+            background: var(--card-bg); padding: 12px 10px; border-radius: 8px; margin-bottom: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1); 
+            display: flex; flex-direction: row; align-items: center; gap: 8px;
+            user-select: none; -webkit-user-select: none; transition: background 0.2s; font-size: 13px;
+        }
+        .data-item:active { background: #e2e2e2; }
+        
+        .col-suffix { font-weight: bold; white-space: nowrap; }
+        .col-unit { white-space: nowrap; }
+        .col-problem { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #555; }
+        .col-status { font-weight: bold; white-space: nowrap; text-align: right; }
+        
+        .status-ok { color: var(--success); }
+        .status-ng { color: var(--danger); }
+        
+        .history-date {
+            background: var(--primary); color: white; padding: 15px; border-radius: 8px; 
+            margin-bottom: 10px; cursor: pointer; text-align: center; font-weight: bold;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 80%; max-width: 300px; text-align: center; }
+        .modal-content h3 { margin-top: 0; margin-bottom: 15px; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- HALAMAN UTAMA -->
+    <div id="page-main" class="container page active">
+        <h2>Input Data Unit</h2>
+        
+        <div class="card">
+            <input type="hidden" id="edit-id">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Suffix</label>
+                    <input type="text" id="input-suffix" oninput="this.value = this.value.toUpperCase()">
+                </div>
+                <div class="form-group">
+                    <label>Nomer Unit</label>
+                    <input type="number" id="input-unit" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group flex-3">
+                    <label>Problem</label>
+                    <input type="text" id="input-problem">
+                </div>
+                <div class="form-group flex-1">
+                    <label>Status</label>
+                    <select id="input-status" class="ok-status" onchange="updateSelectColor(this)">
+                        <option value="OK">OK</option>
+                        <option value="NG">NG</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button id="btn-simpan" class="btn-primary" onclick="simpanData()">Simpan Data</button>
+        </div>
+
+        <h3>Data Hari Ini (<span id="today-date-text"></span>)</h3>
+        <div class="info-text">*Tekan & tahan data untuk Edit/Hapus (Hanya lokal)</div>
+        
+        <div class="scrollable-area">
+            <ul id="display-list" class="data-list"></ul>
+        </div>
+        
+        <div class="bottom-action">
+            <div class="action-buttons" style="margin-top: 0;">
+                <button class="btn-primary" onclick="openDetailFromMain()">Tampilkan Data</button>
+                <button class="btn-secondary" onclick="showPage('page-history')">Riwayat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HALAMAN RIWAYAT -->
+    <div id="page-history" class="container page">
+        <h2>Riwayat Data</h2>
+        <button class="btn-secondary" style="flex-shrink: 0; width: 100%; padding: 15px;" onclick="showPage('page-main')">Kembali</button>
+        
+        <div class="scrollable-area" style="margin-top: 15px;">
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <!-- HALAMAN DETAIL (EKSPOR/WA) -->
+    <div id="page-detail" class="container page">
+        <h2>Tampil Data Unit: <br><span id="detail-date-text" style="font-size: 16px; font-weight: normal;"></span></h2>
+        
+        <div class="scrollable-area" style="margin-top: 10px;">
+            <ul id="detail-list" class="data-list"></ul>
+        </div>
+        
+        <div class="bottom-action" style="padding-top: 5px;">
+            <div class="action-buttons" style="margin-top: 0; margin-bottom: 10px;">
+                <button class="btn-success" onclick="kirimWADetail()">Kirim WA</button>
+                <button class="btn-success" onclick="eksporExcelDetail()">Ekspor Excel</button>
+            </div>
+            <button class="btn-secondary" style="width: 100%; padding: 15px;" onclick="goBackFromDetail()">Kembali</button>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT / HAPUS -->
+    <div id="action-modal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Pilih Aksi</h3>
+            <button class="btn-primary" style="width:100%; margin-bottom: 10px; padding: 15px;" onclick="editData()">Edit Data</button>
+            <button class="btn-danger" style="width:100%; margin-bottom: 10px; padding: 15px;" onclick="hapusData()">Hapus Data</button>
+            <button class="btn-secondary" style="width:100%; padding: 15px;" onclick="closeModal(true)">Batal</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // PASTE URL WEB APP APPS SCRIPT ANDA DI SINI
+        // ==========================================
+        const scriptURL = 'https://script.google.com/Macross/s/AKfycbw0OHUFEYW15HNSALTeSCuOxwmAe83AhhO_P_e-fplgHcLl_yfyV8CvtfZWmZaiotWD/exec'; 
+
+        let db = JSON.parse(localStorage.getItem('unitDataDB')) || [];
+        let selectedId = null;
+        let selectedDetailDate = null;
+        let pressTimer;
+        let backTarget = 'page-main'; 
+
+        // Fungsi khusus untuk penyesuaian shift (Batas 07:30)
+        function getTodayDate() {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+
+            // Jika sebelum jam 07:30, hitung sebagai tanggal kemarin
+            if (hour < 7 || (hour === 7 && minute < 30)) {
+                now.setDate(now.getDate() - 1);
+            }
+
+            // Format ke YYYY-MM-DD menggunakan waktu lokal perangkat
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+        }
+
+        document.getElementById('today-date-text').innerText = getTodayDate();
+
+        function updateSelectColor(select) { select.className = select.value === 'OK' ? 'ok-status' : 'ng-status'; }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (pageId === 'page-main') renderTodayData();
+            if (pageId === 'page-history') renderHistoryDates();
+        }
+
+        function openDetailFromMain() { backTarget = 'page-main'; showDetailDate(getTodayDate()); }
+        function openDetailFromHistory(date) { backTarget = 'page-history'; showDetailDate(date); }
+        function goBackFromDetail() { showPage(backTarget); }
+
+        function simpanData() {
+            const suffix = document.getElementById('input-suffix').value.trim();
+            const unit = document.getElementById('input-unit').value.trim();
+            const problem = document.getElementById('input-problem').value.trim();
+            const status = document.getElementById('input-status').value;
+            const editId = document.getElementById('edit-id').value;
+
+            if (!suffix || !unit || !problem) {
+                alert("Mohon isi semua form!");
+                return;
+            }
+
+            const today = getTodayDate();
+            const btnSimpan = document.getElementById('btn-simpan');
+
+            // --- 1. SIMPAN KE LOKAL (HP) ---
+            if (editId) {
+                const index = db.findIndex(item => item.id == editId);
+                if(index !== -1) {
+                    db[index].suffix = suffix; db[index].unit = unit; db[index].problem = problem; db[index].status = status;
+                }
+                document.getElementById('edit-id').value = "";
+            } else {
+                db.push({ id: Date.now(), date: today, suffix, unit, problem, status });
+            }
+            localStorage.setItem('unitDataDB', JSON.stringify(db));
+            
+            // --- 2. KIRIM KE GOOGLE SHEETS ---
+            if (scriptURL !== 'PASTE_URL_WEB_APP_ANDA_DISINI') {
+                btnSimpan.innerText = "Mengirim...";
+                btnSimpan.disabled = true;
+
+                const formData = new FormData();
+                formData.append('date', today);
+                formData.append('suffix', suffix);
+                formData.append('unit', unit);
+                formData.append('problem', problem);
+                formData.append('status', status);
+
+                fetch(scriptURL, { method: 'POST', body: formData })
+                    .then(response => {
+                        console.log("Berhasil terkirim ke Google Sheets!");
+                    })
+                    .catch(error => {
+                        console.error("Gagal mengirim ke Sheets:", error.message);
+                        alert("Gagal koneksi ke Spreadsheet. Tapi data lokal Anda tetap aman.");
+                    })
+                    .finally(() => {
+                        resetFormLokal(btnSimpan);
+                    });
+            } else {
+                resetFormLokal(btnSimpan);
+            }
+        }
+
+        function resetFormLokal(btnSimpan) {
+            document.getElementById('input-suffix').value = "";
+            document.getElementById('input-unit').value = "";
+            document.getElementById('input-problem').value = "";
+            document.getElementById('input-status').value = "OK";
+            updateSelectColor(document.getElementById('input-status'));
+            document.getElementById('input-suffix').focus();
+            
+            btnSimpan.innerText = "Simpan Data";
+            btnSimpan.disabled = false;
+            renderTodayData();
+        }
+
+        function createListItemHTML(item) {
+            const statusClass = item.status === 'OK' ? 'status-ok' : 'status-ng';
+            return `<span class="col-suffix">${item.suffix}</span>
+                    <span class="col-unit">${item.unit}</span>
+                    <span class="col-problem">${item.problem}</span>
+                    <span class="col-status ${statusClass}">${item.status}</span>`;
+        }
+
+        function renderTodayData() {
+            const list = document.getElementById('display-list');
+            list.innerHTML = "";
+            db.filter(item => item.date === getTodayDate()).forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'data-item';
+                li.innerHTML = createListItemHTML(item);
+                
+                li.addEventListener('touchstart', () => startPress(item.id));
+                li.addEventListener('touchend', cancelPress);
+                li.addEventListener('touchmove', cancelPress);
+                li.addEventListener('mousedown', () => startPress(item.id));
+                li.addEventListener('mouseup', cancelPress);
+                li.addEventListener('mouseleave', cancelPress);
+                list.appendChild(li);
+            });
+            const scrollArea = list.parentElement;
+            scrollArea.scrollTop = scrollArea.scrollHeight;
+        }
+
+        function startPress(id) {
+            pressTimer = setTimeout(() => {
+                selectedId = id;
+                document.getElementById('action-modal').classList.add('active');
+            }, 600);
+        }
+
+        function cancelPress() { clearTimeout(pressTimer); }
+
+        function closeModal(force = false) {
+            if (force === true || force.target.id === 'action-modal') {
+                document.getElementById('action-modal').classList.remove('active');
+                selectedId = null;
+            }
+        }
+
+        function editData() {
+            const item = db.find(d => d.id === selectedId);
+            if(item) {
+                document.getElementById('edit-id').value = item.id;
+                document.getElementById('input-suffix').value = item.suffix;
+                document.getElementById('input-unit').value = item.unit;
+                document.getElementById('input-problem').value = item.problem;
+                document.getElementById('input-status').value = item.status;
+                updateSelectColor(document.getElementById('input-status'));
+            }
+            closeModal(true);
+        }
+
+        function hapusData() {
+            if(confirm("Hapus data ini dari lokal? (Di Google Sheets tidak akan terhapus otomatis)")) {
+                db = db.filter(item => item.id !== selectedId);
+                localStorage.setItem('unitDataDB', JSON.stringify(db));
+                renderTodayData();
+            }
+            closeModal(true);
+        }
+
+        function renderHistoryDates() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = "";
+            const dates = [...new Set(db.map(item => item.date))].sort().reverse();
+            if(dates.length === 0) {
+                list.innerHTML = "<p style='text-align:center;'>Belum ada data riwayat</p>";
+                return;
+            }
+            dates.forEach(date => {
+                const div = document.createElement('div');
+                div.className = 'history-date';
+                div.innerText = "Tanggal: " + date;
+                div.onclick = () => openDetailFromHistory(date);
+                list.appendChild(div);
+            });
+        }
+
+        function showDetailDate(date) {
+            selectedDetailDate = date;
+            document.getElementById('detail-date-text').innerText = date;
+            const list = document.getElementById('detail-list');
+            list.innerHTML = "";
+            
+            const filteredData = db.filter(item => item.date === date);
+            if (filteredData.length === 0) {
+                list.innerHTML = "<p style='text-align:center;'>Tidak ada data untuk hari ini.</p>";
+            } else {
+                filteredData.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'data-item';
+                    li.innerHTML = createListItemHTML(item);
+                    list.appendChild(li);
+                });
+            }
+            showPage('page-detail');
+        }
+
+        function formatPesanWA(date) {
+            const data = db.filter(item => item.date === date);
+            if(data.length === 0) return null;
+            let pesan = `*Laporan Data Unit*\nTanggal: ${date}\n\n`;
+            data.forEach((item, index) => {
+                pesan += `${index + 1}. ${item.suffix} - ${item.unit} - ${item.problem} - ${item.status}\n`;
+            });
+            return pesan;
+        }
+
+        function kirimWADetail() {
+            const pesan = formatPesanWA(selectedDetailDate);
+            if (!pesan) return alert("Tidak ada data untuk dikirim.");
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(pesan)}`, '_blank');
+        }
+
+        function eksporExcelDetail() {
+            const data = db.filter(item => item.date === selectedDetailDate);
+            if (data.length === 0) return alert("Tidak ada data untuk diekspor.");
+            let csvContent = "Tanggal,Suffix,Nomer Unit,Problem,Status\n";
+            data.forEach(item => {
+                const problemEscaped = `"${item.problem.replace(/"/g, '""')}"`;
+                csvContent += `${item.date},${item.suffix},${item.unit},${problemEscaped},${item.status}\n`;
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Laporan_Unit_${selectedDetailDate}.csv`;
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        renderTodayData();
+    </script>
+</body>
+</html>
