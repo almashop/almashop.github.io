@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -146,7 +145,7 @@
                 </div>
 
                 <!-- Manual Simulation Input for Quick Testing -->
-                <!--<div class="w-full mt-4 pt-3 border-t border-slate-700/60">
+                <div class="w-full mt-4 pt-3 border-t border-slate-700/60">
                     <div class="flex items-center justify-between mb-1">
                         <span class="text-[11px] font-semibold text-slate-400"><i class="fa-solid fa-keyboard mr-1"></i>Simulasi Manual Barcode</span>
                         <button id="btnSample" class="text-[10px] text-blue-400 hover:underline">Isi Contoh (22 char)</button>
@@ -157,7 +156,7 @@
                             Scan
                         </button>
                     </div>
-                </div>-->
+                </div>
             </div>
         </section>
 
@@ -916,7 +915,7 @@
                     titleDateStr = getFullIndonesianDateString(new Date(y, m - 1, d));
                 }
 
-                displayTitle.textContent = `Data unit RM0 ${titleDateStr}`;
+                displayTitle.textContent = `Data unit RM0 pada hari ${titleDateStr}`;
                 displaySubtitle.textContent = `Total: ${filteredRecords.length} Unit (Tahan item untuk Edit/Hapus)`;
 
                 unitDisplayContainer.innerHTML = '';
