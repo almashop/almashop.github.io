@@ -1,0 +1,1088 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Data Unit RM0 - Barcode Tracker</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Html5-QRCode Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <style>
+        @keyframes scanAnimation {
+            0% { top: 5%; opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { top: 90%; opacity: 0.8; }
+        }
+
+        .scan-laser {
+            position: absolute;
+            left: 5%;
+            width: 90%;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0) 0%, rgba(59, 130, 246, 1) 50%, rgba(59, 130, 246, 0) 100%);
+            box-shadow: 0 0 15px #3b82f6, 0 0 8px #3b82f6;
+            animation: scanAnimation 2s ease-in-out infinite alternate;
+            z-index: 10;
+        }
+
+        .viewport-corner {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: #3b82f6;
+            border-style: solid;
+            z-index: 10;
+        }
+        .corner-tl { top: 0; left: 0; border-width: 4px 0 0 4px; border-top-left-radius: 8px; }
+        .corner-tr { top: 0; right: 0; border-width: 4px 4px 0 0; border-top-right-radius: 8px; }
+        .corner-bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-bottom-left-radius: 8px; }
+        .corner-br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-bottom-right-radius: 8px; }
+
+        #reader video {
+            object-fit: cover !important;
+            border-radius: 1rem;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        #reader {
+            border: none !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col justify-between selection:bg-blue-500 selection:text-white">
+
+    <header class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/70 sticky top-0 z-50">
+        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+                    <i class="fa-solid fa-truck-ramp-box text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base leading-tight text-white">Unit RM0 Tracker</h1>
+                    <p class="text-[11px] text-slate-400">Pencatatan Data Unit via Barcode</p>
+                </div>
+            </div>
+
+            <!-- Header Nav Buttons -->
+            <div class="flex items-center space-x-1">
+                <button id="navBtnScan" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-md shadow-blue-600/30 transition-all flex items-center space-x-1">
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>Scan</span>
+                </button>
+                <button id="navBtnDisplay" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 transition-all flex items-center space-x-1">
+                    <i class="fa-solid fa-table-list"></i>
+                    <span>Data</span>
+                </button>
+                <button id="navBtnHistory" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 transition-all flex items-center space-x-1">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>Histori</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto w-full px-4 py-4 flex-grow flex flex-col justify-start">
+
+        <!-- HALAMAN 1: SCAN BARCODE -->
+        <section id="viewScan" class="space-y-4 flex flex-col">
+            <div class="bg-slate-800/90 rounded-2xl p-4 border border-slate-700/80 shadow-2xl flex flex-col items-center">
+                <div class="w-full flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold text-slate-200 flex items-center space-x-2">
+                        <i class="fa-solid fa-barcode text-blue-400"></i>
+                        <span>Scan Barcode Unit</span>
+                    </h2>
+                    <button id="toggleSoundBtn" class="text-xs text-slate-400 hover:text-slate-200 p-1">
+                        <i id="soundIcon" class="fa-solid fa-volume-high text-blue-400"></i>
+                    </button>
+                </div>
+
+                <!-- Camera Live View -->
+                <div class="relative w-full aspect-square bg-black rounded-xl overflow-hidden flex items-center justify-center border border-slate-700">
+                    <div id="reader" class="w-full h-full"></div>
+
+                    <div id="scannerOverlay" class="absolute inset-0 pointer-events-none flex items-center justify-center hidden">
+                        <div class="absolute inset-0 bg-black/40"></div>
+                        <div class="relative w-3/4 h-3/4 max-w-[250px] max-h-[250px] rounded-lg shadow-2xl">
+                            <div class="viewport-corner corner-tl"></div>
+                            <div class="viewport-corner corner-tr"></div>
+                            <div class="viewport-corner corner-bl"></div>
+                            <div class="viewport-corner corner-br"></div>
+                            <div class="scan-laser"></div>
+                        </div>
+                    </div>
+
+                    <div id="cameraPlaceholder" class="flex flex-col items-center justify-center text-center p-6 space-y-3">
+                        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 border border-slate-700">
+                            <i class="fa-solid fa-camera text-2xl"></i>
+                        </div>
+                        <p class="text-xs text-slate-400 max-w-[220px]">Tekan "Mulai Scan" untuk membuka kamera HP.</p>
+                    </div>
+                </div>
+
+                <!-- Camera Controls -->
+                <div class="w-full grid grid-cols-3 gap-2 mt-4">
+                    <button id="startStopBtn" class="col-span-1 py-2.5 px-3 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 font-semibold text-xs rounded-xl text-white transition-all flex items-center justify-center space-x-1.5 shadow-lg shadow-blue-600/20">
+                        <i class="fa-solid fa-play text-[10px]" id="startIcon"></i>
+                        <span id="startBtnText">Mulai Scan</span>
+                    </button>
+                    
+                    <button id="switchCamBtn" disabled class="py-2.5 px-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-xs rounded-xl text-slate-200 transition-all flex items-center justify-center space-x-1.5 border border-slate-600/50">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>Kamera</span>
+                    </button>
+
+                    <button id="torchBtn" disabled class="py-2.5 px-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-xs rounded-xl text-slate-200 transition-all flex items-center justify-center space-x-1.5 border border-slate-600/50">
+                        <i class="fa-solid fa-bolt" id="torchIcon"></i>
+                        <span>Senter</span>
+                    </button>
+                </div>
+
+                <!-- Manual Simulation Input for Quick Testing -->
+                <!--<div class="w-full mt-4 pt-3 border-t border-slate-700/60">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[11px] font-semibold text-slate-400"><i class="fa-solid fa-keyboard mr-1"></i>Simulasi Manual Barcode</span>
+                        <button id="btnSample" class="text-[10px] text-blue-400 hover:underline">Isi Contoh (22 char)</button>
+                    </div>
+                    <div class="flex space-x-2">
+                        <input type="text" id="simulatedInput" placeholder="Ketik string barcode..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-blue-500">
+                        <button id="btnProcessSimulated" class="bg-blue-600 hover:bg-blue-500 text-xs px-3 py-1.5 rounded-lg font-semibold text-white">
+                            Scan
+                        </button>
+                    </div>
+                </div>-->
+            </div>
+        </section>
+
+        <!-- HALAMAN 2: FORM INPUT DATA UNIT -->
+        <section id="viewForm" class="space-y-4 hidden">
+            <div class="bg-slate-800/90 rounded-2xl p-5 border border-slate-700/80 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-700/70 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+                        <h2 class="text-sm font-bold text-slate-100">Input Data Unit RM0</h2>
+                    </div>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800">Scan Berhasil</span>
+                </div>
+
+                <!-- Info Suffix & Nomer Body extracted -->
+                <div class="grid grid-cols-2 gap-3 p-3 bg-slate-900/80 rounded-xl border border-slate-700/70">
+                    <div>
+                        <span class="block text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">Nomer Body (12-17)</span>
+                        <p id="formNomerBodyDisplay" class="text-base font-mono font-bold text-emerald-400 leading-tight">-</p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">Suffix (5-6 Belakang)</span>
+                        <p id="formSuffixDisplay" class="text-base font-mono font-bold text-amber-400 leading-tight">-</p>
+                    </div>
+                </div>
+
+                <!-- Raw Barcode Info -->
+                <div class="text-[11px] text-slate-400 bg-slate-900/40 p-2 rounded-lg border border-slate-800 font-mono truncate">
+                    <span class="text-slate-500">Raw Barcode:</span> <span id="formRawBarcode">-</span>
+                </div>
+
+                <!-- Input Problem -->
+                <div>
+                    <label for="inputProblem" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1"></i>Input Problem / Catatan
+                    </label>
+                    <textarea id="inputProblem" rows="3" placeholder="Tuliskan catatan problem unit jika ada (misal: Baret, Longgar, Tidak Presisi, dll)..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-all resize-none"></textarea>
+                </div>
+
+                <!-- Option Status OK / NG -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">
+                        <i class="fa-solid fa-list-check text-blue-400 mr-1"></i>Status Unit
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label id="statusOkOption" class="cursor-pointer border-2 border-emerald-500/80 bg-emerald-950/30 text-emerald-300 rounded-xl p-3 flex items-center justify-center space-x-2 transition-all">
+                            <input type="radio" name="statusOption" value="OK" checked class="hidden">
+                            <i class="fa-solid fa-circle-check text-base text-emerald-400"></i>
+                            <span class="font-bold text-sm">Status OK</span>
+                        </label>
+
+                        <label id="statusNgOption" class="cursor-pointer border border-slate-700 bg-slate-900 text-slate-400 rounded-xl p-3 flex items-center justify-center space-x-2 transition-all">
+                            <input type="radio" name="statusOption" value="NG" class="hidden">
+                            <i class="fa-solid fa-circle-xmark text-base text-rose-400"></i>
+                            <span class="font-bold text-sm">Status NG</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Buttons: Batal & Simpan -->
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button id="btnCancelInput" class="py-2.5 px-4 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold rounded-xl transition-all flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-xmark"></i>
+                        <span>Batal</span>
+                    </button>
+                    <button id="btnSaveInput" class="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Simpan Data</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- HALAMAN 3: DISPLAY DATA UNIT -->
+        <section id="viewDisplay" class="space-y-4 hidden">
+            <div class="bg-slate-800/90 rounded-2xl p-4 border border-slate-700/80 shadow-2xl flex flex-col space-y-3">
+                
+                <!-- Title Header -->
+                <div class="border-b border-slate-700/70 pb-3 flex items-start justify-between">
+                    <div>
+                        <h2 id="displayTitle" class="text-sm font-bold text-blue-400 leading-snug">
+                            Data unit RM0 pada hari -
+                        </h2>
+                        <p class="text-[11px] text-slate-400 mt-0.5" id="displaySubtitle">Daftar unit terdaftar</p>
+                    </div>
+                    <button id="btnNewScanFromDisplay" class="bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg flex items-center space-x-1 shadow-md shadow-blue-600/20">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Scan Unit</span>
+                    </button>
+                </div>
+
+                <!-- Unit Data Display List -->
+                <div id="unitDisplayContainer" class="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyDisplayState" class="text-center py-8 space-y-2">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 mx-auto flex items-center justify-center border border-slate-700">
+                        <i class="fa-solid fa-inbox text-xl"></i>
+                    </div>
+                    <p class="text-xs text-slate-400">Belum ada data unit untuk tanggal ini.</p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- HALAMAN 4: HISTORI DATA TANGGAL -->
+        <section id="viewHistory" class="space-y-4 hidden">
+            <div class="bg-slate-800/90 rounded-2xl p-4 border border-slate-700/80 shadow-2xl flex flex-col space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-700/70 pb-3">
+                    <h2 class="text-sm font-bold text-slate-200 flex items-center space-x-2">
+                        <i class="fa-solid fa-calendar-days text-amber-400"></i>
+                        <span>Histori Data per Tanggal</span>
+                    </h2>
+                    <button id="btnClearAllHistory" class="text-[11px] text-rose-400 hover:text-rose-300 flex items-center space-x-1">
+                        <i class="fa-regular fa-trash-can"></i>
+                        <span>Hapus Semua</span>
+                    </button>
+                </div>
+
+                <div id="historyDateGroupList" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                    <!-- Dynamic Date Accordion List -->
+                </div>
+
+                <div id="emptyHistoryGroupState" class="text-center py-8 space-y-2">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 mx-auto flex items-center justify-center border border-slate-700">
+                        <i class="fa-solid fa-calendar-xmark text-xl"></i>
+                    </div>
+                    <p class="text-xs text-slate-400">Belum ada histori data unit tersimpan.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- EDIT MODAL (POP UP KLIK & TAHAN) -->
+    <div id="editModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h3 class="text-sm font-bold text-slate-100 flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-to-square text-blue-400"></i>
+                    <span>Edit / Hapus Data Unit</span>
+                </h3>
+                <button id="btnCloseEditModal" class="text-slate-400 hover:text-slate-200 text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Suffix (2 Char)</label>
+                        <input type="text" id="editSuffix" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-400 font-bold focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Nomer Body</label>
+                        <input type="text" id="editNomerBody" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-400 font-bold focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Problem</label>
+                    <textarea id="editProblem" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Status Unit</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="btnEditStatusOk" class="py-2 rounded-lg text-xs font-bold border transition-all flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                            <span>OK</span>
+                        </button>
+                        <button type="button" id="btnEditStatusNg" class="py-2 rounded-lg text-xs font-bold border transition-all flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-circle-xmark text-rose-400"></i>
+                            <span>NG</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2 border-t border-slate-700">
+                <button id="btnDeleteFromModal" class="py-2 px-3 bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Hapus Data</span>
+                </button>
+                <button id="btnSaveEditModal" class="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Simpan Edit</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-600 text-slate-200 text-xs font-medium px-4 py-2.5 rounded-xl shadow-2xl transition-all duration-300 opacity-0 pointer-events-none transform translate-y-3 z-50 flex items-center space-x-2">
+        <i id="toastIcon" class="fa-solid fa-info-circle text-blue-400"></i>
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // View Elements
+            const viewScan = document.getElementById('viewScan');
+            const viewForm = document.getElementById('viewForm');
+            const viewDisplay = document.getElementById('viewDisplay');
+            const viewHistory = document.getElementById('viewHistory');
+
+            // Nav Buttons
+            const navBtnScan = document.getElementById('navBtnScan');
+            const navBtnDisplay = document.getElementById('navBtnDisplay');
+            const navBtnHistory = document.getElementById('navBtnHistory');
+
+            // Scan Control Elements
+            const startStopBtn = document.getElementById('startStopBtn');
+            const startBtnText = document.getElementById('startBtnText');
+            const startIcon = document.getElementById('startIcon');
+            const switchCamBtn = document.getElementById('switchCamBtn');
+            const torchBtn = document.getElementById('torchBtn');
+            const torchIcon = document.getElementById('torchIcon');
+            const toggleSoundBtn = document.getElementById('toggleSoundBtn');
+            const soundIcon = document.getElementById('soundIcon');
+            const scannerOverlay = document.getElementById('scannerOverlay');
+            const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+
+            // Manual Simulation
+            const simulatedInput = document.getElementById('simulatedInput');
+            const btnProcessSimulated = document.getElementById('btnProcessSimulated');
+            const btnSample = document.getElementById('btnSample');
+
+            // Form Input Elements
+            const formNomerBodyDisplay = document.getElementById('formNomerBodyDisplay');
+            const formSuffixDisplay = document.getElementById('formSuffixDisplay');
+            const formRawBarcode = document.getElementById('formRawBarcode');
+            const inputProblem = document.getElementById('inputProblem');
+            const statusOkOption = document.getElementById('statusOkOption');
+            const statusNgOption = document.getElementById('statusNgOption');
+            const btnCancelInput = document.getElementById('btnCancelInput');
+            const btnSaveInput = document.getElementById('btnSaveInput');
+
+            // Display Elements
+            const displayTitle = document.getElementById('displayTitle');
+            const displaySubtitle = document.getElementById('displaySubtitle');
+            const unitDisplayContainer = document.getElementById('unitDisplayContainer');
+            const emptyDisplayState = document.getElementById('emptyDisplayState');
+            const btnNewScanFromDisplay = document.getElementById('btnNewScanFromDisplay');
+
+            // History Elements
+            const historyDateGroupList = document.getElementById('historyDateGroupList');
+            const emptyHistoryGroupState = document.getElementById('emptyHistoryGroupState');
+            const btnClearAllHistory = document.getElementById('btnClearAllHistory');
+
+            // Edit Modal Elements
+            const editModal = document.getElementById('editModal');
+            const btnCloseEditModal = document.getElementById('btnCloseEditModal');
+            const editSuffix = document.getElementById('editSuffix');
+            const editNomerBody = document.getElementById('editNomerBody');
+            const editProblem = document.getElementById('editProblem');
+            const btnEditStatusOk = document.getElementById('btnEditStatusOk');
+            const btnEditStatusNg = document.getElementById('btnEditStatusNg');
+            const btnSaveEditModal = document.getElementById('btnSaveEditModal');
+            const btnDeleteFromModal = document.getElementById('btnDeleteFromModal');
+
+            let editingRecordId = null;
+            let editSelectedStatus = 'OK';
+
+            // Toast
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            // Global State
+            let html5QrcodeScanner = null;
+            let isScanning = false;
+            let cameras = [];
+            let currentCameraIndex = 0;
+            let isTorchOn = false;
+            let soundEnabled = true;
+
+            // Temp scanned data before saving
+            let currentScannedData = {
+                rawBarcode: '',
+                nomerBody: '',
+                suffix: ''
+            };
+
+            function getWorkingDate(now = new Date()) {
+                const workingDate = new Date(now);
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                const cutoffMinutes = 7 * 60 + 25; // 07:25 = 445 menit
+
+                // Jika sebelum jam 07:25, set ke tanggal hari sebelumnya
+                if (currentMinutes < cutoffMinutes) {
+                    workingDate.setDate(workingDate.getDate() - 1);
+                }
+                return workingDate;
+            }
+
+            // Selected date for Display View (default = current working date with 07:25 cut-off)
+            let currentDisplayDateKey = getFormattedDateKey(getWorkingDate(new Date()));
+
+            function getFormattedDateKey(dateObj) {
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            function getFullIndonesianDateString(dateObj) {
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                
+                const dayName = days[dateObj.getDay()];
+                const dayNum = String(dateObj.getDate()).padStart(2, '0');
+                const monthName = months[dateObj.getMonth()];
+                const year = dateObj.getFullYear();
+
+                return `${dayName}, ${dayNum} ${monthName} ${year}`;
+            }
+
+            function playBeepSound() {
+                if (!soundEnabled) return;
+                try {
+                    if (audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(1046.50, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 0.15);
+                } catch (e) {
+                    console.log('Audio error:', e);
+                }
+            }
+
+            function showToast(message, type = 'info') {
+                toastMsg.textContent = message;
+                if (type === 'success') {
+                    toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+                } else if (type === 'error') {
+                    toastIcon.className = 'fa-solid fa-triangle-exclamation text-rose-400';
+                } else {
+                    toastIcon.className = 'fa-solid fa-info-circle text-blue-400';
+                }
+
+                toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+                toast.classList.add('opacity-100', 'translate-y-0');
+
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100', 'translate-y-0');
+                    toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+                }, 2500);
+            }
+
+            function switchView(targetView) {
+                viewScan.classList.add('hidden');
+                viewForm.classList.add('hidden');
+                viewDisplay.classList.add('hidden');
+                viewHistory.classList.add('hidden');
+
+                // Reset Nav styles
+                navBtnScan.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 transition-all flex items-center space-x-1';
+                navBtnDisplay.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 transition-all flex items-center space-x-1';
+                navBtnHistory.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 transition-all flex items-center space-x-1';
+
+                if (targetView === 'scan') {
+                    viewScan.classList.remove('hidden');
+                    navBtnScan.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-md shadow-blue-600/30 transition-all flex items-center space-x-1';
+                } else if (targetView === 'form') {
+                    viewForm.classList.remove('hidden');
+                } else if (targetView === 'display') {
+                    viewDisplay.classList.remove('hidden');
+                    navBtnDisplay.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-md shadow-blue-600/30 transition-all flex items-center space-x-1';
+                    renderDisplayView(currentDisplayDateKey);
+                } else if (targetView === 'history') {
+                    viewHistory.classList.remove('hidden');
+                    navBtnHistory.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-md shadow-blue-600/30 transition-all flex items-center space-x-1';
+                    renderHistoryGroupView();
+                }
+            }
+
+            navBtnScan.addEventListener('click', () => switchView('scan'));
+            navBtnDisplay.addEventListener('click', () => {
+                currentDisplayDateKey = getFormattedDateKey(getWorkingDate(new Date()));
+                switchView('display');
+            });
+            navBtnHistory.addEventListener('click', () => switchView('history'));
+            btnNewScanFromDisplay.addEventListener('click', () => switchView('scan'));
+
+            toggleSoundBtn.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                if (soundEnabled) {
+                    soundIcon.className = 'fa-solid fa-volume-high text-blue-400';
+                    showToast('Suara aktif');
+                } else {
+                    soundIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
+                    showToast('Suara dinonaktifkan');
+                }
+            });
+
+            function extractBarcodeData(decodedText) {
+                // Karakter ke 12-17 dari depan
+                let nomerBody = '-';
+                if (decodedText.length >= 17) {
+                    nomerBody = decodedText.substring(11, 17);
+                } else if (decodedText.length >= 12) {
+                    nomerBody = decodedText.substring(11);
+                }
+
+                // Karakter ke 5-6 dari belakang
+                let suffix = '-';
+                if (decodedText.length >= 6) {
+                    const L = decodedText.length;
+                    suffix = decodedText.substring(L - 6, L - 4);
+                }
+
+                return { nomerBody, suffix };
+            }
+
+            function handleSuccessfulScan(decodedText) {
+                playBeepSound();
+                stopScanning();
+
+                const { nomerBody, suffix } = extractBarcodeData(decodedText);
+
+                currentScannedData = {
+                    rawBarcode: decodedText,
+                    nomerBody: nomerBody,
+                    suffix: suffix
+                };
+
+                // Populate Form
+                formNomerBodyDisplay.textContent = nomerBody;
+                formSuffixDisplay.textContent = suffix;
+                formRawBarcode.textContent = decodedText;
+                inputProblem.value = '';
+
+                // Reset Status Radio to OK
+                setStatusRadio('OK');
+
+                // Navigate to Form View
+                switchView('form');
+                showToast('Barcode berhasil dipindai!', 'success');
+            }
+
+            // Radio Button Custom Selector
+            function setStatusRadio(val) {
+                const okRadio = statusOkOption.querySelector('input');
+                const ngRadio = statusNgOption.querySelector('input');
+
+                if (val === 'OK') {
+                    okRadio.checked = true;
+                    statusOkOption.className = 'cursor-pointer border-2 border-emerald-500/80 bg-emerald-950/30 text-emerald-300 rounded-xl p-3 flex items-center justify-center space-x-2 transition-all';
+                    statusNgOption.className = 'cursor-pointer border border-slate-700 bg-slate-900 text-slate-400 rounded-xl p-3 flex items-center justify-center space-x-2 transition-all';
+                } else {
+                    ngRadio.checked = true;
+                    statusNgOption.className = 'cursor-pointer border-2 border-rose-500/80 bg-rose-950/30 text-rose-300 rounded-xl p-3 flex items-center justify-center space-x-2 transition-all';
+                    statusOkOption.className = 'cursor-pointer border border-slate-700 bg-slate-900 text-slate-400 rounded-xl p-3 flex items-center justify-center space-x-2 transition-all';
+                }
+            }
+
+            statusOkOption.addEventListener('click', () => setStatusRadio('OK'));
+            statusNgOption.addEventListener('click', () => setStatusRadio('NG'));
+
+            async function startScanning() {
+                try {
+                    cameras = await Html5Qrcode.getCameras();
+                    if (!cameras || cameras.length === 0) {
+                        showToast('Kamera tidak ditemukan!', 'error');
+                        return;
+                    }
+
+                    let selectedCamId = cameras[0].id;
+                    const backCamIndex = cameras.findIndex(cam => 
+                        cam.label.toLowerCase().includes('back') || 
+                        cam.label.toLowerCase().includes('belakang') ||
+                        cam.label.toLowerCase().includes('environment')
+                    );
+                    if (backCamIndex !== -1) {
+                        currentCameraIndex = backCamIndex;
+                        selectedCamId = cameras[backCamIndex].id;
+                    }
+
+                    html5QrcodeScanner = new Html5Qrcode("reader");
+
+                    const config = { 
+                        fps: 15, 
+                        qrbox: { width: 240, height: 240 },
+                        aspectRatio: 1.0
+                    };
+
+                    await html5QrcodeScanner.start(
+                        selectedCamId, 
+                        config, 
+                        (decodedText) => handleSuccessfulScan(decodedText), 
+                        () => {}
+                    );
+
+                    isScanning = true;
+                    updateScannerUI(true);
+                    switchCamBtn.disabled = cameras.length <= 1;
+                    checkTorchSupport();
+
+                } catch (err) {
+                    console.error("Error starting camera:", err);
+                    showToast('Akses kamera ditolak atau tidak tersedia', 'error');
+                    updateScannerUI(false);
+                }
+            }
+
+            async function stopScanning() {
+                if (html5QrcodeScanner && isScanning) {
+                    try {
+                        if (isTorchOn) await toggleTorch(false);
+                        await html5QrcodeScanner.stop();
+                        html5QrcodeScanner.clear();
+                    } catch (err) {
+                        console.error("Error stopping camera:", err);
+                    } finally {
+                        isScanning = false;
+                        updateScannerUI(false);
+                    }
+                }
+            }
+
+            function updateScannerUI(active) {
+                if (active) {
+                    startBtnText.textContent = 'Berhenti';
+                    startIcon.className = 'fa-solid fa-square text-[10px]';
+                    startStopBtn.className = 'col-span-1 py-2.5 px-3 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 font-semibold text-xs rounded-xl text-white transition-all flex items-center justify-center space-x-1.5 shadow-lg shadow-rose-600/20';
+                    scannerOverlay.classList.remove('hidden');
+                    cameraPlaceholder.classList.add('hidden');
+                } else {
+                    startBtnText.textContent = 'Mulai Scan';
+                    startIcon.className = 'fa-solid fa-play text-[10px]';
+                    startStopBtn.className = 'col-span-1 py-2.5 px-3 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 font-semibold text-xs rounded-xl text-white transition-all flex items-center justify-center space-x-1.5 shadow-lg shadow-blue-600/20';
+                    scannerOverlay.classList.add('hidden');
+                    cameraPlaceholder.classList.remove('hidden');
+                    switchCamBtn.disabled = true;
+                    torchBtn.disabled = true;
+                    isTorchOn = false;
+                    torchBtn.classList.remove('bg-amber-500/20', 'text-amber-400', 'border-amber-500/40');
+                }
+            }
+
+            function checkTorchSupport() {
+                try {
+                    const videoElement = document.querySelector("#reader video");
+                    if (videoElement && videoElement.srcObject) {
+                        const track = videoElement.srcObject.getVideoTracks()[0];
+                        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+                        torchBtn.disabled = !capabilities.torch;
+                    }
+                } catch (e) {
+                    torchBtn.disabled = true;
+                }
+            }
+
+            async function toggleTorch(forceState = null) {
+                const targetState = forceState !== null ? forceState : !isTorchOn;
+                try {
+                    if (html5QrcodeScanner) {
+                        await html5QrcodeScanner.applyVideoConstraints({
+                            advanced: [{ torch: targetState }]
+                        });
+                        isTorchOn = targetState;
+                        if (isTorchOn) {
+                            torchBtn.classList.add('bg-amber-500/20', 'text-amber-400', 'border-amber-500/40');
+                        } else {
+                            torchBtn.classList.remove('bg-amber-500/20', 'text-amber-400', 'border-amber-500/40');
+                        }
+                    }
+                } catch (e) {
+                    torchBtn.disabled = true;
+                }
+            }
+
+            torchBtn.addEventListener('click', () => toggleTorch());
+
+            startStopBtn.addEventListener('click', () => {
+                if (isScanning) {
+                    stopScanning();
+                } else {
+                    startScanning();
+                }
+            });
+
+            switchCamBtn.addEventListener('click', async () => {
+                if (cameras.length <= 1 || !isScanning) return;
+                await stopScanning();
+                currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
+                startScanning();
+            });
+
+            // Manual Simulation Buttons
+            btnSample.addEventListener('click', () => {
+                simulatedInput.value = "12345678901BODY00SFX12";
+            });
+
+            btnProcessSimulated.addEventListener('click', () => {
+                const val = simulatedInput.value.trim();
+                if (!val) {
+                    showToast('Masukkan string barcode terlebih dahulu', 'error');
+                    return;
+                }
+                handleSuccessfulScan(val);
+            });
+
+            simulatedInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') btnProcessSimulated.click();
+            });
+
+            btnCancelInput.addEventListener('click', () => {
+                switchView('scan');
+                showToast('Input dibatalkan');
+            });
+
+            btnSaveInput.addEventListener('click', () => {
+                const selectedStatus = document.querySelector('input[name="statusOption"]:checked').value;
+                const problemText = inputProblem.value.trim() || '-';
+                const now = new Date();
+                
+                const workingDate = getWorkingDate(now);
+                const dateKey = getFormattedDateKey(workingDate);
+                const fullDateStr = getFullIndonesianDateString(workingDate);
+
+                const newRecord = {
+                    id: Date.now(),
+                    rawBarcode: currentScannedData.rawBarcode,
+                    suffix: currentScannedData.suffix,
+                    nomerBody: currentScannedData.nomerBody,
+                    problem: problemText,
+                    status: selectedStatus,
+                    timeStr: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                    dateKey: dateKey,
+                    dateDisplay: fullDateStr
+                };
+
+                saveRecordToLocalStorage(newRecord);
+
+                // Set active view display date to this saved record's date
+                currentDisplayDateKey = dateKey;
+
+                switchView('display');
+                showToast('Data unit berhasil disimpan!', 'success');
+            });
+
+            function getAllRecords() {
+                try {
+                    const data = localStorage.getItem('rm0_unit_records');
+                    return data ? JSON.parse(data) : [];
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function saveRecordToLocalStorage(record) {
+                const records = getAllRecords();
+                records.unshift(record);
+                try {
+                    localStorage.setItem('rm0_unit_records', JSON.stringify(records));
+                } catch (e) {
+                    console.error("Error saving data:", e);
+                }
+            }
+
+            function deleteRecord(id) {
+                let records = getAllRecords();
+                records = records.filter(r => r.id !== id);
+                try {
+                    localStorage.setItem('rm0_unit_records', JSON.stringify(records));
+                } catch (e) {}
+                renderDisplayView(currentDisplayDateKey);
+                showToast('Item berhasil dihapus');
+            }
+
+            // Pop-up Edit Handlers
+            function openEditModal(record) {
+                editingRecordId = record.id;
+                editSuffix.value = record.suffix;
+                editNomerBody.value = record.nomerBody;
+                editProblem.value = record.problem === '-' ? '' : record.problem;
+                setEditModalStatus(record.status);
+                
+                if (navigator.vibrate) navigator.vibrate(50); // Getaran tipis saat long press
+                editModal.classList.remove('hidden');
+            }
+
+            function closeEditModal() {
+                editModal.classList.add('hidden');
+                editingRecordId = null;
+            }
+
+            function setEditModalStatus(status) {
+                editSelectedStatus = status;
+                if (status === 'OK') {
+                    btnEditStatusOk.className = 'py-2 rounded-lg text-xs font-bold bg-emerald-950 border border-emerald-500 text-emerald-300 transition-all flex items-center justify-center space-x-1';
+                    btnEditStatusNg.className = 'py-2 rounded-lg text-xs font-bold bg-slate-900 border border-slate-700 text-slate-400 transition-all flex items-center justify-center space-x-1';
+                } else {
+                    btnEditStatusNg.className = 'py-2 rounded-lg text-xs font-bold bg-rose-950 border border-rose-500 text-rose-300 transition-all flex items-center justify-center space-x-1';
+                    btnEditStatusOk.className = 'py-2 rounded-lg text-xs font-bold bg-slate-900 border border-slate-700 text-slate-400 transition-all flex items-center justify-center space-x-1';
+                }
+            }
+
+            btnEditStatusOk.addEventListener('click', () => setEditModalStatus('OK'));
+            btnEditStatusNg.addEventListener('click', () => setEditModalStatus('NG'));
+            btnCloseEditModal.addEventListener('click', closeEditModal);
+
+            btnSaveEditModal.addEventListener('click', () => {
+                if (!editingRecordId) return;
+
+                let records = getAllRecords();
+                const idx = records.findIndex(r => r.id === editingRecordId);
+
+                if (idx !== -1) {
+                    records[idx].suffix = editSuffix.value.trim() || '-';
+                    records[idx].nomerBody = editNomerBody.value.trim() || '-';
+                    records[idx].problem = editProblem.value.trim() || '-';
+                    records[idx].status = editSelectedStatus;
+
+                    try {
+                        localStorage.setItem('rm0_unit_records', JSON.stringify(records));
+                    } catch (e) {}
+
+                    showToast('Data berhasil diperbarui!', 'success');
+                    closeEditModal();
+                    renderDisplayView(currentDisplayDateKey);
+                }
+            });
+
+            btnDeleteFromModal.addEventListener('click', () => {
+                if (editingRecordId && confirm('Apakah Anda yakin ingin menghapus data unit ini?')) {
+                    deleteRecord(editingRecordId);
+                    closeEditModal();
+                }
+            });
+
+            function renderDisplayView(dateKey) {
+                const records = getAllRecords();
+                const filteredRecords = records.filter(r => r.dateKey === dateKey);
+
+                let titleDateStr = getFullIndonesianDateString(new Date());
+                if (filteredRecords.length > 0) {
+                    titleDateStr = filteredRecords[0].dateDisplay;
+                } else if (dateKey) {
+                    const [y, m, d] = dateKey.split('-');
+                    titleDateStr = getFullIndonesianDateString(new Date(y, m - 1, d));
+                }
+
+                displayTitle.textContent = `Data unit RM0 ${titleDateStr}`;
+                displaySubtitle.textContent = `Total: ${filteredRecords.length} Unit (Tahan item untuk Edit/Hapus)`;
+
+                unitDisplayContainer.innerHTML = '';
+
+                if (filteredRecords.length === 0) {
+                    emptyDisplayState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyDisplayState.classList.add('hidden');
+
+                // Render item format: 2 Karakter Suffix - Nomer Body  Problem  Status
+                filteredRecords.forEach((item, index) => {
+                    const itemEl = document.createElement('div');
+                    const itemNumber = index + 1;
+                    const isOk = item.status === 'OK';
+
+                    itemEl.className = 'p-3 bg-slate-900/90 hover:bg-slate-800/90 rounded-xl border border-slate-700/80 cursor-pointer select-none transition-all active:scale-[0.99] space-y-1.5 shadow-md';
+                    
+                    itemEl.innerHTML = `
+                        <div class="flex items-center justify-between text-xs font-mono">
+                            <div class="flex items-center space-x-1.5 font-bold">
+                                <span class="text-slate-500 font-sans">${itemNumber}.</span>
+                                <span class="text-amber-400">${item.suffix}</span>
+                                <span class="text-slate-500">-</span>
+                                <span class="text-emerald-400">${item.nomerBody}</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isOk ? 'bg-emerald-950 text-emerald-400 border border-emerald-700' : 'bg-rose-950 text-rose-400 border border-rose-700'}">
+                                ${item.status}
+                            </span>
+                        </div>
+                        <div class="text-xs text-slate-300 flex items-center justify-between pt-1 border-t border-slate-800/80">
+                            <div class="flex items-center space-x-1.5 truncate max-w-[80%]">
+                                <i class="fa-solid fa-triangle-exclamation text-[10px] ${item.problem !== '-' ? 'text-amber-400' : 'text-slate-600'}"></i>
+                                <span class="truncate ${item.problem !== '-' ? 'text-slate-200' : 'text-slate-500 italic'}">${item.problem}</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 font-mono">${item.timeStr}</span>
+                        </div>
+                        <div class="text-[9px] text-slate-500 italic text-right pt-0.5">
+                            <i class="fa-solid fa-hand-pointer text-[8px] mr-1"></i>Tekan & tahan untuk edit/hapus
+                        </div>
+                    `;
+
+                    // Gesture Long-Press (Klik dan Tahan) Detection
+                    let timer = null;
+                    const longPressDuration = 500; // ms
+
+                    const startPress = (e) => {
+                        timer = setTimeout(() => {
+                            openEditModal(item);
+                        }, longPressDuration);
+                    };
+
+                    const cancelPress = () => {
+                        if (timer) clearTimeout(timer);
+                    };
+
+                    // Touch Events (Mobile HP)
+                    itemEl.addEventListener('touchstart', startPress, { passive: true });
+                    itemEl.addEventListener('touchend', cancelPress);
+                    itemEl.addEventListener('touchmove', cancelPress);
+
+                    // Mouse Events (Desktop testing)
+                    itemEl.addEventListener('mousedown', startPress);
+                    itemEl.addEventListener('mouseup', cancelPress);
+                    itemEl.addEventListener('mouseleave', cancelPress);
+
+                    unitDisplayContainer.appendChild(itemEl);
+                });
+            }
+
+            function renderHistoryGroupView() {
+                const records = getAllRecords();
+                historyDateGroupList.innerHTML = '';
+
+                if (records.length === 0) {
+                    emptyHistoryGroupState.classList.remove('hidden');
+                    btnClearAllHistory.classList.add('hidden');
+                    return;
+                }
+
+                emptyHistoryGroupState.classList.add('hidden');
+                btnClearAllHistory.classList.remove('hidden');
+
+                // Group by dateKey
+                const grouped = {};
+                records.forEach(r => {
+                    if (!grouped[r.dateKey]) {
+                        grouped[r.dateKey] = {
+                            dateDisplay: r.dateDisplay,
+                            items: []
+                        };
+                    }
+                    grouped[r.dateKey].items.push(r);
+                });
+
+                Object.keys(grouped).sort().reverse().forEach(dateKey => {
+                    const group = grouped[dateKey];
+                    const okCount = group.items.filter(i => i.status === 'OK').length;
+                    const ngCount = group.items.filter(i => i.status === 'NG').length;
+
+                    const groupEl = document.createElement('div');
+                    groupEl.className = 'p-3.5 bg-slate-900/80 hover:bg-slate-900 rounded-xl border border-slate-700/80 cursor-pointer transition-all flex items-center justify-between group';
+                    
+                    groupEl.innerHTML = `
+                        <div class="space-y-1">
+                            <h3 class="text-xs font-bold text-slate-200 group-hover:text-blue-400 transition-colors flex items-center space-x-2">
+                                <i class="fa-solid fa-calendar-day text-blue-400"></i>
+                                <span>${group.dateDisplay}</span>
+                            </h3>
+                            <div class="flex items-center space-x-2 text-[10px] text-slate-400">
+                                <span>Total: <strong class="text-slate-200">${group.items.length} unit</strong></span>
+                                <span>•</span>
+                                <span class="text-emerald-400">OK: ${okCount}</span>
+                                <span>•</span>
+                                <span class="text-rose-400">NG: ${ngCount}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="btn-share-wa px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-bold flex items-center space-x-1 shadow-md shadow-emerald-600/20 transition-all active:scale-95">
+                                <i class="fa-brands fa-whatsapp text-xs"></i>
+                                <span>Kirim WA</span>
+                            </button>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-blue-400"></i>
+                        </div>
+                    `;
+
+                    // Handle WhatsApp export
+                    const btnWa = groupEl.querySelector('.btn-share-wa');
+                    btnWa.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Mencegah pemicu navigasi klik tanggal
+
+                        let waText = `*Data unit WIP RM0 ${group.dateDisplay} Shift B*\n\n`;
+                        
+                        // Urutkan dari terlama ke terbaru (1, 2, 3...)
+                        const sortedItems = [...group.items].reverse();
+                        sortedItems.forEach((item, index) => {
+                            const statusIcon = item.status === 'OK' ? '✅' : '❌';
+                            waText += `${index + 1}. ${item.suffix}-${item.nomerBody} ${item.problem} ${item.status} ${statusIcon}\n`;
+                        });
+
+                        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
+                        window.open(waUrl, '_blank');
+                    });
+
+                    // Click date on history -> open display page for that specific date
+                    groupEl.addEventListener('click', () => {
+                        currentDisplayDateKey = dateKey;
+                        switchView('display');
+                    });
+
+                    historyDateGroupList.appendChild(groupEl);
+                });
+            }
+
+            btnClearAllHistory.addEventListener('click', () => {
+                if (confirm('Apakah Anda yakin ingin menghapus seluruh data histori?')) {
+                    localStorage.removeItem('rm0_unit_records');
+                    renderHistoryGroupView();
+                    showToast('Seluruh data histori telah dihapus');
+                }
+            });
+
+            // Initial view
+            switchView('scan');
+        });
+    </script>
+</body>
+</html>
