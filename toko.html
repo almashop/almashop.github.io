@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Toko & Kasir Mobile</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        :root {
+            --primary: #4caf50;
+            --dark: #333;
+            --light: #f4f4f9;
+            --danger: #f44336;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light);
+            padding-bottom: 60px; /* Ruang untuk navbar bawah */
+        }
+        header {
+            background-color: var(--primary);
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .container {
+            padding: 15px;
+        }
+        /* Navigasi Bawah */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: white;
+            display: flex;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+        .bottom-nav button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: none;
+            font-size: 1em;
+            font-weight: bold;
+            color: gray;
+        }
+        .bottom-nav button.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+        /* Halaman */
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* Form & Input */
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        .btn-scan {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+        .btn-save {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+        }
+        
+        /* List Item */
+        .item-card {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* Scanner Modal */
+        #scanner-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+        }
+        #reader { width: 100%; background: white; }
+        .close-scanner {
+            background: var(--danger);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <header>TokoPintar Mobile</header>
+
+    <!-- HALAMAN KASIR -->
+    <div id="kasir-page" class="page active container">
+        <h3>Proses Kasir</h3>
+        <button class="btn-scan" onclick="openScanner('kasir')">📷 Scan Barang untuk Dijual</button>
+        
+        <div id="cart-list"></div>
+        
+        <div style="background: white; padding: 15px; border-radius: 5px; margin-top: 15px;">
+            <h3 style="margin: 0 0 10px 0; display: flex; justify-content: space-between;">
+                <span>Total:</span> <span id="cart-total">Rp 0</span>
+            </h3>
+            <button class="btn-save" onclick="checkout()">Bayar Selesai</button>
+        </div>
+    </div>
+
+    <!-- HALAMAN STOK -->
+    <div id="stok-page" class="page container">
+        <h3>Input Stok Baru</h3>
+        <button class="btn-scan" onclick="openScanner('stok')">📷 Scan Barcode Barang</button>
+        
+        <input type="text" id="input-barcode" placeholder="Barcode (terisi otomatis setelah scan)">
+        <input type="text" id="input-nama" placeholder="Nama Barang">
+        <input type="number" id="input-harga" placeholder="Harga Jual (Rp)">
+        <input type="number" id="input-stok" placeholder="Jumlah Stok">
+        <button class="btn-save" onclick="simpanBarang()">Simpan Barang</button>
+
+        <h3>Daftar Barang</h3>
+        <div id="stok-list"></div>
+    </div>
+
+    <!-- SCANNER MODAL -->
+    <div id="scanner-modal">
+        <div id="reader"></div>
+        <div class="close-scanner" onclick="closeScanner()">Tutup Kamera</div>
+    </div>
+
+    <!-- NAVIGASI BAWAH -->
+    <div class="bottom-nav">
+        <button id="nav-kasir" class="active" onclick="switchPage('kasir')">KASIR</button>
+        <button id="nav-stok" onclick="switchPage('stok')">KELOLA STOK</button>
+    </div>
+
+    <script>
+        // --- INISIALISASI DATA (LOCAL STORAGE) ---
+        let dbProduk = JSON.parse(localStorage.getItem('toko_produk')) || [];
+        let cart = [];
+        let scannerMode = ''; 
+        let html5QrcodeScanner = null;
+
+        // --- NAVIGASI HALAMAN ---
+        function switchPage(page) {
+            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav button').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(page + '-page').classList.add('active');
+            document.getElementById('nav-' + page).classList.add('active');
+            
+            renderStok();
+        }
+
+        // --- KELOLA STOK ---
+        function simpanBarang() {
+            let barcode = document.getElementById('input-barcode').value;
+            let nama = document.getElementById('input-nama').value;
+            let harga = parseInt(document.getElementById('input-harga').value);
+            let stok = parseInt(document.getElementById('input-stok').value);
+
+            if(!barcode || !nama || !harga || !stok) return alert('Semua kolom harus diisi!');
+
+            let existingIndex = dbProduk.findIndex(p => p.barcode === barcode);
+            if(existingIndex >= 0) {
+                // Update stok jika barcode sudah ada
+                dbProduk[existingIndex].stok += stok;
+                dbProduk[existingIndex].harga = harga;
+                dbProduk[existingIndex].nama = nama;
+            } else {
+                // Tambah baru
+                dbProduk.push({ barcode, nama, harga, stok });
+            }
+
+            localStorage.setItem('toko_produk', JSON.stringify(dbProduk));
+            alert('Barang berhasil disimpan!');
+            
+            // Bersihkan form
+            document.getElementById('input-barcode').value = '';
+            document.getElementById('input-nama').value = '';
+            document.getElementById('input-harga').value = '';
+            document.getElementById('input-stok').value = '';
+            
+            renderStok();
+        }
+
+        function renderStok() {
+            let html = '';
+            dbProduk.forEach((p, index) => {
+                html += `
+                <div class="item-card">
+                    <div>
+                        <strong>${p.nama}</strong><br>
+                        <small>Barcode: ${p.barcode}</small><br>
+                        Rp ${p.harga.toLocaleString('id-ID')}
+                    </div>
+                    <div style="text-align: right;">
+                        <strong>Stok: ${p.stok}</strong><br>
+                        <button class="btn-danger" style="padding:5px; margin-top:5px; width:auto;" onclick="hapusBarang(${index})">Hapus</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('stok-list').innerHTML = html;
+        }
+
+        function hapusBarang(index) {
+            if(confirm('Hapus barang ini?')) {
+                dbProduk.splice(index, 1);
+                localStorage.setItem('toko_produk', JSON.stringify(dbProduk));
+                renderStok();
+            }
+        }
+
+        // --- KASIR ---
+        function tambahKeKeranjang(barcode) {
+            let produk = dbProduk.find(p => p.barcode === barcode);
+            if(!produk) return alert('Barang tidak ditemukan di database stok!');
+            if(produk.stok <= 0) return alert('Stok habis!');
+
+            let cartItem = cart.find(c => c.barcode === barcode);
+            if(cartItem) {
+                if(cartItem.qty >= produk.stok) return alert('Stok tidak mencukupi!');
+                cartItem.qty += 1;
+            } else {
+                cart.push({ ...produk, qty: 1 });
+            }
+            renderKeranjang();
+        }
+
+        function renderKeranjang() {
+            let html = '';
+            let total = 0;
+            cart.forEach((c, index) => {
+                let subtotal = c.harga * c.qty;
+                total += subtotal;
+                html += `
+                <div class="item-card">
+                    <div>
+                        <strong>${c.nama}</strong><br>
+                        Rp ${c.harga.toLocaleString('id-ID')} x ${c.qty}
+                    </div>
+                    <div style="text-align: right;">
+                        <strong>Rp ${subtotal.toLocaleString('id-ID')}</strong><br>
+                        <button class="btn-danger" style="padding:5px; margin-top:5px; width:auto;" onclick="hapusKeranjang(${index})">Batal</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('cart-list').innerHTML = html;
+            document.getElementById('cart-total').innerText = 'Rp ' + total.toLocaleString('id-ID');
+        }
+
+        function hapusKeranjang(index) {
+            cart.splice(index, 1);
+            renderKeranjang();
+        }
+
+        function checkout() {
+            if(cart.length === 0) return alert('Keranjang kosong!');
+            
+            // Kurangi stok di database
+            cart.forEach(cItem => {
+                let pIndex = dbProduk.findIndex(p => p.barcode === cItem.barcode);
+                if(pIndex >= 0) {
+                    dbProduk[pIndex].stok -= cItem.qty;
+                }
+            });
+
+            // Simpan perubahan stok ke local storage
+            localStorage.setItem('toko_produk', JSON.stringify(dbProduk));
+            
+            alert('Pembayaran berhasil! Stok telah dikurangi.');
+            cart = [];
+            renderKeranjang();
+            renderStok();
+        }
+
+        // --- SCANNER KAMERA ---
+        function openScanner(mode) {
+            scannerMode = mode;
+            document.getElementById('scanner-modal').style.display = 'flex';
+            
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", { fps: 10, qrbox: {width: 250, height: 150} }, false
+            );
+            
+            html5QrcodeScanner.render(onScanSuccess);
+        }
+
+        function closeScanner() {
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.clear();
+            }
+            document.getElementById('scanner-modal').style.display = 'none';
+        }
+
+        function onScanSuccess(decodedText) {
+            closeScanner(); // Tutup kamera setelah dapat barcode
+            
+            if(scannerMode === 'stok') {
+                // Masukkan hasil scan ke kolom form input stok
+                document.getElementById('input-barcode').value = decodedText;
+                alert('Barcode berhasil di-scan. Silakan isi nama dan harga.');
+            } else if(scannerMode === 'kasir') {
+                // Langsung tambahkan ke keranjang
+                tambahKeKeranjang(decodedText);
+            }
+        }
+
+        // Load data awal
+        renderStok();
+    </script>
+</body>
+</html>
