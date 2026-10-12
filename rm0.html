@@ -331,7 +331,8 @@
 
     <script>
         // GOOGLE APPS SCRIPT URL INTEGRATION
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCkdTkFvP-dXuO7k1Re6ULUQAxOnZiDUoAn4vGRKjSK4eCVwqGj1wnz2a3u8HxurK9/exec"; 
+        // Tempelkan URL Web App Google Apps Script Anda di sini
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyd0mH_HTH_xRmOgO-VXn_OlTrqQz2RlXlTdWYMRRu69h-YTopBhq2RxQJm-5cBi1oV/exec"; 
 
         const CHECK_ITEMS = [
             "1. Cek AC", "2. Cek panel control AC", "3. Cek fungsi level blower", "4. Cek fungsi Auto AC",
@@ -440,7 +441,7 @@
                 document.getElementById('inputUnitNum').value = '';
                 
                 // Refresh data setelah input
-                setTimeout(fetchDatabaseData, 1000);
+                setTimeout(fetchDatabaseData, 1200);
 
             } catch (err) {
                 showToast("Gagal mengirim unit NG baru.", "fa-triangle-exclamation text-red-400");
@@ -665,13 +666,13 @@
             switchTab('tab-ng');
         }
 
-        // SIMPAN HASIL REPAIR (POST)
+        // SIMPAN HASIL REPAIR KE DATABASE & UPDATE PERMANEN STATUS UNIT
         async function saveRepairConfirmation() {
             if (!activeRepairUnit) return;
 
             const btnSave = document.getElementById('btnSaveRepair');
             btnSave.disabled = true;
-            btnSave.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan...`;
+            btnSave.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan ke Database...`;
 
             const now = new Date();
             const dateFormatted = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + `, ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -686,26 +687,32 @@
             };
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(completedUnit)
-                });
+                if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "URL_GOOGLE_APPS_SCRIPT_ANDA") {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(completedUnit)
+                    });
+                }
 
                 activeRepairUnit = null;
                 activeCheckResults = {};
                 document.getElementById('repair-active-dot').classList.add('hidden');
 
-                showToast(`Unit ${completedUnit.suffix}-${completedUnit.unitNum} tersimpan ke database OK!`, "fa-circle-check text-emerald-400");
+                showToast(`Unit ${completedUnit.suffix}-${completedUnit.unitNum} tersimpan ke database & berstatus OK!`, "fa-circle-check text-emerald-400");
                 
-                // Refresh data OK & NG dari database
-                setTimeout(fetchDatabaseData, 1000);
                 switchTab('tab-ok');
+
+                // Tarik ulang data dari database agar daftar NG & OK sinkron permanen
+                setTimeout(fetchDatabaseData, 1500);
 
             } catch (error) {
                 console.error("Gagal mengirim:", error);
                 showToast("Gagal menyimpan ke database.", "fa-triangle-exclamation text-amber-400");
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Simpan Hasil Repair`;
             }
         }
 
