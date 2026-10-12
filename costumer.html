@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konfirmasi RM0 - Portal Customer</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-12">
+
+  <!-- TOP NAVBAR -->
+  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-xl text-white shadow-md shadow-blue-500/30">
+          RM0
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight leading-tight">Konfirmasi RM0</h1>
+          <p class="text-xs text-blue-400 font-medium flex items-center gap-1">
+            <i class="fa-solid fa-eye text-[10px]"></i> Portal Monitoring Customer
+          </p>
+        </div>
+      </div>
+      
+      <!-- Tombol Sync Refresh -->
+      <button onclick="fetchDataFromCloud()" title="Refresh Data" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl transition text-xs font-semibold flex items-center gap-2">
+        <i class="fa-solid fa-arrows-rotate text-blue-400"></i>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-5xl mx-auto px-4 pt-4 space-y-4">
+
+    <!-- INFORMASI TANGGAL & STATUS REALTIME SINKRONISASI -->
+    <div class="glass-card rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+          <i class="fa-regular fa-calendar-days text-xl"></i>
+        </div>
+        <div>
+          <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Hari & Tanggal</span>
+          <p id="current-date" class="font-bold text-slate-700 text-sm sm:text-base">--</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+        <div id="cloud-status" class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Terhubung ke Cloud</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BANNER PEMBERITAHUAN CUSTOMER -->
+    <div class="bg-blue-600 text-white rounded-2xl p-4 shadow-md flex items-start gap-3">
+      <div class="p-2 bg-white/10 rounded-xl shrink-0 mt-0.5">
+        <i class="fa-solid fa-circle-info text-xl"></i>
+      </div>
+      <div class="text-xs leading-relaxed">
+        <h4 class="font-extrabold text-sm mb-0.5">Status Perbaikan Unit RM0</h4>
+        <p class="text-blue-100">
+          Halaman ini menampilkan progres perbaikan unit secara langsung. Pilih tab di bawah untuk melihat unit yang sedang diproses (NG) atau yang sudah selesai (OK). Klik pada kartu unit untuk melihat rincian 14 item verifikasi perbaikan.
+        </p>
+      </div>
+    </div>
+
+    <!-- TABS NAVIGASI STATUS (NG vs OK) -->
+    <div class="flex bg-slate-200/80 p-1.5 rounded-2xl gap-1 text-sm font-bold">
+      <button id="tab-ng" onclick="switchTab('NG')" class="flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 bg-white text-rose-600 shadow-sm">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Proses Perbaikan (NG)</span>
+        <span id="count-ng" class="ml-1 bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full text-xs">0</span>
+      </button>
+      <button id="tab-ok" onclick="switchTab('OK')" class="flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>Selesai (OK)</span>
+        <span id="count-ok" class="ml-1 bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs">0</span>
+      </button>
+    </div>
+
+    <!-- FILTER PENCARIAN -->
+    <div class="relative">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text" id="search-input" oninput="renderUnitList()" placeholder="Cari Suffix, Nomor Unit, atau Problem..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition">
+    </div>
+
+    <!-- DAFTAR UNIT LIST -->
+    <div id="unit-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <!-- Unit Cards diproduksi dinamis via JS -->
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div id="empty-state" class="hidden glass-card rounded-2xl p-12 text-center border border-dashed border-slate-300">
+      <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400 text-2xl">
+        <i class="fa-solid fa-folder-open"></i>
+      </div>
+      <h3 class="font-bold text-slate-700">Tidak Ada Data Unit</h3>
+      <p class="text-slate-400 text-xs mt-1">Tidak ditemukan data unit pada kategori ini.</p>
+    </div>
+
+  </main>
+
+  <!-- MODAL 1: INFORMASI DETAIL UNIT -->
+  <div id="modal-info" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-150">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-circle-info text-blue-400"></i>
+          <h3 class="font-bold text-base">Informasi Unit</h3>
+        </div>
+        <button onclick="closeModal('modal-info')" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-200/60">
+          <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Suffix / No Unit</span>
+            <span id="info-suffix-unit" class="font-extrabold text-slate-800 text-base">--</span>
+          </div>
+          <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Status</span>
+            <span id="info-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold">--</span>
+          </div>
+          <div>
+            <span class="text-xs font-semibold text-slate-400 uppercase block mb-1">Catatan Problem</span>
+            <p id="info-problem" class="text-sm font-semibold text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-100">--</p>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button onclick="closeModal('modal-info')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition">
+            Tutup
+          </button>
+          <button onclick="proceedToConfirmationPage()" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
+            <span>Lihat 14 Item</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: DETAIL CHECKLIST 14 ITEM (READ ONLY FOR CUSTOMER) -->
+  <div id="modal-check-items" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-100">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center shrink-0">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="check-badge-status" class="px-2 py-0.5 rounded text-xs font-black bg-rose-500 text-white">NG</span>
+            <h3 id="check-header-title" class="font-bold text-lg">Suffix - No Unit</h3>
+          </div>
+          <p id="check-header-problem" class="text-xs text-slate-300 mt-0.5 truncate max-w-md">Problem: --</p>
+        </div>
+        <button onclick="closeModal('modal-check-items')" class="text-slate-400 hover:text-white p-1.5 rounded-lg">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Item Checklist Header & Progress -->
+      <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center text-xs font-bold text-slate-600 shrink-0">
+        <span>STATUS VERIFIKASI 14 ITEM PEMERIKSAAN</span>
+        <span id="check-progress" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">0/14 Item OK</span>
+      </div>
+
+      <!-- Item Checklist Scrollable Body -->
+      <div class="p-4 overflow-y-auto custom-scrollbar space-y-2 flex-1" id="items-container">
+        <!-- 14 Items injected via JS -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end items-center shrink-0">
+        <button onclick="closeModal('modal-check-items')" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-sm transition">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // 14 Item Verifikasi
+    const CHECK_ITEMS_LIST = [
+      "Cek AC",
+      "Cek panel control AC",
+      "Cek fungsi level blower",
+      "Cek fungsi Auto AC",
+      "Cek tombol defoger",
+      "Cek fungsi Air fresh",
+      "Cek mode AC",
+      "Cek tombol fungsi defroster",
+      "Cek fungsi heater",
+      "Cek fungsi tele tale",
+      "Cek kipas AC",
+      "Cek pompa AC",
+      "Cek defoger",
+      "Hasil DS"
+    ];
+
+    // Read Key dari Storage (Diset dari Halaman Admin)
+    const binId = localStorage.getItem('rm0_bin_id') || '';
+    const apiKey = localStorage.getItem('rm0_api_key') || '';
+
+    let currentTab = 'NG';
+    let unitsData = [];
+    let activeUnitId = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderDate();
+      fetchDataFromCloud();
+
+      // Auto Refresh Data Cloud setiap 10 detik
+      setInterval(() => {
+        fetchDataFromCloud(true);
+      }, 10000);
+    });
+
+    function renderDate() {
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('current-date').textContent = now.toLocaleDateString('id-ID', options);
+    }
+
+    async function fetchDataFromCloud(isBackground = false) {
+      if (!binId || !apiKey) {
+        const localData = localStorage.getItem('rm0_units_data');
+        if (localData) {
+          try { unitsData = JSON.parse(localData); } catch(e) {}
+        }
+        updateCloudStatusBadge(false, 'Local View');
+        renderUnitList();
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+          method: 'GET',
+          headers: { 'X-Master-Key': apiKey }
+        });
+
+        if (!response.ok) throw new Error('Gagal sync data cloud');
+
+        const result = await response.json();
+        if (Array.isArray(result.record)) {
+          unitsData = result.record;
+          localStorage.setItem('rm0_units_data', JSON.stringify(unitsData));
+          updateCloudStatusBadge(true, 'Live Connected');
+          renderUnitList();
+        }
+      } catch (error) {
+        console.error(error);
+        updateCloudStatusBadge(false, 'Offline View');
+      }
+    }
+
+    function updateCloudStatusBadge(isSuccess, text) {
+      const badge = document.getElementById('cloud-status');
+      if (isSuccess) {
+        badge.className = "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>${text}</span>`;
+      } else {
+        badge.className = "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200";
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>${text}</span>`;
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      const tabNg = document.getElementById('tab-ng');
+      const tabOk = document.getElementById('tab-ok');
+
+      if (tab === 'NG') {
+        tabNg.className = "flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 bg-white text-rose-600 shadow-sm";
+        tabOk.className = "flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+      } else {
+        tabOk.className = "flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 bg-white text-emerald-600 shadow-sm";
+        tabNg.className = "flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+      }
+
+      renderUnitList();
+    }
+
+    function renderUnitList() {
+      const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+      const listContainer = document.getElementById('unit-list');
+      const emptyState = document.getElementById('empty-state');
+
+      const ngUnits = unitsData.filter(u => u.status === 'NG');
+      const okUnits = unitsData.filter(u => u.status === 'OK');
+      document.getElementById('count-ng').textContent = ngUnits.length;
+      document.getElementById('count-ok').textContent = okUnits.length;
+
+      const filtered = unitsData.filter(u => {
+        const matchesStatus = u.status === currentTab;
+        const matchesSearch = u.suffix.toLowerCase().includes(searchQuery) || 
+                              u.noUnit.toLowerCase().includes(searchQuery) || 
+                              u.problem.toLowerCase().includes(searchQuery);
+        return matchesStatus && matchesSearch;
+      });
+
+      listContainer.innerHTML = '';
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      filtered.forEach(unit => {
+        const checkedCount = Object.values(unit.itemsChecked || {}).filter(v => v === 'OK').length;
+
+        const card = document.createElement('div');
+        card.className = "glass-card rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition cursor-pointer relative overflow-hidden group";
+        card.onclick = () => openUnitInfoModal(unit.id);
+
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Suffix - No Unit</span>
+              <h3 class="text-lg font-extrabold text-slate-800 group-hover:text-blue-600 transition">
+                ${unit.suffix} - ${unit.noUnit}
+              </h3>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-black ${
+              unit.status === 'NG' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+            }">
+              ${unit.status === 'NG' ? 'Proses Perbaikan' : 'Selesai (OK)'}
+            </span>
+          </div>
+
+          <div class="mb-3">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Problem:</span>
+            <p class="text-xs font-semibold text-slate-700 line-clamp-2">${unit.problem}</p>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+            <span class="text-slate-400 font-medium">
+              <i class="fa-regular fa-square-check text-blue-500 mr-1"></i> Checked: ${checkedCount}/14 Item
+            </span>
+            <span class="text-blue-600 font-bold group-hover:translate-x-1 transition flex items-center gap-1">
+              Lihat Rincian <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </span>
+          </div>
+        `;
+
+        listContainer.appendChild(card);
+      });
+    }
+
+    function openUnitInfoModal(unitId) {
+      activeUnitId = unitId;
+      const unit = unitsData.find(u => u.id === unitId);
+      if (!unit) return;
+
+      document.getElementById('info-suffix-unit').textContent = `${unit.suffix} - ${unit.noUnit}`;
+      document.getElementById('info-problem').textContent = unit.problem;
+
+      const badge = document.getElementById('info-status-badge');
+      if (unit.status === 'NG') {
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700";
+        badge.textContent = "Proses Perbaikan (NG)";
+      } else {
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700";
+        badge.textContent = "Selesai (OK)";
+      }
+
+      openModal('modal-info');
+    }
+
+    function proceedToConfirmationPage() {
+      closeModal('modal-info');
+      renderConfirmationChecklist();
+      openModal('modal-check-items');
+    }
+
+    function renderConfirmationChecklist() {
+      const unit = unitsData.find(u => u.id === activeUnitId);
+      if (!unit) return;
+
+      document.getElementById('check-header-title').textContent = `${unit.suffix} - ${unit.noUnit}`;
+      document.getElementById('check-header-problem').textContent = `Problem: ${unit.problem}`;
+      
+      const badge = document.getElementById('check-badge-status');
+      badge.textContent = unit.status;
+      badge.className = unit.status === 'NG' ? "px-2 py-0.5 rounded text-xs font-black bg-rose-500 text-white" : "px-2 py-0.5 rounded text-xs font-black bg-emerald-500 text-white";
+
+      const container = document.getElementById('items-container');
+      container.innerHTML = '';
+
+      let okCount = 0;
+
+      CHECK_ITEMS_LIST.forEach((itemName, index) => {
+        const itemStatus = (unit.itemsChecked && unit.itemsChecked[itemName]) || 'PENDING';
+        if (itemStatus === 'OK') okCount++;
+
+        const itemRow = document.createElement('div');
+        itemRow.className = "flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80";
+        
+        let statusBadgeHTML = '';
+        if (itemStatus === 'OK') {
+          statusBadgeHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-extrabold rounded-lg flex items-center gap-1"><i class="fa-solid fa-check"></i> OK</span>`;
+        } else if (itemStatus === 'NG') {
+          statusBadgeHTML = `<span class="px-2.5 py-1 bg-rose-100 text-rose-700 text-xs font-extrabold rounded-lg flex items-center gap-1"><i class="fa-solid fa-xmark"></i> NG</span>`;
+        } else {
+          statusBadgeHTML = `<span class="px-2.5 py-1 bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg">Belum Ditindak</span>`;
+        }
+
+        itemRow.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold flex items-center justify-center shrink-0">
+              ${index + 1}
+            </span>
+            <span class="text-xs font-bold text-slate-700">${itemName}</span>
+          </div>
+          <div>
+            ${statusBadgeHTML}
+          </div>
+        `;
+
+        container.appendChild(itemRow);
+      });
+
+      document.getElementById('check-progress').textContent = `${okCount}/14 Item OK`;
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
