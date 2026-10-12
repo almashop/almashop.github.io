@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konfirmasi RM0 - Repair Unit Checklist</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.90);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        .modal-animate {
+            transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+        }
+        @keyframes fillProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        .progress-active {
+            animation: fillProgress 0.7s linear forwards;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Top Header -->
+    <header class="bg-gradient-to-r from-slate-900 via-indigo-900 to-sky-900 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3.5 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-sky-500/20 rounded-xl border border-sky-400/30 text-sky-400">
+                    <i class="fa-solid fa-wrench text-xl sm:text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-sky-100 to-sky-300 bg-clip-text text-transparent">
+                        Konfirmasi RM0
+                    </h1>
+                    <p class="text-xs text-sky-200/80">Sistem Inspeksi & Repair Konfirmasi Unit</p>
+                </div>
+            </div>
+            <!-- Dynamic Date Display -->
+            <div class="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium text-sky-100 border border-white/10 shadow-inner">
+                <i class="fa-regular fa-calendar-days text-sky-300"></i>
+                <span id="currentDateDisplay">--</span>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 mt-1 flex space-x-2 border-t border-white/10 pt-2 pb-1 overflow-x-auto">
+            <button onclick="switchTab('tab-ng')" id="btn-tab-ng" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 bg-red-500 text-white shadow-md whitespace-nowrap">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>Data Unit</span>
+                <span id="count-ng-badge" class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-mono">36</span>
+            </button>
+            <button onclick="switchTab('tab-repair')" id="btn-tab-repair" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 whitespace-nowrap">
+                <i class="fa-solid fa-clipboard-check"></i>
+                <span>Konfirmasi</span>
+                <span id="repair-active-dot" class="w-2 h-2 rounded-full bg-amber-400 hidden animate-ping"></span>
+            </button>
+            <button onclick="switchTab('tab-ok')" id="btn-tab-ok" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 whitespace-nowrap">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Unit OK</span>
+                <span id="count-ok-badge" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs px-2 py-0.5 rounded-full font-mono">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex-grow w-full">
+
+        <!-- ================= PAGE 1: UNIT STATUS NG ================= -->
+        <section id="page-ng" class="space-y-4">
+            <!-- Search & Actions Bar -->
+            <div class="glass-card p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between gap-3 items-center">
+                <div class="relative w-full sm:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" onkeyup="filterNGUnits()" placeholder="Cari Suffix (JF/HN/LN/KF) atau Nomor Unit..." 
+                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all">
+                </div>
+                <div class="flex items-center justify-between w-full sm:w-auto gap-3">
+                    <button onclick="resetDataSet()" title="Reset ke 36 Data Awal" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-left"></i> Reset Data
+                    </button>
+                    <div class="text-xs text-slate-500 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-sky-500"></i>
+                        <span>Klik / <strong>Tahan (Hold)</strong> card unit untuk detail.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List of NG Units -->
+            <div id="ngUnitList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                <!-- 36 Unit Cards rendered dynamically -->
+            </div>
+
+            <!-- Empty State for Search -->
+            <div id="ngEmptyState" class="hidden text-center py-12 glass-card rounded-2xl">
+                <i class="fa-solid fa-box-open text-4xl text-slate-300 mb-2"></i>
+                <p class="text-slate-500 font-medium">Tidak ada data unit NG ditemukan.</p>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 2: FORM KONFIRMASI REPAIR ================= -->
+        <section id="page-repair" class="hidden space-y-5">
+            <!-- Unit Header Info Card -->
+            <div id="activeUnitHeader" class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-5 rounded-2xl shadow-lg border border-slate-800 relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 opacity-10 text-8xl text-white">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex flex-wrap justify-between items-start gap-2 mb-2">
+                        <div>
+                            <span class="text-xs uppercase tracking-wider text-sky-400 font-semibold">Unit Dalam Pemeriksaan</span>
+                            <h2 id="repairUnitTitle" class="text-2xl font-bold text-white tracking-wide">SUFFIX - 000000</h2>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
+                            <i class="fa-solid fa-spinner animate-spin"></i> Proses Inspeksi
+                        </span>
+                    </div>
+                    <div class="bg-slate-800/80 rounded-xl p-3 border border-slate-700/60 mt-3 text-sm">
+                        <span class="text-slate-400 block text-xs mb-0.5">Deskripsi Problem:</span>
+                        <p id="repairUnitProblem" class="font-mono text-amber-200 font-medium">Control panel AC part TA</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checklist Section -->
+            <div class="glass-card rounded-2xl p-5 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200/80 pb-3">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">Konfirmasi Item Berikut:</h3>
+                        <p class="text-xs text-slate-500">Klik setiap baris item untuk menentukan hasil pengecekan (OK / NG).</p>
+                    </div>
+                    <!-- Checklist Counter Badge -->
+                    <div class="bg-slate-100 text-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-200 font-medium">
+                        Progress: <span id="checkedCount" class="font-bold text-sky-600">0</span> / 13 Item Terkonfirmasi
+                    </div>
+                </div>
+
+                <!-- 13 Check Items Grid/List -->
+                <div id="checkListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    <!-- Dynamically Generated Items -->
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row justify-end gap-3">
+                    <button onclick="cancelRepairProcess()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium text-sm transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-xmark"></i> Batal
+                    </button>
+                    <button id="btnSaveRepair" onclick="saveRepairConfirmation()" disabled class="w-full sm:w-auto px-8 py-2.5 rounded-xl bg-slate-300 text-slate-500 font-semibold text-sm cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Hasil Repair
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 3: UNIT STATUS OK ================= -->
+        <section id="page-ok" class="hidden space-y-4">
+            <div class="glass-card p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div>
+                    <h2 class="font-bold text-slate-800 text-lg">Daftar Unit Status OK</h2>
+                    <p class="text-xs text-slate-500">Unit yang telah selesai dikonfirmasi dan siap dilanjutkan.</p>
+                </div>
+                <button onclick="exportOKSummary()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-copy"></i> Copy Laporan Ringkasan
+                </button>
+            </div>
+
+            <!-- List of Completed OK Units -->
+            <div id="okUnitList" class="grid grid-cols-1 gap-4">
+                <!-- OK Units Rendered Here -->
+            </div>
+
+            <div id="okEmptyState" class="hidden text-center py-12 glass-card rounded-2xl">
+                <i class="fa-solid fa-clipboard-check text-4xl text-slate-300 mb-2"></i>
+                <p class="text-slate-500 font-medium">Belum ada unit dengan status OK.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200/80 py-4 text-center text-xs text-slate-400 mt-8">
+        &copy; 2026 Quality Control & Repair Management System - RM0
+    </footer>
+
+    <!-- ================= POP-UP MODAL 1: INFORMASI DETAIL UNIT NG ================= -->
+    <div id="unitDetailModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-transform duration-200 modal-animate border border-slate-100">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-red-600 to-rose-700 text-white p-4 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                    <h3 class="font-bold text-base">Konfirmasi Repair Unit NG</h3>
+                </div>
+                <button onclick="closeUnitDetailModal()" class="text-white/80 hover:text-white text-lg w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <!-- Modal Content -->
+            <div class="p-5 space-y-4">
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <span class="text-xs text-slate-500 font-medium">Suffix</span>
+                        <span id="modalSuffix" class="font-bold text-slate-800 text-sm">--</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <span class="text-xs text-slate-500 font-medium">Nomor Unit</span>
+                        <span id="modalUnitNum" class="font-mono font-bold text-sky-700 text-base">--</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium block mb-1">Problem / Keluhan:</span>
+                        <div id="modalProblem" class="text-sm font-semibold text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-100">--</div>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 italic text-center">Apakah Anda ingin memulai proses konfirmasi pemeriksaan untuk unit ini?</p>
+            </div>
+            <!-- Modal Actions -->
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+                <button onclick="closeUnitDetailModal()" class="w-1/2 py-2.5 border border-slate-300 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-100 transition-all">
+                    Batal
+                </button>
+                <button id="btnConfirmRepairStart" onclick="startRepairFromModal()" class="w-1/2 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-wrench"></i> Konfirmasi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= POP-UP MODAL 2: KONFIRMASI CHECK ITEM (OK/NG) ================= -->
+    <div id="itemCheckModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden transform scale-95 transition-transform duration-200 modal-animate border border-slate-100">
+            <div class="bg-slate-900 text-white p-4 text-center relative">
+                <span id="modalItemIndex" class="text-xs text-sky-400 font-mono font-semibold block mb-0.5">ITEM INSPEKSI #1</span>
+                <h3 id="modalItemTitle" class="font-bold text-lg text-white">Cek AC</h3>
+                <button onclick="closeItemCheckModal()" class="absolute right-3 top-3 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-5 text-center space-y-4">
+                <p class="text-sm text-slate-600">Pilih status hasil pengujian untuk item ini:</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="setItemCheckResult('OK')" class="p-4 border-2 border-emerald-500 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold transition-all flex flex-col items-center gap-2 group">
+                        <i class="fa-solid fa-circle-check text-3xl text-emerald-600 group-hover:scale-110 transition-transform"></i>
+                        <span>STATUS OK</span>
+                    </button>
+                    <button onclick="setItemCheckResult('NG')" class="p-4 border-2 border-red-400 rounded-xl bg-red-50 hover:bg-red-100 text-red-800 font-bold transition-all flex flex-col items-center gap-2 group">
+                        <i class="fa-solid fa-circle-xmark text-3xl text-red-600 group-hover:scale-110 transition-transform"></i>
+                        <span>STATUS NG</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 border border-slate-700">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-sky-400"></i>
+        <span id="toastMessage" class="text-xs font-medium">Notifikasi</span>
+    </div>
+
+    <script>
+        // GOOGLE APPS SCRIPT DATABASE INTEGRATION
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIZxqCZStKt-mJJtJO_xvz2wQUVRV77QqF74Mx2KR1EAo_0TDSwqbeJPU3wltq21kT/exec"; 
+
+        // Data Check Items (13 Items)
+        const CHECK_ITEMS = [
+            "1. Cek AC",
+            "2. Cek panel control AC",
+            "3. Cek fungsi level blower",
+            "4. Cek fungsi Auto AC",
+            "5. Cek tombol defoger",
+            "6. Cek fungsi Air fresh",
+            "7. Cek mode AC",
+            "8. Cek fungsi defroster",
+            "9. Cek fungsi heater",
+            "10. Cek fungsi tele tale",
+            "11. Cek kipas AC",
+            "12. Cek pompa AC",
+            "13. Hasil DS"
+        ];
+
+        // Strict 36 NG Data Records
+        const INITIAL_36_NG_UNITS = [
+            { id: 1, suffix: "JF", unitNum: "039668", problem: "Control panel AC part TA" },
+            { id: 2, suffix: "JF", unitNum: "039669", problem: "Control panel AC part TA" },
+            { id: 3, suffix: "HN", unitNum: "007980", problem: "Control panel AC part TA" },
+            { id: 4, suffix: "LN", unitNum: "026341", problem: "Control panel AC part TA" },
+            { id: 5, suffix: "JF", unitNum: "039670", problem: "Control panel AC part TA" },
+            { id: 6, suffix: "JF", unitNum: "039666", problem: "Control panel AC part TA" },
+            { id: 7, suffix: "KF", unitNum: "039673", problem: "Control panel AC part TA" },
+            { id: 8, suffix: "JF", unitNum: "039671", problem: "Control panel AC part TA" },
+            { id: 9, suffix: "JF", unitNum: "039674", problem: "Control panel AC part TA" },
+            { id: 10, suffix: "JF", unitNum: "039675", problem: "Control panel AC part TA" },
+            { id: 11, suffix: "JF", unitNum: "039679", problem: "Control panel AC part TA" },
+            { id: 12, suffix: "JF", unitNum: "039680", problem: "Control panel AC part TA" },
+            { id: 13, suffix: "JF", unitNum: "039678", problem: "Control panel AC part TA" },
+            { id: 14, suffix: "JF", unitNum: "039698", problem: "Control panel AC part TA" },
+            { id: 15, suffix: "JF", unitNum: "039676", problem: "Control panel AC part TA" },
+            { id: 16, suffix: "JF", unitNum: "039690", problem: "Control panel AC part TA" },
+            { id: 17, suffix: "HN", unitNum: "007984", problem: "Control panel AC part TA" },
+            { id: 18, suffix: "LN", unitNum: "026348", problem: "Control panel AC part TA" },
+            { id: 19, suffix: "JF", unitNum: "039709", problem: "Control panel AC part TA" },
+            { id: 20, suffix: "HN", unitNum: "007985", problem: "Control panel AC part TA" },
+            { id: 21, suffix: "HN", unitNum: "007982", problem: "Control panel AC part TA" },
+            { id: 22, suffix: "JF", unitNum: "039695", problem: "Control panel AC part TA" },
+            { id: 23, suffix: "JF", unitNum: "039710", problem: "Control panel AC part TA" },
+            { id: 24, suffix: "JF", unitNum: "039700", problem: "Control panel AC part TA" },
+            { id: 25, suffix: "JF", unitNum: "039707", problem: "Control panel AC part TA" },
+            { id: 26, suffix: "LN", unitNum: "026349", problem: "Control panel AC part TA" },
+            { id: 27, suffix: "JF", unitNum: "039694", problem: "Control panel AC part TA" },
+            { id: 28, suffix: "JF", unitNum: "039711", problem: "Control panel AC part TA" },
+            { id: 29, suffix: "JF", unitNum: "039712", problem: "Control panel AC part TA" },
+            { id: 30, suffix: "JF", unitNum: "039699", problem: "Control panel AC part TA" },
+            { id: 31, suffix: "LN", unitNum: "026350", problem: "Control panel AC part TA" },
+            { id: 32, suffix: "JF", unitNum: "039708", problem: "Control panel AC part TA" },
+            { id: 33, suffix: "JF", unitNum: "039713", problem: "Control panel AC part TA" },
+            { id: 34, suffix: "HN", unitNum: "007986", problem: "Control panel AC part TA" },
+            { id: 35, suffix: "JF", unitNum: "039715", problem: "Control panel AC part TA" },
+            { id: 36, suffix: "JF", unitNum: "039714", problem: "Control panel AC part TA" }
+        ];
+
+        let ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
+        let okUnits = [];
+
+        // Active States
+        let selectedNGUnit = null;
+        let activeRepairUnit = null;
+        let activeCheckResults = {};
+        let currentEditingItemIndex = null;
+
+        // Long Press States
+        let longPressTimer = null;
+        let isLongPress = false;
+
+        window.onload = function() {
+            renderDate();
+            renderNGUnits();
+            renderOKUnits();
+            renderChecklist();
+            updateBadges();
+        };
+
+        function renderDate() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('id-ID', options);
+            document.getElementById('currentDateDisplay').textContent = dateStr;
+        }
+
+        function switchTab(tabId) {
+            document.getElementById('page-ng').classList.add('hidden');
+            document.getElementById('page-repair').classList.add('hidden');
+            document.getElementById('page-ok').classList.add('hidden');
+
+            const btnNg = document.getElementById('btn-tab-ng');
+            const btnRepair = document.getElementById('btn-tab-repair');
+            const btnOk = document.getElementById('btn-tab-ok');
+
+            const defaultBtnClass = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 whitespace-nowrap";
+            
+            btnNg.className = defaultBtnClass;
+            btnRepair.className = defaultBtnClass;
+            btnOk.className = defaultBtnClass;
+
+            if (tabId === 'tab-ng') {
+                document.getElementById('page-ng').classList.remove('hidden');
+                btnNg.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 bg-red-500 text-white shadow-md whitespace-nowrap";
+            } else if (tabId === 'tab-repair') {
+                if (!activeRepairUnit) {
+                    showToast("Pilih unit status NG terlebih dahulu untuk konfirmasi!", "fa-circle-exclamation text-amber-400");
+                    switchTab('tab-ng');
+                    return;
+                }
+                document.getElementById('page-repair').classList.remove('hidden');
+                btnRepair.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 bg-sky-600 text-white shadow-md whitespace-nowrap";
+            } else if (tabId === 'tab-ok') {
+                document.getElementById('page-ok').classList.remove('hidden');
+                btnOk.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 bg-emerald-600 text-white shadow-md whitespace-nowrap";
+            }
+        }
+
+        function renderNGUnits(filterText = '') {
+            const container = document.getElementById('ngUnitList');
+            const emptyState = document.getElementById('ngEmptyState');
+            container.innerHTML = '';
+
+            const filtered = ngUnits.filter(unit => 
+                unit.unitNum.toLowerCase().includes(filterText.toLowerCase()) || 
+                unit.suffix.toLowerCase().includes(filterText.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach((unit, index) => {
+                const card = document.createElement('div');
+                card.className = "glass-card p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer border border-slate-200 select-none relative overflow-hidden group";
+                
+                card.innerHTML = `
+                    <div class="progress-bar absolute bottom-0 left-0 h-1 bg-sky-500 w-0"></div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                            ${unit.suffix} - ${unit.unitNum}
+                        </span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                            NG
+                        </span>
+                    </div>
+                    <h3 class="text-base font-bold font-mono text-slate-800 mb-1 group-hover:text-sky-600 transition-colors">
+                        ${unit.suffix} - ${unit.unitNum}
+                    </h3>
+                    <div class="bg-red-50/70 p-2 rounded-lg border border-red-100/80 mb-2">
+                        <p class="text-xs text-red-900 font-medium truncate">${unit.problem}</p>
+                    </div>
+                    <div class="flex justify-between items-center text-[11px] text-slate-400 pt-1.5 border-t border-slate-100">
+                        <span><i class="fa-solid fa-fingerprint mr-1"></i> #Card ${index + 1}</span>
+                        <span class="text-sky-600 font-semibold group-hover:translate-x-1 transition-transform inline-block">
+                            Periksa <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                        </span>
+                    </div>
+                `;
+
+                const progressBar = card.querySelector('.progress-bar');
+
+                const startHold = () => {
+                    isLongPress = false;
+                    progressBar.classList.add('progress-active');
+                    longPressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        openUnitDetailModal(unit);
+                        progressBar.classList.remove('progress-active');
+                    }, 600);
+                };
+
+                const cancelHold = () => {
+                    clearTimeout(longPressTimer);
+                    progressBar.classList.remove('progress-active');
+                };
+
+                card.addEventListener('mousedown', startHold);
+                card.addEventListener('touchstart', startHold);
+
+                card.addEventListener('mouseup', () => {
+                    cancelHold();
+                    if (!isLongPress) {
+                        openUnitDetailModal(unit);
+                    }
+                });
+
+                card.addEventListener('mouseleave', cancelHold);
+                card.addEventListener('touchend', cancelHold);
+
+                container.appendChild(card);
+            });
+        }
+
+        function filterNGUnits() {
+            const query = document.getElementById('searchInput').value;
+            renderNGUnits(query);
+        }
+
+        function openUnitDetailModal(unit) {
+            selectedNGUnit = unit;
+            document.getElementById('modalSuffix').textContent = unit.suffix;
+            document.getElementById('modalUnitNum').textContent = `${unit.suffix} - ${unit.unitNum}`;
+            document.getElementById('modalProblem').textContent = unit.problem;
+
+            const modal = document.getElementById('unitDetailModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-animate').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeUnitDetailModal() {
+            const modal = document.getElementById('unitDetailModal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-animate').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function startRepairFromModal() {
+            if (!selectedNGUnit) return;
+            activeRepairUnit = { ...selectedNGUnit };
+            activeCheckResults = {};
+
+            document.getElementById('repairUnitTitle').textContent = `${activeRepairUnit.suffix} - ${activeRepairUnit.unitNum}`;
+            document.getElementById('repairUnitProblem').textContent = activeRepairUnit.problem;
+
+            closeUnitDetailModal();
+            renderChecklist();
+            
+            document.getElementById('repair-active-dot').classList.remove('hidden');
+            switchTab('tab-repair');
+            showToast(`Memulai konfirmasi repair untuk unit ${activeRepairUnit.suffix} - ${activeRepairUnit.unitNum}`, "fa-screwdriver-wrench text-sky-400");
+        }
+
+        function renderChecklist() {
+            const container = document.getElementById('checkListContainer');
+            container.innerHTML = '';
+
+            CHECK_ITEMS.forEach((itemText, idx) => {
+                const status = activeCheckResults[idx];
+                
+                const itemCard = document.createElement('div');
+                itemCard.onclick = () => openItemCheckModal(idx);
+
+                let statusBadgeHTML = `
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-400 border border-slate-200 flex items-center gap-1">
+                        <i class="fa-regular fa-circle"></i> Belum Cek
+                    </span>
+                `;
+
+                let cardBorderClass = "border-slate-200 hover:border-sky-300";
+
+                if (status === 'OK') {
+                    statusBadgeHTML = `
+                        <span class="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-circle-check text-emerald-600"></i> OK
+                        </span>
+                    `;
+                    cardBorderClass = "border-emerald-300 bg-emerald-50/30";
+                } else if (status === 'NG') {
+                    statusBadgeHTML = `
+                        <span class="text-xs font-bold px-3 py-1 rounded-lg bg-red-100 text-red-800 border border-red-300 flex items-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-circle-xmark text-red-600"></i> NG
+                        </span>
+                    `;
+                    cardBorderClass = "border-red-300 bg-red-50/30";
+                }
+
+                itemCard.className = `p-3.5 rounded-xl border ${cardBorderClass} glass-card flex justify-between items-center cursor-pointer hover:shadow-md transition-all select-none`;
+                itemCard.innerHTML = `
+                    <span class="text-sm font-semibold text-slate-700">${itemText}</span>
+                    <div>${statusBadgeHTML}</div>
+                `;
+
+                container.appendChild(itemCard);
+            });
+
+            updateChecklistProgress();
+        }
+
+        function openItemCheckModal(idx) {
+            currentEditingItemIndex = idx;
+            document.getElementById('modalItemIndex').textContent = `ITEM INSPEKSI #${idx + 1}`;
+            document.getElementById('modalItemTitle').textContent = CHECK_ITEMS[idx];
+
+            const modal = document.getElementById('itemCheckModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-animate').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeItemCheckModal() {
+            const modal = document.getElementById('itemCheckModal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-animate').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function setItemCheckResult(result) {
+            if (currentEditingItemIndex !== null) {
+                activeCheckResults[currentEditingItemIndex] = result;
+                closeItemCheckModal();
+                renderChecklist();
+            }
+        }
+
+        function updateChecklistProgress() {
+            const confirmedCount = Object.keys(activeCheckResults).length;
+            document.getElementById('checkedCount').textContent = confirmedCount;
+
+            const btnSave = document.getElementById('btnSaveRepair');
+            if (confirmedCount === CHECK_ITEMS.length) {
+                btnSave.disabled = false;
+                btnSave.className = "w-full sm:w-auto px-8 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer animate-pulse";
+            } else {
+                btnSave.disabled = true;
+                btnSave.className = "w-full sm:w-auto px-8 py-2.5 rounded-xl bg-slate-300 text-slate-500 font-semibold text-sm cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-sm";
+            }
+        }
+
+        function cancelRepairProcess() {
+            activeRepairUnit = null;
+            activeCheckResults = {};
+            document.getElementById('repair-active-dot').classList.add('hidden');
+            switchTab('tab-ng');
+        }
+
+        async function saveRepairConfirmation() {
+            if (!activeRepairUnit) return;
+
+            const btnSave = document.getElementById('btnSaveRepair');
+            const originalBtnText = btnSave.innerHTML;
+            btnSave.disabled = true;
+            btnSave.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan ke Database...`;
+
+            const now = new Date();
+            const dateFormatted = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + `, ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            const resultsArray = CHECK_ITEMS.map((_, i) => activeCheckResults[i] || 'OK');
+            
+            const completedUnit = {
+                id: Date.now(),
+                suffix: activeRepairUnit.suffix,
+                unitNum: activeRepairUnit.unitNum,
+                problem: activeRepairUnit.problem,
+                completedAt: dateFormatted,
+                results: resultsArray
+            };
+
+            try {
+                if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "URL_GOOGLE_APPS_SCRIPT_ANDA") {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(completedUnit)
+                    });
+                }
+
+                ngUnits = ngUnits.filter(u => u.id !== activeRepairUnit.id);
+                okUnits.unshift(completedUnit);
+
+                activeRepairUnit = null;
+                activeCheckResults = {};
+                document.getElementById('repair-active-dot').classList.add('hidden');
+
+                renderNGUnits();
+                renderOKUnits();
+                updateBadges();
+
+                switchTab('tab-ok');
+                showToast(`Unit ${completedUnit.suffix} - ${completedUnit.unitNum} tersimpan ke Google Sheets & berstatus OK!`, "fa-circle-check text-emerald-400");
+
+            } catch (error) {
+                console.error("Gagal mengirim data:", error);
+                showToast("Gagal menyimpan ke Google Sheets, tetapi data tersimpan secara lokal.", "fa-triangle-exclamation text-amber-400");
+            } finally {
+                btnSave.innerHTML = originalBtnText;
+            }
+        }
+
+        function renderOKUnits() {
+            const container = document.getElementById('okUnitList');
+            const emptyState = document.getElementById('okEmptyState');
+            container.innerHTML = '';
+
+            if (okUnits.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            okUnits.forEach(unit => {
+                const card = document.createElement('div');
+                card.className = "glass-card p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-3";
+                
+                let checkSummaryPills = unit.results.map((res, i) => {
+                    const isOk = res === 'OK';
+                    return `
+                        <span class="text-[11px] px-2 py-0.5 rounded ${isOk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'} font-medium">
+                            #${i+1} ${isOk ? 'OK' : 'NG'}
+                        </span>
+                    `;
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl border border-emerald-200">
+                                <i class="fa-solid fa-circle-check text-xl"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-slate-500">Suffix: </span>
+                                <h3 class="text-lg font-bold font-mono text-slate-800">${unit.suffix} - ${unit.unitNum}</h3>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block mb-1">
+                                Status OK
+                            </span>
+                            <p class="text-[11px] text-slate-400"><i class="fa-regular fa-clock mr-1"></i> Selesai: ${unit.completedAt}</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-xs">
+                        <span class="text-slate-400 font-medium block mb-0.5">Problem Awal:</span>
+                        <p class="text-slate-700 font-semibold">${unit.problem}</p>
+                    </div>
+
+                    <div>
+                        <span class="text-xs text-slate-500 font-semibold block mb-1.5">Ringkasan Check 13 Item:</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            ${checkSummaryPills}
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function updateBadges() {
+            document.getElementById('count-ng-badge').textContent = ngUnits.length;
+            document.getElementById('count-ok-badge').textContent = okUnits.length;
+        }
+
+        function resetDataSet() {
+            ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
+            okUnits = [];
+            activeRepairUnit = null;
+            activeCheckResults = {};
+            document.getElementById('repair-active-dot').classList.add('hidden');
+            document.getElementById('searchInput').value = '';
+            renderNGUnits();
+            renderOKUnits();
+            updateBadges();
+            showToast("Dataset berhasil di-reset ke 36 unit NG awal!", "fa-rotate-left text-sky-400");
+        }
+
+        function showToast(message, iconClass = "fa-circle-info text-sky-400") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+            toastIcon.className = `fa-solid ${iconClass}`;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function exportOKSummary() {
+            if (okUnits.length === 0) {
+                showToast("Tidak ada data OK untuk di-copy.", "fa-circle-exclamation text-amber-400");
+                return;
+            }
+
+            let text = `=== LAPORAN KONFIRMASI RM0 (STATUS OK) ===\nTanggal: ${document.getElementById('currentDateDisplay').textContent}\nTotal Unit OK: ${okUnits.length}\n-----------------------------------\n`;
+            
+            okUnits.forEach((u, index) => {
+                text += `${index + 1}. [${u.suffix}] ${u.unitNum}\n   Problem: ${u.problem}\n   Selesai: ${u.completedAt}\n   Hasil Check: 13 Item Terkonfirmasi OK\n\n`;
+            });
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Laporan ringkasan berhasil dicopy ke clipboard!", "fa-copy text-emerald-400");
+            } catch (err) {
+                showToast("Gagal menyalin laporan.", "fa-triangle-exclamation text-red-400");
+            }
+            document.body.removeChild(textarea);
+        }
+    </script>
+</body>
+</html>
