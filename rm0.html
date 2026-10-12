@@ -94,7 +94,7 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 mt-1 flex space-x-2 border-t border-white/10 pt-2 pb-1 overflow-x-auto">
             <button onclick="switchTab('tab-ng')" id="btn-tab-ng" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 bg-red-500 text-white shadow-md whitespace-nowrap">
                 <i class="fa-solid fa-circle-exclamation"></i>
-                <span>Data Unit</span>
+                <span>Data Unit NG</span>
                 <span id="count-ng-badge" class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-mono">0</span>
             </button>
             <button onclick="switchTab('tab-repair')" id="btn-tab-repair" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 whitespace-nowrap">
@@ -117,25 +117,24 @@
         <section id="page-ng" class="space-y-4">
             <!-- Search & Actions Bar -->
             <div class="glass-card p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between gap-3 items-center">
-                <div class="relative w-full sm:w-96">
+                <div class="relative w-full sm:w-80">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" id="searchInput" onkeyup="filterNGUnits()" placeholder="Cari Suffix (JF/HN/LN/KF) atau Nomor Unit..." 
+                    <input type="text" id="searchInput" onkeyup="filterNGUnits()" placeholder="Cari Suffix atau Nomor Unit..." 
                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all">
                 </div>
-                <div class="flex items-center justify-between w-full sm:w-auto gap-3">
-                    <button onclick="resetDataSet()" title="Reload Data dari Google Sheets" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5">
-                        <i class="fa-solid fa-rotate-left"></i> Reload Database
+                <div class="flex items-center justify-between w-full sm:w-auto gap-2">
+                    <button onclick="openAddNGModal()" class="px-3.5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus"></i> Input Unit NG
                     </button>
-                    <div class="text-xs text-slate-500 flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-info text-sky-500"></i>
-                        <span>Klik / <strong>Tahan (Hold)</strong> card unit untuk detail.</span>
-                    </div>
+                    <button onclick="fetchDatabaseData()" title="Reload Database" class="px-3 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-left"></i> Reload
+                    </button>
                 </div>
             </div>
 
             <!-- List of NG Units -->
             <div id="ngUnitList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                <!-- Data Unit Rendered Here -->
+                <!-- Data Unit NG Rendered Here -->
             </div>
 
             <!-- Empty State for Search -->
@@ -147,7 +146,6 @@
 
         <!-- ================= PAGE 2: FORM KONFIRMASI REPAIR ================= -->
         <section id="page-repair" class="hidden space-y-5">
-            <!-- Unit Header Info Card -->
             <div id="activeUnitHeader" class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-5 rounded-2xl shadow-lg border border-slate-800 relative overflow-hidden">
                 <div class="absolute -right-6 -bottom-6 opacity-10 text-8xl text-white">
                     <i class="fa-solid fa-screwdriver-wrench"></i>
@@ -169,25 +167,21 @@
                 </div>
             </div>
 
-            <!-- Checklist Section -->
             <div class="glass-card rounded-2xl p-5 shadow-sm space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200/80 pb-3">
                     <div>
                         <h3 class="font-bold text-slate-800 text-lg">Konfirmasi Item Berikut:</h3>
                         <p class="text-xs text-slate-500">Klik setiap baris item untuk menentukan hasil pengecekan (OK / NG).</p>
                     </div>
-                    <!-- Checklist Counter Badge -->
                     <div class="bg-slate-100 text-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-200 font-medium">
                         Progress: <span id="checkedCount" class="font-bold text-sky-600">0</span> / 13 Item Terkonfirmasi
                     </div>
                 </div>
 
-                <!-- 13 Check Items Grid/List -->
                 <div id="checkListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                     <!-- Dynamically Generated Items -->
                 </div>
 
-                <!-- Action Buttons -->
                 <div class="pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row justify-end gap-3">
                     <button onclick="cancelRepairProcess()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium text-sm transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-xmark"></i> Batal
@@ -204,7 +198,7 @@
             <div class="glass-card p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
                 <div>
                     <h2 class="font-bold text-slate-800 text-lg">Daftar Unit Status OK</h2>
-                    <p class="text-xs text-slate-500">Unit yang telah selesai dikonfirmasi dan siap dilanjutkan.</p>
+                    <p class="text-xs text-slate-500">Data unit terkonfirmasi yang tersimpan di database.</p>
                 </div>
                 <button onclick="exportOKSummary()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-2">
                     <i class="fa-solid fa-copy"></i> Copy Laporan Ringkasan
@@ -218,7 +212,7 @@
 
             <div id="okEmptyState" class="hidden text-center py-12 glass-card rounded-2xl">
                 <i class="fa-solid fa-clipboard-check text-4xl text-slate-300 mb-2"></i>
-                <p class="text-slate-500 font-medium">Belum ada unit dengan status OK.</p>
+                <p class="text-slate-500 font-medium">Belum ada unit dengan status OK di database.</p>
             </div>
         </section>
 
@@ -229,20 +223,55 @@
         &copy; 2026 Quality Control & Repair Management System - RM0
     </footer>
 
-    <!-- ================= POP-UP MODAL 1: INFORMASI DETAIL UNIT NG ================= -->
+    <!-- ================= MODAL TAMBAH UNIT NG BARU ================= -->
+    <div id="addNGModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-transform duration-200 modal-animate border border-slate-100">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-sky-400"></i>
+                    <h3 class="font-bold text-base">Input Unit NG Baru</h3>
+                </div>
+                <button onclick="closeAddNGModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="submitNewNGUnit(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Suffix (Model)</label>
+                    <input type="text" id="inputSuffix" required placeholder="Contoh: JF, HN, LN, KF" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Unit / Body</label>
+                    <input type="text" id="inputUnitNum" required placeholder="Contoh: 039668" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Deskripsi Problem</label>
+                    <input type="text" id="inputProblem" required value="Control panel AC part TA" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="closeAddNGModal()" class="w-1/2 py-2.5 border border-slate-300 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-100">
+                        Batal
+                    </button>
+                    <button type="submit" id="btnSubmitNG" class="w-1/2 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-save"></i> Simpan Unit NG
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMATION & ITEM CHECK -->
     <div id="unitDetailModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform scale-95 transition-transform duration-200 modal-animate border border-slate-100">
-            <!-- Modal Header -->
             <div class="bg-gradient-to-r from-red-600 to-rose-700 text-white p-4 flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation text-lg"></i>
                     <h3 class="font-bold text-base">Konfirmasi Repair Unit NG</h3>
                 </div>
-                <button onclick="closeUnitDetailModal()" class="text-white/80 hover:text-white text-lg w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-all">
-                    <i class="fa-solid fa-xmark"></i>
+                <button onclick="closeUnitDetailModal()" class="text-white/80 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <!-- Modal Content -->
             <div class="p-5 space-y-4">
                 <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2">
                     <div class="flex justify-between items-center border-b border-slate-200 pb-2">
@@ -260,19 +289,15 @@
                 </div>
                 <p class="text-xs text-slate-500 italic text-center">Apakah Anda ingin memulai proses konfirmasi pemeriksaan untuk unit ini?</p>
             </div>
-            <!-- Modal Actions -->
             <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-                <button onclick="closeUnitDetailModal()" class="w-1/2 py-2.5 border border-slate-300 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-100 transition-all">
-                    Batal
-                </button>
-                <button id="btnConfirmRepairStart" onclick="startRepairFromModal()" class="w-1/2 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md flex items-center justify-center gap-1.5">
+                <button onclick="closeUnitDetailModal()" class="w-1/2 py-2.5 border border-slate-300 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-100">Batal</button>
+                <button id="btnConfirmRepairStart" onclick="startRepairFromModal()" class="w-1/2 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-sm font-semibold shadow-md flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-wrench"></i> Konfirmasi
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ================= POP-UP MODAL 2: KONFIRMASI CHECK ITEM (OK/NG) ================= -->
     <div id="itemCheckModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
         <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden transform scale-95 transition-transform duration-200 modal-animate border border-slate-100">
             <div class="bg-slate-900 text-white p-4 text-center relative">
@@ -285,12 +310,12 @@
             <div class="p-5 text-center space-y-4">
                 <p class="text-sm text-slate-600">Pilih status hasil pengujian untuk item ini:</p>
                 <div class="grid grid-cols-2 gap-3">
-                    <button onclick="setItemCheckResult('OK')" class="p-4 border-2 border-emerald-500 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold transition-all flex flex-col items-center gap-2 group">
-                        <i class="fa-solid fa-circle-check text-3xl text-emerald-600 group-hover:scale-110 transition-transform"></i>
+                    <button onclick="setItemCheckResult('OK')" class="p-4 border-2 border-emerald-500 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-3xl text-emerald-600"></i>
                         <span>STATUS OK</span>
                     </button>
-                    <button onclick="setItemCheckResult('NG')" class="p-4 border-2 border-red-400 rounded-xl bg-red-50 hover:bg-red-100 text-red-800 font-bold transition-all flex flex-col items-center gap-2 group">
-                        <i class="fa-solid fa-circle-xmark text-3xl text-red-600 group-hover:scale-110 transition-transform"></i>
+                    <button onclick="setItemCheckResult('NG')" class="p-4 border-2 border-red-400 rounded-xl bg-red-50 hover:bg-red-100 text-red-800 font-bold flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-circle-xmark text-3xl text-red-600"></i>
                         <span>STATUS NG</span>
                     </button>
                 </div>
@@ -298,74 +323,65 @@
         </div>
     </div>
 
-    <!-- Custom Toast Notification -->
+    <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 border border-slate-700">
         <i id="toastIcon" class="fa-solid fa-circle-info text-sky-400"></i>
         <span id="toastMessage" class="text-xs font-medium">Notifikasi</span>
     </div>
 
     <script>
-        // GOOGLE APPS SCRIPT DATABASE INTEGRATION
-        // Tempel URL Web App dari Google Apps Script Anda di sini
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzSEqq-BdR5OS3YmV4EQsq293dGKFCTOxbgGDewp8RzHu4-OFXCfjZOS05LidGXb5w6/exec"; 
+        // GOOGLE APPS SCRIPT URL INTEGRATION
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCkdTkFvP-dXuO7k1Re6ULUQAxOnZiDUoAn4vGRKjSK4eCVwqGj1wnz2a3u8HxurK9/exec"; 
 
-        // Data Check Items (13 Items)
         const CHECK_ITEMS = [
-            "1. Cek AC",
-            "2. Cek panel control AC",
-            "3. Cek fungsi level blower",
-            "4. Cek fungsi Auto AC",
-            "5. Cek tombol defoger",
-            "6. Cek fungsi Air fresh",
-            "7. Cek mode AC",
-            "8. Cek fungsi defroster",
-            "9. Cek fungsi heater",
-            "10. Cek fungsi tele tale",
-            "11. Cek kipas AC",
-            "12. Cek pompa AC",
-            "13. Hasil DS"
-        ];
-
-        // Fallback Static Data jika database belum dikonfigurasi/offline
-        const INITIAL_36_NG_UNITS = [
-            { id: 1, suffix: "JF", unitNum: "039668", problem: "Control panel AC part TA" },
-            { id: 2, suffix: "JF", unitNum: "039669", problem: "Control panel AC part TA" },
-            { id: 3, suffix: "HN", unitNum: "007980", problem: "Control panel AC part TA" },
-            { id: 4, suffix: "LN", unitNum: "026341", problem: "Control panel AC part TA" },
-            { id: 5, suffix: "JF", unitNum: "039670", problem: "Control panel AC part TA" }
+            "1. Cek AC", "2. Cek panel control AC", "3. Cek fungsi level blower", "4. Cek fungsi Auto AC",
+            "5. Cek tombol defoger", "6. Cek fungsi Air fresh", "7. Cek mode AC", "8. Cek fungsi defroster",
+            "9. Cek fungsi heater", "10. Cek fungsi tele tale", "11. Cek kipas AC", "12. Cek pompa AC", "13. Hasil DS"
         ];
 
         let ngUnits = [];
         let okUnits = [];
 
-        // Active States
         let selectedNGUnit = null;
         let activeRepairUnit = null;
         let activeCheckResults = {};
         let currentEditingItemIndex = null;
 
-        // Long Press States
         let longPressTimer = null;
         let isLongPress = false;
 
         window.onload = function() {
             renderDate();
-            renderOKUnits();
             renderChecklist();
-            fetchNGUnitsFromSheets();
+            fetchDatabaseData();
         };
 
         function renderDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const today = new Date();
-            const dateStr = today.toLocaleDateString('id-ID', options);
-            document.getElementById('currentDateDisplay').textContent = dateStr;
+            document.getElementById('currentDateDisplay').textContent = new Date().toLocaleDateString('id-ID', options);
         }
 
-        // FUNGSI MEMBACA DATA DARI GOOGLE SHEETS DATABASE (GET)
-        async function fetchNGUnitsFromSheets() {
-            const container = document.getElementById('ngUnitList');
-            container.innerHTML = `
+        // TAMPILKAN/SEMBUNYIKAN MODAL INPUT NG
+        function openAddNGModal() {
+            const modal = document.getElementById('addNGModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-animate').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeAddNGModal() {
+            const modal = document.getElementById('addNGModal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-animate').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        // AMBIL DATA UNIT NG & UNIT OK DARI DATABASE (GET)
+        async function fetchDatabaseData() {
+            const containerNG = document.getElementById('ngUnitList');
+            containerNG.innerHTML = `
                 <div class="col-span-full text-center py-12">
                     <i class="fa-solid fa-database animate-spin text-3xl text-sky-600 mb-2"></i>
                     <p class="text-sm font-semibold text-slate-600">Menghubungkan ke database Google Sheets...</p>
@@ -373,10 +389,7 @@
             `;
 
             if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "URL_GOOGLE_APPS_SCRIPT_ANDA") {
-                showToast("URL Apps Script belum diatur, memuat data lokal cadangan.", "fa-triangle-exclamation text-amber-400");
-                ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
-                renderNGUnits();
-                updateBadges();
+                showToast("Atur GOOGLE_SCRIPT_URL terlebih dahulu.", "fa-triangle-exclamation text-amber-400");
                 return;
             }
 
@@ -384,20 +397,56 @@
                 const response = await fetch(GOOGLE_SCRIPT_URL);
                 const result = await response.json();
 
-                if (result.status === "success" && result.data && result.data.length > 0) {
-                    ngUnits = result.data;
-                    showToast(`Berhasil memuat ${ngUnits.length} data unit dari database!`, "fa-cloud-arrow-down text-emerald-400");
-                } else {
-                    showToast("Database kosong atau format berbeda, memuat data cadangan.", "fa-triangle-exclamation text-amber-400");
-                    ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
+                if (result.status === "success") {
+                    ngUnits = result.ngUnits || [];
+                    okUnits = result.okUnits || [];
+                    showToast(`Data berhasil disinkronisasi dengan database!`, "fa-cloud-arrow-down text-emerald-400");
                 }
             } catch (error) {
-                console.error("Gagal menarik data dari database:", error);
-                showToast("Gagal terhubung ke database, menggunakan data lokal cadangan.", "fa-wifi text-red-400");
-                ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
+                console.error("Gagal menarik data:", error);
+                showToast("Gagal terhubung ke database Google Sheets.", "fa-wifi text-red-400");
             } finally {
                 renderNGUnits();
+                renderOKUnits();
                 updateBadges();
+            }
+        }
+
+        // KIRIM UNIT NG BARU KE DATABASE (POST)
+        async function submitNewNGUnit(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSubmitNG');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan...`;
+
+            const payload = {
+                action: "ADD_NG",
+                suffix: document.getElementById('inputSuffix').value.toUpperCase(),
+                unitNum: document.getElementById('inputUnitNum').value,
+                problem: document.getElementById('inputProblem').value
+            };
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                showToast(`Unit NG ${payload.suffix}-${payload.unitNum} tersimpan!`, "fa-circle-check text-emerald-400");
+                closeAddNGModal();
+                document.getElementById('inputSuffix').value = '';
+                document.getElementById('inputUnitNum').value = '';
+                
+                // Refresh data setelah input
+                setTimeout(fetchDatabaseData, 1000);
+
+            } catch (err) {
+                showToast("Gagal mengirim unit NG baru.", "fa-triangle-exclamation text-red-400");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-save"></i> Simpan Unit NG`;
             }
         }
 
@@ -411,7 +460,6 @@
             const btnOk = document.getElementById('btn-tab-ok');
 
             const defaultBtnClass = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 whitespace-nowrap";
-            
             btnNg.className = defaultBtnClass;
             btnRepair.className = defaultBtnClass;
             btnOk.className = defaultBtnClass;
@@ -421,7 +469,7 @@
                 btnNg.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 bg-red-500 text-white shadow-md whitespace-nowrap";
             } else if (tabId === 'tab-repair') {
                 if (!activeRepairUnit) {
-                    showToast("Pilih unit status NG terlebih dahulu untuk konfirmasi!", "fa-circle-exclamation text-amber-400");
+                    showToast("Pilih unit status NG terlebih dahulu!", "fa-circle-exclamation text-amber-400");
                     switchTab('tab-ng');
                     return;
                 }
@@ -460,13 +508,9 @@
                         <span class="text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
                             ${unit.suffix} - ${unit.unitNum}
                         </span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-                            NG
-                        </span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">NG</span>
                     </div>
-                    <h3 class="text-base font-bold font-mono text-slate-800 mb-1 group-hover:text-sky-600 transition-colors">
-                        ${unit.suffix} - ${unit.unitNum}
-                    </h3>
+                    <h3 class="text-base font-bold font-mono text-slate-800 mb-1 group-hover:text-sky-600 transition-colors">${unit.suffix} - ${unit.unitNum}</h3>
                     <div class="bg-red-50/70 p-2 rounded-lg border border-red-100/80 mb-2">
                         <p class="text-xs text-red-900 font-medium truncate">${unit.problem}</p>
                     </div>
@@ -479,7 +523,6 @@
                 `;
 
                 const progressBar = card.querySelector('.progress-bar');
-
                 const startHold = () => {
                     isLongPress = false;
                     progressBar.classList.add('progress-active');
@@ -497,14 +540,7 @@
 
                 card.addEventListener('mousedown', startHold);
                 card.addEventListener('touchstart', startHold);
-
-                card.addEventListener('mouseup', () => {
-                    cancelHold();
-                    if (!isLongPress) {
-                        openUnitDetailModal(unit);
-                    }
-                });
-
+                card.addEventListener('mouseup', () => { cancelHold(); if (!isLongPress) openUnitDetailModal(unit); });
                 card.addEventListener('mouseleave', cancelHold);
                 card.addEventListener('touchend', cancelHold);
 
@@ -513,8 +549,7 @@
         }
 
         function filterNGUnits() {
-            const query = document.getElementById('searchInput').value;
-            renderNGUnits(query);
+            renderNGUnits(document.getElementById('searchInput').value);
         }
 
         function openUnitDetailModal(unit) {
@@ -535,9 +570,7 @@
             const modal = document.getElementById('unitDetailModal');
             modal.classList.add('opacity-0');
             modal.querySelector('.modal-animate').classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
+            setTimeout(() => modal.classList.add('hidden'), 200);
         }
 
         function startRepairFromModal() {
@@ -553,7 +586,6 @@
             
             document.getElementById('repair-active-dot').classList.remove('hidden');
             switchTab('tab-repair');
-            showToast(`Memulai konfirmasi repair untuk unit ${activeRepairUnit.suffix} - ${activeRepairUnit.unitNum}`, "fa-screwdriver-wrench text-sky-400");
         }
 
         function renderChecklist() {
@@ -562,40 +594,22 @@
 
             CHECK_ITEMS.forEach((itemText, idx) => {
                 const status = activeCheckResults[idx];
-                
                 const itemCard = document.createElement('div');
                 itemCard.onclick = () => openItemCheckModal(idx);
 
-                let statusBadgeHTML = `
-                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-400 border border-slate-200 flex items-center gap-1">
-                        <i class="fa-regular fa-circle"></i> Belum Cek
-                    </span>
-                `;
-
+                let statusBadgeHTML = `<span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-400 border border-slate-200 flex items-center gap-1"><i class="fa-regular fa-circle"></i> Belum Cek</span>`;
                 let cardBorderClass = "border-slate-200 hover:border-sky-300";
 
                 if (status === 'OK') {
-                    statusBadgeHTML = `
-                        <span class="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-sm">
-                            <i class="fa-solid fa-circle-check text-emerald-600"></i> OK
-                        </span>
-                    `;
+                    statusBadgeHTML = `<span class="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1"><i class="fa-solid fa-circle-check text-emerald-600"></i> OK</span>`;
                     cardBorderClass = "border-emerald-300 bg-emerald-50/30";
                 } else if (status === 'NG') {
-                    statusBadgeHTML = `
-                        <span class="text-xs font-bold px-3 py-1 rounded-lg bg-red-100 text-red-800 border border-red-300 flex items-center gap-1 shadow-sm">
-                            <i class="fa-solid fa-circle-xmark text-red-600"></i> NG
-                        </span>
-                    `;
+                    statusBadgeHTML = `<span class="text-xs font-bold px-3 py-1 rounded-lg bg-red-100 text-red-800 border border-red-300 flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-600"></i> NG</span>`;
                     cardBorderClass = "border-red-300 bg-red-50/30";
                 }
 
-                itemCard.className = `p-3.5 rounded-xl border ${cardBorderClass} glass-card flex justify-between items-center cursor-pointer hover:shadow-md transition-all select-none`;
-                itemCard.innerHTML = `
-                    <span class="text-sm font-semibold text-slate-700">${itemText}</span>
-                    <div>${statusBadgeHTML}</div>
-                `;
-
+                itemCard.className = `p-3.5 rounded-xl border ${cardBorderClass} glass-card flex justify-between items-center cursor-pointer select-none`;
+                itemCard.innerHTML = `<span class="text-sm font-semibold text-slate-700">${itemText}</span><div>${statusBadgeHTML}</div>`;
                 container.appendChild(itemCard);
             });
 
@@ -619,9 +633,7 @@
             const modal = document.getElementById('itemCheckModal');
             modal.classList.add('opacity-0');
             modal.querySelector('.modal-animate').classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
+            setTimeout(() => modal.classList.add('hidden'), 200);
         }
 
         function setItemCheckResult(result) {
@@ -639,10 +651,10 @@
             const btnSave = document.getElementById('btnSaveRepair');
             if (confirmedCount === CHECK_ITEMS.length) {
                 btnSave.disabled = false;
-                btnSave.className = "w-full sm:w-auto px-8 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer animate-pulse";
+                btnSave.className = "w-full sm:w-auto px-8 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md cursor-pointer animate-pulse";
             } else {
                 btnSave.disabled = true;
-                btnSave.className = "w-full sm:w-auto px-8 py-2.5 rounded-xl bg-slate-300 text-slate-500 font-semibold text-sm cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-sm";
+                btnSave.className = "w-full sm:w-auto px-8 py-2.5 rounded-xl bg-slate-300 text-slate-500 font-semibold text-sm cursor-not-allowed shadow-sm";
             }
         }
 
@@ -653,22 +665,19 @@
             switchTab('tab-ng');
         }
 
-        // FUNGSI MENYIMPAN DATA INSPEKSI REPAIR KE GOOGLE SHEETS DATABASE (POST)
+        // SIMPAN HASIL REPAIR (POST)
         async function saveRepairConfirmation() {
             if (!activeRepairUnit) return;
 
             const btnSave = document.getElementById('btnSaveRepair');
-            const originalBtnText = btnSave.innerHTML;
             btnSave.disabled = true;
-            btnSave.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan ke Database...`;
+            btnSave.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan...`;
 
             const now = new Date();
             const dateFormatted = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + `, ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
             const resultsArray = CHECK_ITEMS.map((_, i) => activeCheckResults[i] || 'OK');
-            
+
             const completedUnit = {
-                id: Date.now(),
                 suffix: activeRepairUnit.suffix,
                 unitNum: activeRepairUnit.unitNum,
                 problem: activeRepairUnit.problem,
@@ -677,36 +686,26 @@
             };
 
             try {
-                if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "URL_GOOGLE_APPS_SCRIPT_ANDA") {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(completedUnit)
-                    });
-                }
-
-                ngUnits = ngUnits.filter(u => u.id !== activeRepairUnit.id);
-                okUnits.unshift(completedUnit);
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(completedUnit)
+                });
 
                 activeRepairUnit = null;
                 activeCheckResults = {};
                 document.getElementById('repair-active-dot').classList.add('hidden');
 
-                renderNGUnits();
-                renderOKUnits();
-                updateBadges();
-
+                showToast(`Unit ${completedUnit.suffix}-${completedUnit.unitNum} tersimpan ke database OK!`, "fa-circle-check text-emerald-400");
+                
+                // Refresh data OK & NG dari database
+                setTimeout(fetchDatabaseData, 1000);
                 switchTab('tab-ok');
-                showToast(`Unit ${completedUnit.suffix} - ${completedUnit.unitNum} tersimpan ke database & berstatus OK!`, "fa-circle-check text-emerald-400");
 
             } catch (error) {
-                console.error("Gagal mengirim data ke database:", error);
-                showToast("Gagal menyimpan ke database, tetapi data tersimpan di browser.", "fa-triangle-exclamation text-amber-400");
-            } finally {
-                btnSave.innerHTML = originalBtnText;
+                console.error("Gagal mengirim:", error);
+                showToast("Gagal menyimpan ke database.", "fa-triangle-exclamation text-amber-400");
             }
         }
 
@@ -747,23 +746,17 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block mb-1">
-                                Status OK
-                            </span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block mb-1">Status OK</span>
                             <p class="text-[11px] text-slate-400"><i class="fa-regular fa-clock mr-1"></i> Selesai: ${unit.completedAt}</p>
                         </div>
                     </div>
-
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-xs">
                         <span class="text-slate-400 font-medium block mb-0.5">Problem Awal:</span>
                         <p class="text-slate-700 font-semibold">${unit.problem}</p>
                     </div>
-
                     <div>
-                        <span class="text-xs text-slate-500 font-semibold block mb-1.5">Ringkasan Check 13 Item:</span>
-                        <div class="flex flex-wrap gap-1.5">
-                            ${checkSummaryPills}
-                        </div>
+                        <span class="text-xs text-slate-500 font-semibold block mb-1.5">Hasil Checklist (13 Item):</span>
+                        <div class="flex flex-wrap gap-1.5">${checkSummaryPills}</div>
                     </div>
                 `;
 
@@ -776,22 +769,12 @@
             document.getElementById('count-ok-badge').textContent = okUnits.length;
         }
 
-        function resetDataSet() {
-            fetchNGUnitsFromSheets();
-        }
-
         function showToast(message, iconClass = "fa-circle-info text-sky-400") {
             const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toastMessage');
-            const toastIcon = document.getElementById('toastIcon');
-
-            toastMsg.textContent = message;
-            toastIcon.className = `fa-solid ${iconClass}`;
-
+            document.getElementById('toastMessage').textContent = message;
+            document.getElementById('toastIcon').className = `fa-solid ${iconClass}`;
             toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
 
         function exportOKSummary() {
@@ -801,9 +784,8 @@
             }
 
             let text = `=== LAPORAN KONFIRMASI RM0 (STATUS OK) ===\nTanggal: ${document.getElementById('currentDateDisplay').textContent}\nTotal Unit OK: ${okUnits.length}\n-----------------------------------\n`;
-            
             okUnits.forEach((u, index) => {
-                text += `${index + 1}. [${u.suffix}] ${u.unitNum}\n   Problem: ${u.problem}\n   Selesai: ${u.completedAt}\n   Hasil Check: 13 Item Terkonfirmasi OK\n\n`;
+                text += `${index + 1}. [${u.suffix}] ${u.unitNum}\n   Problem: ${u.problem}\n   Selesai: ${u.completedAt}\n   Hasil Check: 13 Item Terkonfirmasi\n\n`;
             });
 
             const textarea = document.createElement('textarea');
@@ -812,7 +794,7 @@
             textarea.select();
             try {
                 document.execCommand('copy');
-                showToast("Laporan ringkasan berhasil dicopy ke clipboard!", "fa-copy text-emerald-400");
+                showToast("Laporan ringkasan dicopy ke clipboard!", "fa-copy text-emerald-400");
             } catch (err) {
                 showToast("Gagal menyalin laporan.", "fa-triangle-exclamation text-red-400");
             }
