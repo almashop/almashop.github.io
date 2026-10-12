@@ -95,7 +95,7 @@
             <button onclick="switchTab('tab-ng')" id="btn-tab-ng" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 bg-red-500 text-white shadow-md whitespace-nowrap">
                 <i class="fa-solid fa-circle-exclamation"></i>
                 <span>Data Unit</span>
-                <span id="count-ng-badge" class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-mono">36</span>
+                <span id="count-ng-badge" class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-mono">0</span>
             </button>
             <button onclick="switchTab('tab-repair')" id="btn-tab-repair" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 whitespace-nowrap">
                 <i class="fa-solid fa-clipboard-check"></i>
@@ -123,8 +123,8 @@
                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all">
                 </div>
                 <div class="flex items-center justify-between w-full sm:w-auto gap-3">
-                    <button onclick="resetDataSet()" title="Reset ke 36 Data Awal" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5">
-                        <i class="fa-solid fa-rotate-left"></i> Reset Data
+                    <button onclick="resetDataSet()" title="Reload Data dari Google Sheets" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-left"></i> Reload Database
                     </button>
                     <div class="text-xs text-slate-500 flex items-center gap-1.5">
                         <i class="fa-solid fa-circle-info text-sky-500"></i>
@@ -135,7 +135,7 @@
 
             <!-- List of NG Units -->
             <div id="ngUnitList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                <!-- 36 Unit Cards rendered dynamically -->
+                <!-- Data Unit Rendered Here -->
             </div>
 
             <!-- Empty State for Search -->
@@ -306,7 +306,8 @@
 
     <script>
         // GOOGLE APPS SCRIPT DATABASE INTEGRATION
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIZxqCZStKt-mJJtJO_xvz2wQUVRV77QqF74Mx2KR1EAo_0TDSwqbeJPU3wltq21kT/exec"; 
+        // Tempel URL Web App dari Google Apps Script Anda di sini
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzSEqq-BdR5OS3YmV4EQsq293dGKFCTOxbgGDewp8RzHu4-OFXCfjZOS05LidGXb5w6/exec"; 
 
         // Data Check Items (13 Items)
         const CHECK_ITEMS = [
@@ -325,47 +326,16 @@
             "13. Hasil DS"
         ];
 
-        // Strict 36 NG Data Records
+        // Fallback Static Data jika database belum dikonfigurasi/offline
         const INITIAL_36_NG_UNITS = [
             { id: 1, suffix: "JF", unitNum: "039668", problem: "Control panel AC part TA" },
             { id: 2, suffix: "JF", unitNum: "039669", problem: "Control panel AC part TA" },
             { id: 3, suffix: "HN", unitNum: "007980", problem: "Control panel AC part TA" },
             { id: 4, suffix: "LN", unitNum: "026341", problem: "Control panel AC part TA" },
-            { id: 5, suffix: "JF", unitNum: "039670", problem: "Control panel AC part TA" },
-            { id: 6, suffix: "JF", unitNum: "039666", problem: "Control panel AC part TA" },
-            { id: 7, suffix: "JF", unitNum: "039673", problem: "Control panel AC part TA" },
-            { id: 8, suffix: "JF", unitNum: "039671", problem: "Control panel AC part TA" },
-            { id: 9, suffix: "JF", unitNum: "039674", problem: "Control panel AC part TA" },
-            { id: 10, suffix: "JF", unitNum: "039675", problem: "Control panel AC part TA" },
-            { id: 11, suffix: "JF", unitNum: "039679", problem: "Control panel AC part TA" },
-            { id: 12, suffix: "JF", unitNum: "039680", problem: "Control panel AC part TA" },
-            { id: 13, suffix: "JF", unitNum: "039678", problem: "Control panel AC part TA" },
-            { id: 14, suffix: "JF", unitNum: "039698", problem: "Control panel AC part TA" },
-            { id: 15, suffix: "JF", unitNum: "039676", problem: "Control panel AC part TA" },
-            { id: 16, suffix: "JF", unitNum: "039690", problem: "Control panel AC part TA" },
-            { id: 17, suffix: "HN", unitNum: "007984", problem: "Control panel AC part TA" },
-            { id: 18, suffix: "LN", unitNum: "026348", problem: "Control panel AC part TA" },
-            { id: 19, suffix: "JF", unitNum: "039709", problem: "Control panel AC part TA" },
-            { id: 20, suffix: "HN", unitNum: "007985", problem: "Control panel AC part TA" },
-            { id: 21, suffix: "HN", unitNum: "007982", problem: "Control panel AC part TA" },
-            { id: 22, suffix: "JF", unitNum: "039695", problem: "Control panel AC part TA" },
-            { id: 23, suffix: "JF", unitNum: "039710", problem: "Control panel AC part TA" },
-            { id: 24, suffix: "JF", unitNum: "039700", problem: "Control panel AC part TA" },
-            { id: 25, suffix: "JF", unitNum: "039707", problem: "Control panel AC part TA" },
-            { id: 26, suffix: "LN", unitNum: "026349", problem: "Control panel AC part TA" },
-            { id: 27, suffix: "JF", unitNum: "039694", problem: "Control panel AC part TA" },
-            { id: 28, suffix: "JF", unitNum: "039711", problem: "Control panel AC part TA" },
-            { id: 29, suffix: "JF", unitNum: "039712", problem: "Control panel AC part TA" },
-            { id: 30, suffix: "JF", unitNum: "039699", problem: "Control panel AC part TA" },
-            { id: 31, suffix: "LN", unitNum: "026350", problem: "Control panel AC part TA" },
-            { id: 32, suffix: "JF", unitNum: "039708", problem: "Control panel AC part TA" },
-            { id: 33, suffix: "JF", unitNum: "039713", problem: "Control panel AC part TA" },
-            { id: 34, suffix: "HN", unitNum: "007986", problem: "Control panel AC part TA" },
-            { id: 35, suffix: "JF", unitNum: "039715", problem: "Control panel AC part TA" },
-            { id: 36, suffix: "JF", unitNum: "039714", problem: "Control panel AC part TA" }
+            { id: 5, suffix: "JF", unitNum: "039670", problem: "Control panel AC part TA" }
         ];
 
-        let ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
+        let ngUnits = [];
         let okUnits = [];
 
         // Active States
@@ -380,10 +350,9 @@
 
         window.onload = function() {
             renderDate();
-            renderNGUnits();
             renderOKUnits();
             renderChecklist();
-            updateBadges();
+            fetchNGUnitsFromSheets();
         };
 
         function renderDate() {
@@ -391,6 +360,45 @@
             const today = new Date();
             const dateStr = today.toLocaleDateString('id-ID', options);
             document.getElementById('currentDateDisplay').textContent = dateStr;
+        }
+
+        // FUNGSI MEMBACA DATA DARI GOOGLE SHEETS DATABASE (GET)
+        async function fetchNGUnitsFromSheets() {
+            const container = document.getElementById('ngUnitList');
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <i class="fa-solid fa-database animate-spin text-3xl text-sky-600 mb-2"></i>
+                    <p class="text-sm font-semibold text-slate-600">Menghubungkan ke database Google Sheets...</p>
+                </div>
+            `;
+
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "URL_GOOGLE_APPS_SCRIPT_ANDA") {
+                showToast("URL Apps Script belum diatur, memuat data lokal cadangan.", "fa-triangle-exclamation text-amber-400");
+                ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
+                renderNGUnits();
+                updateBadges();
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                const result = await response.json();
+
+                if (result.status === "success" && result.data && result.data.length > 0) {
+                    ngUnits = result.data;
+                    showToast(`Berhasil memuat ${ngUnits.length} data unit dari database!`, "fa-cloud-arrow-down text-emerald-400");
+                } else {
+                    showToast("Database kosong atau format berbeda, memuat data cadangan.", "fa-triangle-exclamation text-amber-400");
+                    ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
+                }
+            } catch (error) {
+                console.error("Gagal menarik data dari database:", error);
+                showToast("Gagal terhubung ke database, menggunakan data lokal cadangan.", "fa-wifi text-red-400");
+                ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
+            } finally {
+                renderNGUnits();
+                updateBadges();
+            }
         }
 
         function switchTab(tabId) {
@@ -645,6 +653,7 @@
             switchTab('tab-ng');
         }
 
+        // FUNGSI MENYIMPAN DATA INSPEKSI REPAIR KE GOOGLE SHEETS DATABASE (POST)
         async function saveRepairConfirmation() {
             if (!activeRepairUnit) return;
 
@@ -691,11 +700,11 @@
                 updateBadges();
 
                 switchTab('tab-ok');
-                showToast(`Unit ${completedUnit.suffix} - ${completedUnit.unitNum} tersimpan ke Google Sheets & berstatus OK!`, "fa-circle-check text-emerald-400");
+                showToast(`Unit ${completedUnit.suffix} - ${completedUnit.unitNum} tersimpan ke database & berstatus OK!`, "fa-circle-check text-emerald-400");
 
             } catch (error) {
-                console.error("Gagal mengirim data:", error);
-                showToast("Gagal menyimpan ke Google Sheets, tetapi data tersimpan secara lokal.", "fa-triangle-exclamation text-amber-400");
+                console.error("Gagal mengirim data ke database:", error);
+                showToast("Gagal menyimpan ke database, tetapi data tersimpan di browser.", "fa-triangle-exclamation text-amber-400");
             } finally {
                 btnSave.innerHTML = originalBtnText;
             }
@@ -768,16 +777,7 @@
         }
 
         function resetDataSet() {
-            ngUnits = JSON.parse(JSON.stringify(INITIAL_36_NG_UNITS));
-            okUnits = [];
-            activeRepairUnit = null;
-            activeCheckResults = {};
-            document.getElementById('repair-active-dot').classList.add('hidden');
-            document.getElementById('searchInput').value = '';
-            renderNGUnits();
-            renderOKUnits();
-            updateBadges();
-            showToast("Dataset berhasil di-reset ke 36 unit NG awal!", "fa-rotate-left text-sky-400");
+            fetchNGUnitsFromSheets();
         }
 
         function showToast(message, iconClass = "fa-circle-info text-sky-400") {
