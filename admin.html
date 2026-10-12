@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konfirmasi RM0 - System Repair Unit</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-12">
+
+  <!-- TOP NAVBAR -->
+  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-xl text-white shadow-md shadow-indigo-500/30">
+          RM0
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight leading-tight">Konfirmasi RM0</h1>
+          <p id="role-badge" class="text-xs text-indigo-400 font-medium">Mode: Admin</p>
+        </div>
+      </div>
+      
+      <!-- Role Switcher & Config -->
+      <div class="flex items-center space-x-2">
+        <button onclick="openConfigModal()" class="p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition text-xs flex items-center gap-1.5 border border-slate-700">
+          <i class="fa-solid fa-gear"></i>
+          <span class="hidden sm:inline">API Config</span>
+        </button>
+
+        <div class="bg-slate-800 p-1 rounded-xl flex border border-slate-700 text-xs font-semibold">
+          <button id="btn-role-admin" onclick="switchRole('admin')" class="px-3 py-1.5 rounded-lg transition-all duration-200 bg-indigo-600 text-white shadow">
+            Admin
+          </button>
+          <button id="btn-role-customer" onclick="switchRole('customer')" class="px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-400 hover:text-white">
+            Customer
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-5xl mx-auto px-4 pt-4 space-y-4">
+
+    <!-- BAR INFORMASI TANGGAL & STATUS KONEKSI CLOUD -->
+    <div class="glass-card rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+          <i class="fa-regular fa-calendar-days text-xl"></i>
+        </div>
+        <div>
+          <span class="text-xs uppercase tracking-wider font-bold text-slate-400">Hari & Tanggal</span>
+          <p id="current-date" class="font-bold text-slate-700 text-sm sm:text-base">--</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+        <div id="cloud-status" class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+          <span>Local Storage Only</span>
+        </div>
+        <button onclick="fetchDataFromCloud()" title="Refresh Data" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition active:scale-95 text-xs font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>Sync</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TABS NAVIGASI STATUS (NG vs OK) -->
+    <div class="flex bg-slate-200/80 p-1.5 rounded-2xl gap-1 text-sm font-bold">
+      <button id="tab-ng" onclick="switchTab('NG')" class="flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 bg-white text-rose-600 shadow-sm">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Unit Status NG</span>
+        <span id="count-ng" class="ml-1 bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full text-xs">0</span>
+      </button>
+      <button id="tab-ok" onclick="switchTab('OK')" class="flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>Unit Status OK</span>
+        <span id="count-ok" class="ml-1 bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs">0</span>
+      </button>
+    </div>
+
+    <!-- FILTER PENCARIAN & TAMBAH DATA (ADMIN) -->
+    <div class="flex flex-col sm:flex-row gap-2">
+      <div class="relative flex-1">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="search-input" oninput="renderUnitList()" placeholder="Cari Suffix, No Unit, atau Problem..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition">
+      </div>
+      <button id="btn-add-unit" onclick="openAddUnitModal()" class="bg-slate-800 hover:bg-slate-900 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-sm">
+        <i class="fa-solid fa-plus"></i>
+        <span>Tambah Unit NG</span>
+      </button>
+    </div>
+
+    <!-- INFORMASI KHUSUS CUSTOMER VIEW -->
+    <div id="customer-notice" class="hidden bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-xs text-indigo-700 flex items-center gap-2">
+      <i class="fa-solid fa-eye text-base"></i>
+      <span>Anda berada dalam <strong>Halaman Customer (Read-Only)</strong>. Anda dapat memantau perbaikan unit secara real-time. Tekan unit untuk melihat rincian pemeriksaan.</span>
+    </div>
+
+    <!-- DAFTAR UNIT LIST -->
+    <div id="unit-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <!-- Unit Cards diproduksi dinamis via JS -->
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div id="empty-state" class="hidden glass-card rounded-2xl p-12 text-center border border-dashed border-slate-300">
+      <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400 text-2xl">
+        <i class="fa-solid fa-box-open"></i>
+      </div>
+      <h3 class="font-bold text-slate-700">Tidak Ada Data Unit</h3>
+      <p class="text-slate-400 text-xs mt-1">Tidak ditemukan data unit pada kategori/pencarian ini.</p>
+    </div>
+
+  </main>
+
+  <!-- MODAL 1: INFORMASI DATA UNIT (TRIGGER BY HOLD / CLICK) -->
+  <div id="modal-info" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-150">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-circle-info text-indigo-400"></i>
+          <h3 class="font-bold text-base">Detail Informasi Unit</h3>
+        </div>
+        <button onclick="closeModal('modal-info')" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-200/60">
+          <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Suffix / No Unit</span>
+            <span id="info-suffix-unit" class="font-extrabold text-slate-800 text-base">--</span>
+          </div>
+          <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Status Unit</span>
+            <span id="info-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold">--</span>
+          </div>
+          <div>
+            <span class="text-xs font-semibold text-slate-400 uppercase block mb-1">Problem / Deskripsi Defect</span>
+            <p id="info-problem" class="text-sm font-semibold text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-100">--</p>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-500 text-center italic">
+          Tekan tombol "Lanjutkan Konfirmasi" untuk memulai 14 item verifikasi perbaikan.
+        </p>
+
+        <div class="flex gap-2 pt-2">
+          <button onclick="closeModal('modal-info')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition">
+            Batal
+          </button>
+          <button id="btn-proceed-confirm" onclick="proceedToConfirmationPage()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2">
+            <span>Konfirmasi</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: HALAMAN KONFIRMASI 14 ITEM -->
+  <div id="modal-check-items" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-100">
+      
+      <!-- Modal Header -->
+      <div class="bg-indigo-900 text-white p-4 flex justify-between items-center shrink-0">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="check-badge-status" class="px-2 py-0.5 rounded text-xs font-black bg-rose-500 text-white">NG</span>
+            <h3 id="check-header-title" class="font-bold text-lg">Suffix - No Unit</h3>
+          </div>
+          <p id="check-header-problem" class="text-xs text-indigo-200 mt-0.5 truncate max-w-md">Problem: --</p>
+        </div>
+        <button onclick="closeModal('modal-check-items')" class="text-indigo-200 hover:text-white p-1.5 rounded-lg">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Item Checklist Header & Progress -->
+      <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center text-xs font-bold text-slate-600 shrink-0">
+        <span>VERIFIKASI 14 ITEM PEMERIKSAAN</span>
+        <span id="check-progress" class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">0/14 Item OK</span>
+      </div>
+
+      <!-- Item Checklist Scrollable Body -->
+      <div class="p-4 overflow-y-auto custom-scrollbar space-y-2 flex-1" id="items-container">
+        <!-- 14 Items injected via JS -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center gap-3 shrink-0">
+        <button onclick="closeModal('modal-check-items')" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm transition">
+          Batal
+        </button>
+        <button id="btn-save-confirmation" onclick="saveConfirmationResult()" class="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Simpan & Ubah ke OK</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: POPUP STATUS CHECK ITEM (OK / NG SELECTOR) -->
+  <div id="modal-item-toggle" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-xs rounded-2xl shadow-2xl p-5 text-center space-y-4 animate-in zoom-in duration-100">
+      <h4 id="toggle-item-title" class="font-bold text-slate-800 text-sm">Cek AC</h4>
+      <p class="text-xs text-slate-500">Pilih hasil konfirmasi pemeriksaan item ini:</p>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="setItemStatus('OK')" class="py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-md transition flex flex-col items-center justify-center gap-1">
+          <i class="fa-solid fa-circle-check text-xl"></i>
+          <span>OK</span>
+        </button>
+        <button onclick="setItemStatus('NG')" class="py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-md transition flex flex-col items-center justify-center gap-1">
+          <i class="fa-solid fa-circle-xmark text-xl"></i>
+          <span>NG</span>
+        </button>
+      </div>
+
+      <button onclick="closeModal('modal-item-toggle')" class="text-xs font-semibold text-slate-400 hover:text-slate-600 pt-1">
+        Batal
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 4: TAMBAH UNIT BARU (ADMIN) -->
+  <div id="modal-add-unit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-100">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+        <h3 class="font-bold text-base">Tambah Unit Defect (NG)</h3>
+        <button onclick="closeModal('modal-add-unit')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <form onsubmit="handleAddNewUnit(event)" class="p-5 space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Suffix</label>
+          <input type="text" id="input-suffix" required placeholder="Contoh: A1 / B2" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nomor Unit</label>
+          <input type="text" id="input-nounit" required placeholder="Contoh: 1005" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Problem / Deskripsi Problem</label>
+          <textarea id="input-problem" required rows="3" placeholder="Contoh: Fungsi heater tidak bekerja..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-add-unit')" class="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl text-sm">
+            Batal
+          </button>
+          <button type="submit" class="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700">
+            Simpan Unit
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 5: CONFIG JSONBIN.IO -->
+  <div id="modal-config" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-100">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+        <h3 class="font-bold text-base">Konfigurasi JSONbin.io Cloud</h3>
+        <button onclick="closeModal('modal-config')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-4">
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Hubungkan aplikasi ke JSONbin.io agar data dapat diakses dan diperbarui secara real-time oleh Admin dan Customer.
+        </p>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">BIN ID</label>
+          <input type="text" id="config-bin-id" placeholder="Contoh: 651234567890abcdef..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">X-Master-Key / Access Key</label>
+          <input type="password" id="config-api-key" placeholder="$2a$10$..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button onclick="saveApiConfig()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-md transition">
+            Simpan & Tes Koneksi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // 14 Item Verifikasi Standar RM0
+    const CHECK_ITEMS_LIST = [
+      "Cek AC",
+      "Cek panel control AC",
+      "Cek fungsi level blower",
+      "Cek fungsi Auto AC",
+      "Cek tombol defoger",
+      "Cek fungsi Air fresh",
+      "Cek mode AC",
+      "Cek tombol fungsi defroster",
+      "Cek fungsi heater",
+      "Cek fungsi tele tale",
+      "Cek kipas AC",
+      "Cek pompa AC",
+      "Cek defoger",
+      "Hasil DS"
+    ];
+
+    // Initial Default Data (Digunakan jika Cloud/LocalStorage Kosong)
+    const INITIAL_UNITS = [
+      {
+        id: "unit-101",
+        suffix: "A1",
+        noUnit: "1001",
+        problem: "AC tidak dingin dan Blower berisik pada level 3",
+        status: "NG",
+        itemsChecked: {},
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: "unit-102",
+        suffix: "B2",
+        noUnit: "1002",
+        problem: "Tombol defroster macet dan indikator tele tale mati",
+        status: "NG",
+        itemsChecked: {},
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: "unit-103",
+        suffix: "C3",
+        noUnit: "1003",
+        problem: "Panel Control AC lepas",
+        status: "OK",
+        itemsChecked: CHECK_ITEMS_LIST.reduce((acc, item) => ({...acc, [item]: 'OK'}), {}),
+        updatedAt: new Date().toISOString()
+      }
+    ];
+
+    // State Aplikasi
+    let currentRole = 'admin'; // 'admin' | 'customer'
+    let currentTab = 'NG'; // 'NG' | 'OK'
+    let unitsData = [];
+    let activeUnitId = null;
+    let activeItemName = null;
+    let holdTimer = null;
+
+    // Config JSONbin.io
+    let binId = localStorage.getItem('rm0_bin_id') || '';
+    let apiKey = localStorage.getItem('rm0_api_key') || '';
+
+    // INIT APP
+    window.addEventListener('DOMContentLoaded', () => {
+      renderDate();
+      loadInitialData();
+      
+      // Auto Sync every 15 seconds if Cloud API Configured
+      setInterval(() => {
+        if (binId && apiKey) {
+          fetchDataFromCloud(true);
+        }
+      }, 15000);
+    });
+
+    // RENDER DATE IN INDONESIAN FORMAT
+    function renderDate() {
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('current-date').textContent = now.toLocaleDateString('id-ID', options);
+    }
+
+    // LOAD DATA
+    function loadInitialData() {
+      const localData = localStorage.getItem('rm0_units_data');
+      if (localData) {
+        try {
+          unitsData = JSON.parse(localData);
+        } catch(e) {
+          unitsData = INITIAL_UNITS;
+        }
+      } else {
+        unitsData = INITIAL_UNITS;
+        saveToLocalStorage();
+      }
+
+      if (binId && apiKey) {
+        fetchDataFromCloud();
+      } else {
+        updateCloudStatusBadge(false, 'Local Storage Only');
+        renderUnitList();
+      }
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('rm0_units_data', JSON.stringify(unitsData));
+    }
+
+    // CLOUD SYNC (JSONbin.io)
+    async function fetchDataFromCloud(isBackground = false) {
+      if (!binId || !apiKey) return;
+      
+      if (!isBackground) {
+        updateCloudStatusBadge(null, 'Syncing...');
+      }
+
+      try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+          method: 'GET',
+          headers: {
+            'X-Master-Key': apiKey
+          }
+        });
+
+        if (!response.ok) throw new Error('Gagal mengambil data cloud');
+
+        const result = await response.json();
+        if (Array.isArray(result.record)) {
+          unitsData = result.record;
+          saveToLocalStorage();
+          updateCloudStatusBadge(true, 'Cloud Synced');
+          renderUnitList();
+        }
+      } catch (error) {
+        console.error(error);
+        updateCloudStatusBadge(false, 'Cloud Error');
+      }
+    }
+
+    async function syncToCloud() {
+      saveToLocalStorage();
+      if (!binId || !apiKey) return;
+
+      updateCloudStatusBadge(null, 'Saving to Cloud...');
+
+      try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': apiKey
+          },
+          body: JSON.stringify(unitsData)
+        });
+
+        if (!response.ok) throw new Error('Gagal menyimpan ke cloud');
+
+        updateCloudStatusBadge(true, 'Cloud Synced');
+      } catch (error) {
+        console.error(error);
+        updateCloudStatusBadge(false, 'Cloud Save Failed');
+      }
+    }
+
+    function updateCloudStatusBadge(isSuccess, text) {
+      const badge = document.getElementById('cloud-status');
+      if (isSuccess === true) {
+        badge.className = "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>${text}</span>`;
+      } else if (isSuccess === false) {
+        badge.className = "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200";
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>${text}</span>`;
+      } else {
+        badge.className = "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200";
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span><span>${text}</span>`;
+      }
+    }
+
+    // ROLE SWITCHER
+    function switchRole(role) {
+      currentRole = role;
+      const btnAdmin = document.getElementById('btn-role-admin');
+      const btnCustomer = document.getElementById('btn-role-customer');
+      const badge = document.getElementById('role-badge');
+      const btnAdd = document.getElementById('btn-add-unit');
+      const notice = document.getElementById('customer-notice');
+
+      if (role === 'admin') {
+        btnAdmin.className = "px-3 py-1.5 rounded-lg transition-all duration-200 bg-indigo-600 text-white shadow";
+        btnCustomer.className = "px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-400 hover:text-white";
+        badge.textContent = "Mode: Admin";
+        btnAdd.classList.remove('hidden');
+        notice.classList.add('hidden');
+      } else {
+        btnCustomer.className = "px-3 py-1.5 rounded-lg transition-all duration-200 bg-indigo-600 text-white shadow";
+        btnAdmin.className = "px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-400 hover:text-white";
+        badge.textContent = "Mode: Customer (Read-Only)";
+        btnAdd.classList.add('hidden');
+        notice.classList.remove('hidden');
+      }
+
+      renderUnitList();
+    }
+
+    // TAB SWITCHER (NG vs OK)
+    function switchTab(tab) {
+      currentTab = tab;
+      const tabNg = document.getElementById('tab-ng');
+      const tabOk = document.getElementById('tab-ok');
+
+      if (tab === 'NG') {
+        tabNg.className = "flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 bg-white text-rose-600 shadow-sm";
+        tabOk.className = "flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+      } else {
+        tabOk.className = "flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 bg-white text-emerald-600 shadow-sm";
+        tabNg.className = "flex-1 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+      }
+
+      renderUnitList();
+    }
+
+    // RENDER LIST UNIT CARDS
+    function renderUnitList() {
+      const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+      const listContainer = document.getElementById('unit-list');
+      const emptyState = document.getElementById('empty-state');
+
+      // Calculate Counters
+      const ngUnits = unitsData.filter(u => u.status === 'NG');
+      const okUnits = unitsData.filter(u => u.status === 'OK');
+      document.getElementById('count-ng').textContent = ngUnits.length;
+      document.getElementById('count-ok').textContent = okUnits.length;
+
+      // Filter Data
+      const filtered = unitsData.filter(u => {
+        const matchesStatus = u.status === currentTab;
+        const matchesSearch = u.suffix.toLowerCase().includes(searchQuery) || 
+                              u.noUnit.toLowerCase().includes(searchQuery) || 
+                              u.problem.toLowerCase().includes(searchQuery);
+        return matchesStatus && matchesSearch;
+      });
+
+      listContainer.innerHTML = '';
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      filtered.forEach(unit => {
+        const checkedCount = Object.values(unit.itemsChecked || {}).filter(v => v === 'OK').length;
+        const isCompleted = checkedCount === 14;
+
+        const card = document.createElement('div');
+        card.className = "glass-card rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition cursor-pointer relative overflow-hidden group";
+        
+        // Touch & Hold event setup
+        card.addEventListener('mousedown', () => startHoldTimer(unit.id));
+        card.addEventListener('mouseup', endHoldTimer);
+        card.addEventListener('mouseleave', endHoldTimer);
+        card.addEventListener('touchstart', () => startHoldTimer(unit.id), {passive: true});
+        card.addEventListener('touchend', endHoldTimer);
+
+        // Click event setup
+        card.onclick = () => handleCardClick(unit.id);
+
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="text-xs font-bold text-slate-400 tracking-wider uppercase">Suffix - No Unit</span>
+              <h3 class="text-lg font-extrabold text-slate-800 group-hover:text-indigo-600 transition">
+                ${unit.suffix} - ${unit.noUnit}
+              </h3>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-black ${
+              unit.status === 'NG' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+            }">
+              ${unit.status}
+            </span>
+          </div>
+
+          <div class="mb-3">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Problem:</span>
+            <p class="text-xs font-semibold text-slate-700 line-clamp-2">${unit.problem}</p>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+            <span class="text-slate-400 font-medium">
+              <i class="fa-regular fa-square-check text-indigo-500 mr-1"></i> Check Item: ${checkedCount}/14
+            </span>
+            <span class="text-indigo-600 font-bold group-hover:translate-x-1 transition flex items-center gap-1">
+              ${currentRole === 'admin' && unit.status === 'NG' ? 'Konfirmasi' : 'Detail'} <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </span>
+          </div>
+        `;
+
+        listContainer.appendChild(card);
+      });
+    }
+
+    // HOLD TO TRIGGER INFO POPUP
+    function startHoldTimer(unitId) {
+      holdTimer = setTimeout(() => {
+        openUnitInfoModal(unitId);
+      }, 600); // 600ms hold time trigger
+    }
+
+    function endHoldTimer() {
+      if (holdTimer) clearTimeout(holdTimer);
+    }
+
+    function handleCardClick(unitId) {
+      openUnitInfoModal(unitId);
+    }
+
+    // MODAL HANDLERS
+    function openUnitInfoModal(unitId) {
+      activeUnitId = unitId;
+      const unit = unitsData.find(u => u.id === unitId);
+      if (!unit) return;
+
+      document.getElementById('info-suffix-unit').textContent = `${unit.suffix} - ${unit.noUnit}`;
+      document.getElementById('info-problem').textContent = unit.problem;
+
+      const badge = document.getElementById('info-status-badge');
+      if (unit.status === 'NG') {
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700";
+        badge.textContent = "Status: NG";
+      } else {
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700";
+        badge.textContent = "Status: OK";
+      }
+
+      const proceedBtn = document.getElementById('btn-proceed-confirm');
+      if (currentRole === 'customer') {
+        proceedBtn.innerHTML = `<span>Lihat Item Checklist</span> <i class="fa-solid fa-eye"></i>`;
+      } else {
+        proceedBtn.innerHTML = `<span>Lanjutkan Konfirmasi</span> <i class="fa-solid fa-arrow-right"></i>`;
+      }
+
+      openModal('modal-info');
+    }
+
+    function proceedToConfirmationPage() {
+      closeModal('modal-info');
+      renderConfirmationChecklist();
+      openModal('modal-check-items');
+    }
+
+    function renderConfirmationChecklist() {
+      const unit = unitsData.find(u => u.id === activeUnitId);
+      if (!unit) return;
+
+      document.getElementById('check-header-title').textContent = `${unit.suffix} - ${unit.noUnit}`;
+      document.getElementById('check-header-problem').textContent = `Problem: ${unit.problem}`;
+      
+      const badge = document.getElementById('check-badge-status');
+      badge.textContent = unit.status;
+      badge.className = unit.status === 'NG' ? "px-2 py-0.5 rounded text-xs font-black bg-rose-500 text-white" : "px-2 py-0.5 rounded text-xs font-black bg-emerald-500 text-white";
+
+      const container = document.getElementById('items-container');
+      container.innerHTML = '';
+
+      let okCount = 0;
+
+      CHECK_ITEMS_LIST.forEach((itemName, index) => {
+        const itemStatus = (unit.itemsChecked && unit.itemsChecked[itemName]) || 'PENDING';
+        if (itemStatus === 'OK') okCount++;
+
+        const itemRow = document.createElement('div');
+        itemRow.className = "flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition";
+        
+        let statusBadgeHTML = '';
+        if (itemStatus === 'OK') {
+          statusBadgeHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-extrabold rounded-lg flex items-center gap-1"><i class="fa-solid fa-check"></i> OK</span>`;
+        } else if (itemStatus === 'NG') {
+          statusBadgeHTML = `<span class="px-2.5 py-1 bg-rose-100 text-rose-700 text-xs font-extrabold rounded-lg flex items-center gap-1"><i class="fa-solid fa-xmark"></i> NG</span>`;
+        } else {
+          statusBadgeHTML = `<span class="px-2.5 py-1 bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg">Belum Cek</span>`;
+        }
+
+        itemRow.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold flex items-center justify-center shrink-0">
+              ${index + 1}
+            </span>
+            <span class="text-xs font-bold text-slate-700">${itemName}</span>
+          </div>
+          <div>
+            ${statusBadgeHTML}
+          </div>
+        `;
+
+        if (currentRole === 'admin') {
+          itemRow.style.cursor = 'pointer';
+          itemRow.onclick = () => openItemToggleModal(itemName);
+        }
+
+        container.appendChild(itemRow);
+      });
+
+      document.getElementById('check-progress').textContent = `${okCount}/14 Item OK`;
+
+      const saveBtn = document.getElementById('btn-save-confirmation');
+      if (currentRole === 'customer') {
+        saveBtn.classList.add('hidden');
+      } else {
+        saveBtn.classList.remove('hidden');
+      }
+    }
+
+    function openItemToggleModal(itemName) {
+      activeItemName = itemName;
+      document.getElementById('toggle-item-title').textContent = itemName;
+      openModal('modal-item-toggle');
+    }
+
+    function setItemStatus(status) {
+      const unit = unitsData.find(u => u.id === activeUnitId);
+      if (!unit) return;
+
+      if (!unit.itemsChecked) unit.itemsChecked = {};
+      unit.itemsChecked[activeItemName] = status;
+
+      closeModal('modal-item-toggle');
+      renderConfirmationChecklist();
+    }
+
+    // SAVE CONFIRMATION (UBAH KE STATUS OK)
+    function saveConfirmationResult() {
+      const unit = unitsData.find(u => u.id === activeUnitId);
+      if (!unit) return;
+
+      unit.status = 'OK';
+      unit.updatedAt = new Date().toISOString();
+
+      syncToCloud();
+      closeModal('modal-check-items');
+      switchTab('OK');
+      alert(`Unit ${unit.suffix} - ${unit.noUnit} berhasil dikonfirmasi dan dipindahkan ke status OK!`);
+    }
+
+    // ADD NEW UNIT
+    function openAddUnitModal() {
+      openModal('modal-add-unit');
+    }
+
+    function handleAddNewUnit(event) {
+      event.preventDefault();
+      const suffix = document.getElementById('input-suffix').value.trim();
+      const noUnit = document.getElementById('input-nounit').value.trim();
+      const problem = document.getElementById('input-problem').value.trim();
+
+      const newUnit = {
+        id: 'unit-' + Date.now(),
+        suffix: suffix,
+        noUnit: noUnit,
+        problem: problem,
+        status: 'NG',
+        itemsChecked: {},
+        updatedAt: new Date().toISOString()
+      };
+
+      unitsData.unshift(newUnit);
+      syncToCloud();
+
+      document.getElementById('input-suffix').value = '';
+      document.getElementById('input-nounit').value = '';
+      document.getElementById('input-problem').value = '';
+
+      closeModal('modal-add-unit');
+      switchTab('NG');
+    }
+
+    // CONFIG MODAL HANDLERS
+    function openConfigModal() {
+      document.getElementById('config-bin-id').value = binId;
+      document.getElementById('config-api-key').value = apiKey;
+      openModal('modal-config');
+    }
+
+    function saveApiConfig() {
+      binId = document.getElementById('config-bin-id').value.trim();
+      apiKey = document.getElementById('config-api-key').value.trim();
+
+      localStorage.setItem('rm0_bin_id', binId);
+      localStorage.setItem('rm0_api_key', apiKey);
+
+      closeModal('modal-config');
+      fetchDataFromCloud();
+    }
+
+    // UTILS MODAL
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
+
+
