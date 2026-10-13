@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Input Problem RM0 - Shift B</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Anime.js CDN (untuk animasi loading/koneksi) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- HTML5 QRCode Scanner CDN -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- Custom Color Palette Tailor -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#095196',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar untuk area display */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col font-sans">
+
+    <!-- Loading Overlay Powered by Anime.js -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white transition-opacity duration-300">
+        <div class="relative flex items-center justify-center mb-4">
+            <div id="animeSpinner" class="w-16 h-16 border-4 border-cyan-400 border-t-transparent rounded-full"></div>
+            <i class="fa-solid fa-wifi text-xl text-cyan-300 absolute"></i>
+        </div>
+        <p id="loadingText" class="text-lg font-semibold tracking-wide">Menghubungkan ke Database...</p>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-white/10 rounded-lg">
+                    <i class="fa-solid fa-car-battery text-amber-300 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold leading-tight">MONITORING PROBLEM UNIT</h1>
+                    <div class="flex items-center space-x-2 text-xs text-indigo-200">
+                        <span class="bg-amber-400 text-slate-900 font-extrabold px-1.5 py-0.5 rounded">SHIFT B</span>
+                        <span id="headerDateDisplay">--/--/----</span>
+                    </div>
+                </div>
+            </div>
+            <button onclick="toggleHistoryModal(true)" class="bg-white/10 hover:bg-white/20 active:scale-95 transition px-3 py-2 rounded-lg text-xs font-medium flex items-center space-x-1.5 border border-white/20">
+                <i class="fa-solid fa-clock-rotate-left text-cyan-300"></i>
+                <span>Riwayat</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-md w-full mx-auto p-4 space-y-4">
+
+        <!-- Barcode Scanner Action Card -->
+        <section class="bg-white rounded-2xl p-4 shadow-md border border-slate-200/80 text-center relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 text-slate-100 -z-0">
+                <i class="fa-solid fa-barcode text-8xl"></i>
+            </div>
+            <div class="relative z-10 space-y-3">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Scan Barcode Unit WIP</p>
+                <button onclick="startScanner()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition active:scale-95 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-camera text-lg"></i>
+                    <span>SCAN BARCODE UNIT</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Display Area Data Hari Ini -->
+        <section class="bg-white rounded-2xl shadow-md border border-slate-200/80 flex flex-col h-[400px]">
+            <!-- Header Display -->
+            <div class="p-3.5 border-b border-slate-100 bg-slate-50/80 rounded-t-2xl flex items-center justify-between">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                        <i class="fa-solid fa-[#0284c7] fa-list-check text-sky-600"></i>
+                        <span>Data Hari Ini</span>
+                    </h2>
+                    <p id="todayDateLabel" class="text-xs text-slate-500 font-medium">--</p>
+                </div>
+                <button onclick="fetchDataFromSheet()" class="text-xs text-sky-600 hover:text-sky-700 font-semibold p-1.5 hover:bg-sky-50 rounded-lg transition">
+                    <i class="fa-solid fa-rotate-right"></i> Refresh
+                </button>
+            </div>
+
+            <!-- List Data (Scrollable Area) -->
+            <div id="displayArea" class="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+                <!-- Content generated dynamically -->
+            </div>
+
+            <!-- Summary & WA Footer -->
+            <div class="p-3 border-t border-slate-100 bg-slate-50/80 rounded-b-2xl space-y-2">
+                <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold">
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg py-1.5 text-amber-700">
+                        WIP: <span id="countWIP">0</span>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg py-1.5 text-emerald-700">
+                        OK: <span id="countOK">0</span>
+                    </div>
+                    <div class="bg-rose-50 border border-rose-200 rounded-lg py-1.5 text-rose-700">
+                        NG: <span id="countNG">0</span>
+                    </div>
+                </div>
+                <button onclick="sendWhatsAppToday()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center space-x-2 text-sm">
+                    <i class="fa-brands fa-whatsapp text-lg"></i>
+                    <span>Kirim Laporan WA Hari Ini</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Scanner Barcode -->
+    <div id="scannerModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-3 bg-slate-800 text-white flex justify-between items-center">
+                <span class="text-sm font-bold flex items-center space-x-2">
+                    <i class="fa-solid fa-qrcode text-cyan-400"></i>
+                    <span>Arahkan Kamera ke Barcode</span>
+                </span>
+                <button onclick="stopScanner()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-4 flex-1">
+                <div id="reader" class="w-full rounded-lg overflow-hidden border"></div>
+            </div>
+            <div class="p-3 bg-slate-50 text-center border-t">
+                <button onclick="stopScanner()" class="bg-slate-300 hover:bg-slate-400 text-slate-800 px-4 py-1.5 rounded-lg text-xs font-semibold">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Input Problem -->
+    <div id="inputModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Input Data Problem Unit</span>
+                </h3>
+                <button onclick="toggleInputModal(false)" class="text-white/80 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Form Content -->
+            <form id="problemForm" onsubmit="submitData(event)" class="p-4 space-y-3.5">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Suffix</label>
+                        <input type="text" id="inputSuffix" required class="w-full bg-slate-100 border border-slate-300 rounded-lg p-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Nomor Unit</label>
+                        <input type="text" id="inputNoUnit" required class="w-full bg-slate-100 border border-slate-300 rounded-lg p-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Problem / Detail Defect</label>
+                    <textarea id="inputProblem" rows="2" placeholder="Masukkan deskripsi problem..." required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Pilihan Status (Maksimal 2)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <!-- Checkbox WIP -->
+                        <label id="lblWip" class="cursor-pointer border-2 border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 transition">
+                            <input type="checkbox" id="chkWip" value="WIP" onchange="handleStatusValidation('WIP')" class="hidden">
+                            <i class="fa-solid fa-spinner text-amber-500 text-lg mb-1"></i>
+                            <span class="text-xs font-bold text-slate-700">WIP</span>
+                        </label>
+                        <!-- Checkbox OK -->
+                        <label id="lblOk" class="cursor-pointer border-2 border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 transition">
+                            <input type="checkbox" id="chkOk" value="OK" onchange="handleStatusValidation('OK')" class="hidden">
+                            <i class="fa-solid fa-circle-check text-emerald-500 text-lg mb-1"></i>
+                            <span class="text-xs font-bold text-slate-700">OK</span>
+                        </label>
+                        <!-- Checkbox NG -->
+                        <label id="lblNg" class="cursor-pointer border-2 border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 transition">
+                            <input type="checkbox" id="chkNg" value="NG" onchange="handleStatusValidation('NG')" class="hidden">
+                            <i class="fa-solid fa-circle-xmark text-rose-500 text-lg mb-1"></i>
+                            <span class="text-xs font-bold text-slate-700">NG</span>
+                        </label>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">* OK & NG tidak dapat dipilih secara bersamaan.</p>
+                </div>
+
+                <div class="flex items-center space-x-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="toggleInputModal(false)" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">
+                        Batal
+                    </button>
+                    <button type="submit" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">
+                        Simpan Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Riwayat Tanggal -->
+    <div id="historyModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="p-3.5 bg-slate-800 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-calendar-days text-indigo-400"></i>
+                    <span>Riwayat Input Data</span>
+                </h3>
+                <button onclick="toggleHistoryModal(false)" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div id="historyListArea" class="p-4 overflow-y-auto space-y-2 flex-1 custom-scrollbar">
+                <!-- Daftar Tanggal Generated Dynamically -->
+            </div>
+            <div class="p-3 bg-slate-50 border-t text-right">
+                <button onclick="toggleHistoryModal(false)" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-4 py-1.5 rounded-lg text-xs">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Info Detail Tanggal Riwayat -->
+    <div id="historyDetailModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-3.5 bg-indigo-700 text-white flex justify-between items-center">
+                <div>
+                    <h3 id="historyDetailTitle" class="font-bold text-sm">Detail Data</h3>
+                    <p id="historyDetailSub" class="text-[11px] text-indigo-200">Shift B</p>
+                </div>
+                <button onclick="toggleHistoryDetailModal(false)" class="text-indigo-200 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="historyDetailContent" class="p-4 overflow-y-auto space-y-2.5 flex-1 custom-scrollbar">
+                <!-- Detail items generated dynamically -->
+            </div>
+            <div class="p-3 bg-slate-50 border-t flex justify-between items-center">
+                <button onclick="toggleHistoryDetailModal(false)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">
+                    <i class="fa-solid fa-xmark"></i> Tutup
+                </button>
+                <button id="btnSendWaHistory" onclick="" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow">
+                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                    <span>Kirim WA</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // ==========================================
+        // CONFIG & GLOBAL VARIABLES
+        // ==========================================
+        // GANTI DENGAN URL GOOGLE APPS SCRIPT ANDA
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyD9XHmrsGpXD8mENnYpiJ88mMlbroZgS04lbMeXU1hWk6PxeqD1QMDqt4Y9MW6xfnvJg/exec"; 
+        
+        let allDataStore = [];
+        let html5QrCode = null;
+
+        const NAMA_BULAN = [
+            "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+            "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+        ];
+        const NAMA_HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        document.addEventListener("DOMContentLoaded", () => {
+            initLoadingAnimation();
+            updateDateHeader();
+            fetchDataFromSheet();
+        });
+
+        // Anime.js Loading Animation Init
+        function initLoadingAnimation() {
+            anime({
+                targets: '#animeSpinner',
+                rotate: '1turn',
+                duration: 1000,
+                easing: 'linear',
+                loop: true
+            });
+        }
+
+        function showLoading(show, message = "Loading...") {
+            const overlay = document.getElementById("loadingOverlay");
+            document.getElementById("loadingText").innerText = message;
+            if (show) {
+                overlay.classList.remove("hidden");
+                overlay.style.opacity = "1";
+            } else {
+                overlay.style.opacity = "0";
+                setTimeout(() => overlay.classList.add("hidden"), 300);
+            }
+        }
+
+        // ==========================================
+        // DATE LOGIC (07:25 SHIFT CUTOFF)
+        // ==========================================
+        function getWorkingDate(dateObj = new Date()) {
+            const now = new Date(dateObj);
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            
+            // Jika jam sebelum 07.25, terhitung tanggal kemarin
+            if (hours < 7 || (hours === 7 && minutes < 25)) {
+                now.setDate(now.getDate() - 1);
+            }
+
+            const dayName = NAMA_HARI[now.getDay()];
+            const dateNum = String(now.getDate()).padStart(2, '0');
+            const monthName = NAMA_BULAN[now.getMonth()];
+            const yearNum = now.getFullYear();
+
+            return {
+                fullFormatted: `${dayName}, ${dateNum} ${monthName} ${yearNum}`,
+                dateKey: `${dateNum}-${now.getMonth() + 1}-${yearNum}`,
+                dayName: dayName,
+                dateNum: dateNum,
+                monthName: monthName,
+                yearNum: yearNum
+            };
+        }
+
+        function updateDateHeader() {
+            const workDate = getWorkingDate();
+            document.getElementById("headerDateDisplay").innerText = `${workDate.dateNum} ${workDate.monthName.substring(0, 3)} ${workDate.yearNum}`;
+            document.getElementById("todayDateLabel").innerText = workDate.fullFormatted;
+        }
+
+        // ==========================================
+        // BARCODE SCANNING & PARSING
+        // ==========================================
+        function startScanner() {
+            document.getElementById("scannerModal").classList.remove("hidden");
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                alert("Gagal mengakses kamera: " + err);
+                stopScanner();
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    document.getElementById("scannerModal").classList.add("hidden");
+                }).catch(err => console.error(err));
+            } else {
+                document.getElementById("scannerModal").classList.add("hidden");
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            stopScanner();
+            parseBarcodeData(decodedText);
+        }
+
+        function onScanFailure(error) {
+            // silent scan retry
+        }
+
+        function parseBarcodeData(str) {
+            // Aturan parsing:
+            // 1. Karakter ke-12 s/d 17 dari depan sebagai Nomor Unit (index 11 to 17)
+            // 2. Dua karakter ke-5 dan 4 dari belakang sebagai Suffix
+            let noUnit = "";
+            let suffix = "";
+
+            if (str.length >= 17) {
+                noUnit = str.substring(11, 17);
+            } else {
+                noUnit = str; // fallback jika string kurang panjang
+            }
+
+            if (str.length >= 5) {
+                suffix = str.substring(str.length - 5, str.length - 3);
+            } else {
+                suffix = "XX";
+            }
+
+            // Pindahkan ke Pop Up Modal Input
+            document.getElementById("inputSuffix").value = suffix;
+            document.getElementById("inputNoUnit").value = noUnit;
+            document.getElementById("inputProblem").value = "";
+            
+            // Reset status check
+            resetFormCheckbox();
+            
+            toggleInputModal(true);
+        }
+
+        // ==========================================
+        // FORM CHECKBOX VALIDATION (MAX 2, NO OK+NG)
+        // ==========================================
+        function resetFormCheckbox() {
+            ['WIP', 'OK', 'NG'].forEach(type => {
+                const chk = document.getElementById(`chk${type}`);
+                chk.checked = false;
+                updateCheckboxStyle(type, false);
+            });
+        }
+
+        function handleStatusValidation(changedType) {
+            const chkWip = document.getElementById("chkWip");
+            const chkOk = document.getElementById("chkOk");
+            const chkNg = document.getElementById("chkNg");
+
+            // Aturan: Tidak bisa pilih OK dan NG bersamaan
+            if (changedType === 'OK' && chkOk.checked) {
+                if (chkNg.checked) {
+                    chkNg.checked = false;
+                    updateCheckboxStyle('NG', false);
+                }
+            } else if (changedType === 'NG' && chkNg.checked) {
+                if (chkOk.checked) {
+                    chkOk.checked = false;
+                    updateCheckboxStyle('OK', false);
+                }
+            }
+
+            // Maksimal 2 pilihan
+            const selectedCount = [chkWip.checked, chkOk.checked, chkNg.checked].filter(Boolean).length;
+            if (selectedCount > 2) {
+                alert("Maksimal hanya boleh memilih 2 status!");
+                document.getElementById(`chk${changedType}`).checked = false;
+            }
+
+            // Update visuals
+            ['WIP', 'OK', 'NG'].forEach(type => {
+                updateCheckboxStyle(type, document.getElementById(`chk${type}`).checked);
+            });
+        }
+
+        function updateCheckboxStyle(type, isChecked) {
+            const label = document.getElementById(`lbl${type}`);
+            if (isChecked) {
+                label.classList.add("border-indigo-600", "bg-indigo-50/50");
+                label.classList.remove("border-slate-200");
+            } else {
+                label.classList.remove("border-indigo-600", "bg-indigo-50/50");
+                label.classList.add("border-slate-200");
+            }
+        }
+
+        // ==========================================
+        // DATA API HANDLING (FETCH & SUBMIT)
+        // ==========================================
+        function fetchDataFromSheet() {
+            showLoading(true, "Mengambil Data Spreadsheet...");
+            
+            fetch(SCRIPT_URL)
+                .then(res => res.json())
+                .then(data => {
+                    allDataStore = Array.isArray(data) ? data : [];
+                    renderTodayDisplay();
+                    showLoading(false);
+                })
+                .catch(err => {
+                    console.error("Gagal mengambil data:", err);
+                    showLoading(false);
+                    renderTodayDisplay(); // Render local if error
+                });
+        }
+
+        function submitData(e) {
+            e.preventDefault();
+            
+            const suffix = document.getElementById("inputSuffix").value.trim();
+            const noUnit = document.getElementById("inputNoUnit").value.trim();
+            const problem = document.getElementById("inputProblem").value.trim();
+            
+            const chkWip = document.getElementById("chkWip").checked;
+            const chkOk = document.getElementById("chkOk").checked;
+            const chkNg = document.getElementById("chkNg").checked;
+
+            let statusArr = [];
+            if (chkWip) statusArr.push("WIP");
+            if (chkOk) statusArr.push("OK");
+            if (chkNg) statusArr.push("NG");
+
+            if (statusArr.length === 0) {
+                alert("Pilih minimal satu status (WIP, OK, atau NG)!");
+                return;
+            }
+
+            const workDate = getWorkingDate();
+            const payload = {
+                tanggal: workDate.fullFormatted,
+                shift: "Shift B",
+                suffix: suffix,
+                noUnit: noUnit,
+                problem: problem,
+                status: statusArr.join("/")
+            };
+
+            showLoading(true, "Menyimpan Data ke Google Sheets...");
+
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                showLoading(false);
+                toggleInputModal(false);
+                alert("Data Berhasil Disimpan!");
+                fetchDataFromSheet();
+            })
+            .catch(err => {
+                showLoading(false);
+                console.error("Error saving:", err);
+                alert("Terjadi kesalahan penyimpanan. Data akan ditampilkan secara lokal.");
+                // Fallback simpan lokal untuk tampilan sementara
+                allDataStore.push(payload);
+                toggleInputModal(false);
+                renderTodayDisplay();
+            });
+        }
+
+        // ==========================================
+        // RENDER DISPLAY HARI INI
+        // ==========================================
+        function renderTodayDisplay() {
+            const displayArea = document.getElementById("displayArea");
+            displayArea.innerHTML = "";
+
+            const currentWorkDate = getWorkingDate().fullFormatted;
+            const todayItems = allDataStore.filter(item => item.Tanggal === currentWorkDate || item.tanggal === currentWorkDate);
+
+            let countWIP = 0, countOK = 0, countNG = 0;
+
+            if (todayItems.length === 0) {
+                displayArea.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-slate-400 py-8">
+                        <i class="fa-solid fa-folder-open text-4xl mb-2"></i>
+                        <p class="text-xs">Belum ada data unit problem hari ini.</p>
+                    </div>
+                `;
+            } else {
+                todayItems.forEach((item, idx) => {
+                    const statusStr = item.Status || item.status || "";
+                    const isOK = statusStr.includes("OK");
+                    const isNG = statusStr.includes("NG");
+                    const isWIP = statusStr.includes("WIP");
+
+                    if (isOK) countOK++;
+                    if (isNG) countNG++;
+                    if (isWIP) countWIP++;
+
+                    // Styling Warna berdasarkan OK/NG
+                    let statusBadgeClass = "bg-slate-100 text-slate-700 border-slate-300";
+                    let cardBorderClass = "border-slate-200";
+                    let statusIcon = "";
+
+                    if (isNG) {
+                        statusBadgeClass = "bg-rose-100 text-rose-700 border-rose-300";
+                        cardBorderClass = "border-rose-200 bg-rose-50/30";
+                        statusIcon = `<i class="fa-solid fa-xmark text-rose-600 font-bold"></i>`;
+                    } else if (isOK) {
+                        statusBadgeClass = "bg-emerald-100 text-emerald-700 border-emerald-300";
+                        cardBorderClass = "border-emerald-200 bg-emerald-50/30";
+                        statusIcon = `<i class="fa-solid fa-check text-emerald-600 font-bold"></i>`;
+                    }
+
+                    const cardHtml = `
+                        <div class="p-3 rounded-xl border ${cardBorderClass} shadow-sm bg-white space-y-1.5 transition hover:shadow-md">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-sm text-slate-800">
+                                    ${idx + 1}. ${item.Suffix || item.suffix} - ${item.NoUnit || item.noUnit}
+                                </span>
+                                <span class="text-xs font-extrabold px-2 py-0.5 rounded-full border ${statusBadgeClass} flex items-center space-x-1">
+                                    <span>${statusStr}</span>
+                                    ${statusIcon}
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-600 pl-4 border-l-2 border-indigo-400">
+                                ${item.Problem || item.problem}
+                            </p>
+                        </div>
+                    `;
+                    displayArea.innerHTML += cardHtml;
+                });
+            }
+
+            // Update Counter
+            document.getElementById("countWIP").innerText = countWIP;
+            document.getElementById("countOK").innerText = countOK;
+            document.getElementById("countNG").innerText = countNG;
+        }
+
+        // ==========================================
+        // WHATSAPP REPORT GENERATOR
+        // ==========================================
+        function sendWhatsAppToday() {
+            const currentWorkDate = getWorkingDate().fullFormatted.toUpperCase();
+            const todayItems = allDataStore.filter(item => {
+                const t = item.Tanggal || item.tanggal;
+                return t && t.toUpperCase() === currentWorkDate;
+            });
+
+            generateAndOpenWA(currentWorkDate, todayItems);
+        }
+
+        function generateAndOpenWA(dateHeaderStr, items) {
+            let countOK = 0, countNG = 0, countWIP = 0;
+            let listText = "";
+
+            items.forEach((item, idx) => {
+                const statusStr = item.Status || item.status || "";
+                if (statusStr.includes("OK")) countOK++;
+                if (statusStr.includes("NG")) countNG++;
+                if (statusStr.includes("WIP")) countWIP++;
+
+                let checkSymbol = "";
+                if (statusStr.includes("OK")) checkSymbol = " ✓";
+                if (statusStr.includes("NG")) checkSymbol = " ✗";
+
+                listText += `${idx + 1}. *${item.Suffix || item.suffix}-${item.NoUnit || item.noUnit}*\n`;
+                listText += `     - ${item.Problem || item.problem} (${statusStr}${checkSymbol})\n`;
+            });
+
+            let waMsg = `*DATA UNIT WIP RM 0 ${dateHeaderStr} SHIFT B*\n`;
+            waMsg += `OK : ${countOK} Unit\n`;
+            waMsg += `NG : ${countNG} Unit\n`;
+            waMsg += `WIP: ${countWIP} Unit\n\n`;
+            waMsg += listText + `\n`;
+            waMsg += `*TERIMA KASIH*`;
+
+            const encodedMsg = encodeURIComponent(waMsg);
+            window.open(`https://api.whatsapp.com/send?text=${encodedMsg}`, '_blank');
+        }
+
+        // ==========================================
+        // HISTORY MODAL & DETAILS
+        // ==========================================
+        function toggleHistoryModal(show) {
+            const modal = document.getElementById("historyModal");
+            if (show) {
+                renderHistoryList();
+                modal.classList.remove("hidden");
+            } else {
+                modal.classList.add("hidden");
+            }
+        }
+
+        function renderHistoryList() {
+            const historyArea = document.getElementById("historyListArea");
+            historyArea.innerHTML = "";
+
+            // Grouping by Tanggal
+            const dateGroups = {};
+            allDataStore.forEach(item => {
+                const t = item.Tanggal || item.tanggal;
+                if (t) {
+                    if (!dateGroups[t]) dateGroups[t] = [];
+                    dateGroups[t].push(item);
+                }
+            });
+
+            const uniqueDates = Object.keys(dateGroups);
+
+            if (uniqueDates.length === 0) {
+                historyArea.innerHTML = `<p class="text-xs text-center text-slate-400 py-4">Tidak ada data riwayat.</p>`;
+                return;
+            }
+
+            uniqueDates.forEach(dateStr => {
+                const count = dateGroups[dateStr].length;
+                const card = `
+                    <div onclick="openHistoryDetail('${dateStr}')" class="p-3 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl cursor-pointer flex items-center justify-between transition">
+                        <div>
+                            <p class="font-bold text-xs text-slate-800">${dateStr}</p>
+                            <p class="text-[10px] text-slate-500">Total: ${count} Unit Data</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                    </div>
+                `;
+                historyArea.innerHTML += card;
+            });
+        }
+
+        function openHistoryDetail(dateStr) {
+            toggleHistoryModal(false);
+
+            const filteredItems = allDataStore.filter(item => (item.Tanggal || item.tanggal) === dateStr);
+            
+            document.getElementById("historyDetailTitle").innerText = dateStr;
+            document.getElementById("historyDetailSub").innerText = `Shift B - Total ${filteredItems.length} Unit`;
+
+            const contentArea = document.getElementById("historyDetailContent");
+            contentArea.innerHTML = "";
+
+            filteredItems.forEach((item, idx) => {
+                const statusStr = item.Status || item.status || "";
+                const isOK = statusStr.includes("OK");
+                const isNG = statusStr.includes("NG");
+
+                let badgeColor = "bg-slate-100 text-slate-700";
+                if (isNG) badgeColor = "bg-rose-100 text-rose-700";
+                else if (isOK) badgeColor = "bg-emerald-100 text-emerald-700";
+
+                const card = `
+                    <div class="p-2.5 bg-slate-50 border rounded-lg text-xs space-y-1">
+                        <div class="flex justify-between font-bold">
+                            <span>${idx + 1}. ${item.Suffix || item.suffix} - ${item.NoUnit || item.noUnit}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${statusStr}</span>
+                        </div>
+                        <p class="text-slate-600">${item.Problem || item.problem}</p>
+                    </div>
+                `;
+                contentArea.innerHTML += card;
+            });
+
+            // Config WA Button
+            document.getElementById("btnSendWaHistory").onclick = function() {
+                generateAndOpenWA(dateStr.toUpperCase(), filteredItems);
+            };
+
+            toggleHistoryDetailModal(true);
+        }
+
+        function toggleHistoryDetailModal(show) {
+            const modal = document.getElementById("historyDetailModal");
+            if (show) modal.classList.remove("hidden");
+            else modal.classList.add("hidden");
+        }
+
+        function toggleInputModal(show) {
+            const modal = document.getElementById("inputModal");
+            if (show) modal.classList.remove("hidden");
+            else modal.classList.add("hidden");
+        }
+    </script>
+</body>
+</html>
