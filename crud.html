@@ -80,12 +80,12 @@
       </div>
     </section>
 
-    <!-- DATA INPUT HARI INI -->
+    <!-- AREA TAMPIL DATA INPUT HARI INI -->
     <section class="glass-card rounded-2xl p-4">
       <div class="flex justify-between items-center mb-3">
         <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Input Hari Ini
+          Data Hari Ini
         </h2>
         <button onclick="sendTodayToWA()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-md flex items-center gap-1.5 transition">
           <i class="fa-brands fa-whatsapp text-sm"></i> Kirim WA
@@ -125,7 +125,7 @@
 
   <!-- MODAL FORM INPUT BARU / EDIT -->
   <div id="modalForm" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-700 relative animate-fade-in">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-700 relative">
       <button onclick="closeModal('modalForm')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
         <i class="fa-solid fa-xmark text-lg"></i>
       </button>
@@ -238,6 +238,7 @@
     </div>
   </div>
 
+  <!-- SCRIPT LOGIC -->
   <script>
     // --- STATE & GLOBAL VARIABLES ---
     let localDatabase = JSON.parse(localStorage.getItem('unit_app_db') || '[]');
@@ -256,7 +257,7 @@
       }
     });
 
-    // --- SHIFT DATE LOGIC (07:30 CUTOFF) ---
+    // --- ATURAN BATAS SHIFT JAM 07:30 ---
     function getShiftDate(dateObj = new Date()) {
       const year = dateObj.getFullYear();
       const month = dateObj.getMonth();
@@ -264,9 +265,12 @@
       const hours = dateObj.getHours();
       const minutes = dateObj.getMinutes();
 
+      // Cek apakah waktu saat ini SEBELUM jam 07:30 pagi
       const isBeforeCutoff = (hours < 7) || (hours === 7 && minutes < 30);
       
       let targetDate = new Date(year, month, date);
+      
+      // Jika sebelum 07:30, kurangi 1 hari (masuk tanggal kemarin)
       if (isBeforeCutoff) {
         targetDate.setDate(targetDate.getDate() - 1);
       }
@@ -302,19 +306,17 @@
       document.getElementById('currentDateDisplay').innerText = formatIndonesianDate(todayShift);
     }
 
-    // --- REVISED BARCODE PARSING (SUFFIX: URUTAN 6 & 5 DARI BELAKANG) ---
+    // --- BARCODE PARSING (SUFFIX: KARAKTER KE-6 DAN KE-5 DARI BELAKANG) ---
     function parseBarcodeString(str) {
       let suffix = "";
       let noUnit = "";
 
-      // Suffix: Karakter urutan ke-6 dan ke-5 dari belakang
       if (str.length >= 6) {
         suffix = str.substring(str.length - 6, str.length - 4);
       } else if (str.length >= 2) {
         suffix = str.substring(0, 2);
       }
 
-      // No Unit: Karakter 12 sampai 17 dari depan
       if (str.length >= 17) {
         noUnit = str.substring(11, 17);
       } else {
@@ -324,7 +326,7 @@
       return { suffix, noUnit };
     }
 
-    // --- CAMERA SCANNER ---
+    // --- CAMERA SCANNER CONTROL ---
     function toggleCamera() {
       const container = document.getElementById('scannerContainer');
       const btn = document.getElementById('btnStartScan');
@@ -459,15 +461,22 @@
       localStorage.setItem('unit_app_db', JSON.stringify(localDatabase));
     }
 
-    // --- RENDER TABLES ---
+    // --- RENDER AREA TAMPIL DATA HARI INI ---
     function renderTodayTable() {
-      const todayShift = getShiftDate(new Date());
-      const todayData = localDatabase.filter(item => item.shiftDate === todayShift);
+      const activeShiftDate = getShiftDate(new Date());
+      const todayData = localDatabase.filter(item => item.shiftDate === activeShiftDate);
+      
       const tbody = document.getElementById('todayTableBody');
+      if (!tbody) return;
       tbody.innerHTML = '';
 
+      const dateDisplay = document.getElementById('currentDateDisplay');
+      if (dateDisplay) {
+        dateDisplay.innerText = formatIndonesianDate(activeShiftDate);
+      }
+
       if (todayData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-500 italic">Belum ada data input hari ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-500 italic">Belum ada data input untuk shift hari ini.</td></tr>`;
         return;
       }
 
@@ -593,15 +602,15 @@
       document.getElementById('modalHistoryDetail').classList.remove('hidden');
     }
 
-    // --- WHATSAPP REPORT ---
+    // --- WHATSAPP REPORT GENERATOR ---
     function sendTodayToWA() {
-      const todayShift = getShiftDate(new Date());
-      const todayData = localDatabase.filter(item => item.shiftDate === todayShift);
+      const activeShiftDate = getShiftDate(new Date());
+      const todayData = localDatabase.filter(item => item.shiftDate === activeShiftDate);
       if (todayData.length === 0) {
         alert("Belum ada data untuk dikirim hari ini.");
         return;
       }
-      sendWAText(todayShift, todayData);
+      sendWAText(activeShiftDate, todayData);
     }
 
     function sendWAText(dateStr, dataList) {
@@ -640,7 +649,6 @@
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
-            // Normalisasi data dari GAS untuk mencegah error riwayat
             localDatabase = data.map(item => {
               let parsedShiftDate = item.shiftDate;
               if (parsedShiftDate && parsedShiftDate.includes('T')) {
