@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unit Tracker App</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- HTML5-QRCode Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      user-select: none;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    /* Touch Feedback */
+    .touch-active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-20">
+
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-30 glass-card px-4 py-3 shadow-lg border-b border-slate-700/50">
+    <div class="max-w-md mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-extrabold bg-gradient-to-r from-indigo-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent">
+          Unit Inspection Tracker
+        </h1>
+        <p id="currentDateDisplay" class="text-xs font-medium text-slate-400 mt-0.5"></p>
+      </div>
+      <button id="btnConfigGAS" onclick="openConfigModal()" class="p-2 text-slate-400 hover:text-white transition">
+        <i class="fa-solid fa-gear text-lg"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN NAVIGATION TABS -->
+  <div class="max-w-md mx-auto px-4 mt-4">
+    <div class="flex bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
+      <button id="tabInputBtn" onclick="switchTab('input')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-md">
+        <i class="fa-solid fa-qrcode mr-1.5"></i> Halaman Input
+      </button>
+      <button id="tabHistoryBtn" onclick="switchTab('history')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Riwayat Input
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: HALAMAN INPUT UTAMA -->
+  <main id="tabInput" class="max-w-md mx-auto px-4 mt-4 space-y-4">
+    
+    <!-- SCANNER BUTTON & CAMERA CONTAINER -->
+    <section class="glass-card rounded-2xl p-4 text-center">
+      <button id="btnStartScan" onclick="toggleCamera()" class="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 active:scale-95 transition duration-150 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-camera text-lg"></i>
+        <span>Scan Barcode / QR</span>
+      </button>
+
+      <div id="scannerContainer" class="hidden mt-4 overflow-hidden rounded-xl border-2 border-indigo-500/50 relative">
+        <div id="reader" class="w-full"></div>
+        <button onclick="toggleCamera()" class="absolute top-2 right-2 bg-slate-900/80 text-white w-8 h-8 rounded-full flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- DATA INPUT HARI INI -->
+    <section class="glass-card rounded-2xl p-4">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Input Hari Ini
+        </h2>
+        <button onclick="sendTodayToWA()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-md flex items-center gap-1.5 transition">
+          <i class="fa-brands fa-whatsapp text-sm"></i> Kirim WA
+        </button>
+      </div>
+
+      <!-- TABLE CONTAINER -->
+      <div class="overflow-x-auto custom-scroll rounded-xl border border-slate-700/50 max-h-80">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-800/90 text-slate-400 uppercase tracking-wider sticky top-0">
+            <tr>
+              <th class="py-2.5 px-3">Suffix</th>
+              <th class="py-2.5 px-3">No Unit</th>
+              <th class="py-2.5 px-3">Problem</th>
+            </tr>
+          </thead>
+          <tbody id="todayTableBody" class="divide-y divide-slate-800">
+            <!-- Data baris dirender lewat JS -->
+          </tbody>
+        </table>
+      </div>
+      <p class="text-[10px] text-slate-400 mt-2 text-center">* Tekan & Tahan (Hold) pada baris data untuk Mengedit atau Menghapus.</p>
+    </section>
+  </main>
+
+  <!-- TAB 2: HALAMAN RIWAYAT -->
+  <main id="tabHistory" class="max-w-md mx-auto px-4 mt-4 space-y-4 hidden">
+    <section class="glass-card rounded-2xl p-4">
+      <h2 class="text-base font-bold text-slate-200 mb-3 border-b border-slate-700/50 pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-calendar-days text-indigo-400"></i> Riwayat Tanggal Input
+      </h2>
+      <div id="historyDatesList" class="space-y-2 max-h-[70vh] overflow-y-auto custom-scroll pr-1">
+        <!-- List Tanggal dirender via JS -->
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL 1: FORM INPUT BARU / EDIT (HASIL SCAN) -->
+  <div id="modalForm" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-700 relative animate-fade-in">
+      <button onclick="closeModal('modalForm')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <h3 id="modalFormTitle" class="text-base font-bold text-white mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-pen-to-square text-sky-400"></i> Konfirmasi Data Unit
+      </h3>
+
+      <form id="unitDataForm" onsubmit="handleSaveData(event)" class="space-y-3">
+        <input type="hidden" id="editRowIndex" value="">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] font-semibold text-slate-400">Suffix</label>
+            <input type="text" id="inputSuffix" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-sky-300 font-mono font-bold focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold text-slate-400">No Unit</label>
+            <input type="text" id="inputNoUnit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-sky-300 font-mono font-bold focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-semibold text-slate-400">Detail Problem / Catatan</label>
+          <textarea id="inputProblem" rows="2" placeholder="Masukkan deskripsi problem..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <!-- STATUS OPTIONS (WIP & OK/NG) -->
+        <div class="space-y-2 pt-1">
+          <label class="text-[11px] font-semibold text-slate-400">Status Check</label>
+          
+          <div class="flex items-center gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+            <input type="checkbox" id="checkWip" class="w-4 h-4 accent-indigo-500 rounded">
+            <label for="checkWip" class="text-xs font-medium text-slate-300">WIP (Work In Progress)</label>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-slate-800 bg-slate-900/60 cursor-pointer hover:bg-slate-800/80">
+              <input type="radio" name="statusResult" value="OK" checked class="w-4 h-4 accent-emerald-500">
+              <span class="text-xs font-bold text-emerald-400">OK</span>
+            </label>
+            <label class="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-slate-800 bg-slate-900/60 cursor-pointer hover:bg-slate-800/80">
+              <input type="radio" name="statusResult" value="NG" class="w-4 h-4 accent-rose-500">
+              <span class="text-xs font-bold text-rose-400">NG</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-3">
+          <button type="button" onclick="closeModal('modalForm')" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition">
+            Batal
+          </button>
+          <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-indigo-600/30 transition">
+            Simpan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: DETAIL RIWAYAT TANGGAL -->
+  <div id="modalHistoryDetail" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-md rounded-2xl p-5 shadow-2xl border border-slate-700 relative">
+      <button onclick="closeModal('modalHistoryDetail')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <h3 id="historyDetailTitle" class="text-base font-bold text-white mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-indigo-400"></i> Detail Unit
+      </h3>
+
+      <div class="overflow-x-auto custom-scroll max-h-64 rounded-xl border border-slate-700/50 my-3">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-800 text-slate-400 uppercase">
+            <tr>
+              <th class="py-2 px-3">Suffix</th>
+              <th class="py-2 px-3">No Unit</th>
+              <th class="py-2 px-3">Problem</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody" class="divide-y divide-slate-800">
+            <!-- Data dirender JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal('modalHistoryDetail')" class="flex-1 py-2.5 bg-slate-800 text-slate-300 font-semibold rounded-xl text-xs">
+          Batal
+        </button>
+        <button id="btnSendHistoryWA" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/30">
+          <i class="fa-brands fa-whatsapp"></i> Kirim WA
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIG GOOGLE APPS SCRIPT -->
+  <div id="modalConfig" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-700">
+      <h3 class="text-sm font-bold text-white mb-2">Pengaturan Database (GAS)</h3>
+      <p class="text-[11px] text-slate-400 mb-3">Masukkan Web App URL dari Google Apps Script untuk sinkronisasi database Google Sheets.</p>
+      
+      <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 mb-3">
+      
+      <div class="flex gap-2">
+        <button onclick="closeModal('modalConfig')" class="flex-1 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg">Batal</button>
+        <button onclick="saveGasUrl()" class="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg">Simpan URL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+    // --- STATE & GLOBAL VARIABLES ---
+    let localDatabase = JSON.parse(localStorage.getItem('unit_app_db') || '[]');
+    let gasWebAppUrl = localStorage.getItem('gas_web_app_url') || '';
+    let html5QrCode = null;
+    let isScanning = false;
+    let holdTimer = null;
+
+    // --- INITIALIZATION ---
+    document.addEventListener("DOMContentLoaded", () => {
+      displayCurrentDate();
+      renderTodayTable();
+      document.getElementById('gasUrlInput').value = gasWebAppUrl;
+      
+      // Auto Sync jika ada URL Apps Script
+      if (gasWebAppUrl) {
+        fetchFromGAS();
+      }
+    });
+
+    // --- FORMAL SHIFT DATE LOGIC (07:30 BOUNDARY) ---
+    function getShiftDate(dateObj = new Date()) {
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth();
+      const date = dateObj.getDate();
+      const hours = dateObj.getHours();
+      const minutes = dateObj.getMinutes();
+
+      // Shift cutoff: 07:30 AM
+      const isBeforeCutoff = (hours < 7) || (hours === 7 && minutes < 30);
+      
+      let targetDate = new Date(year, month, date);
+      if (isBeforeCutoff) {
+        targetDate.setDate(targetDate.getDate() - 1);
+      }
+
+      const yyyy = targetDate.getFullYear();
+      const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(targetDate.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function formatIndonesianDate(dateStr) {
+      const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      
+      const d = new Date(dateStr + "T00:00:00");
+      const dayName = days[d.getDay()];
+      const day = String(d.getDate()).padStart(2, '0');
+      const monthName = months[d.getMonth()];
+      const year = d.getFullYear();
+      return `${dayName}, ${day} ${monthName} ${year}`;
+    }
+
+    function displayCurrentDate() {
+      const todayShift = getShiftDate(new Date());
+      document.getElementById('currentDateDisplay').innerText = formatIndonesianDate(todayShift);
+    }
+
+    // --- BARCODE PARSING LOGIC ---
+    function parseBarcodeString(str) {
+      let suffix = "";
+      let noUnit = "";
+
+      // 1. Suffix: Karakter ke-5 dan ke-4 urutan dari belakang
+      if (str.length >= 5) {
+        suffix = str.substring(str.length - 5, str.length - 3);
+      }
+
+      // 2. No Unit: Karakter 12 sampai 17 dari depan (Indeks 11 s/d 17)
+      if (str.length >= 17) {
+        noUnit = str.substring(11, 17);
+      } else {
+        noUnit = str; // Fallback jika string lebih pendek
+      }
+
+      return { suffix, noUnit };
+    }
+
+    // --- CAMERA SCANNER CONTROL ---
+    function toggleCamera() {
+      const container = document.getElementById('scannerContainer');
+      const btn = document.getElementById('btnStartScan');
+
+      if (isScanning) {
+        if (html5QrCode) {
+          html5QrCode.stop().then(() => {
+            container.classList.add('hidden');
+            btn.innerHTML = `<i class="fa-solid fa-camera text-lg"></i><span>Scan Barcode / QR</span>`;
+            isScanning = false;
+          });
+        }
+      } else {
+        container.classList.remove('hidden');
+        btn.innerHTML = `<i class="fa-solid fa-stop text-lg"></i><span>Hentikan Kamera</span>`;
+        isScanning = true;
+
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 150 } },
+          (decodedText) => {
+            // Success Callback
+            toggleCamera(); // Tutup kamera
+            const parsed = parseBarcodeString(decodedText);
+            openInputModal(parsed.suffix, parsed.noUnit);
+          },
+          (errorMessage) => { /* scanning... */ }
+        ).catch(err => {
+          alert("Gagal membuka kamera: " + err);
+          toggleCamera();
+        });
+      }
+    }
+
+    // --- MODAL CONTROLLERS ---
+    function openInputModal(suffix = '', noUnit = '', isEdit = false, index = null) {
+      document.getElementById('modalFormTitle').innerText = isEdit ? 'Edit Data Unit' : 'Konfirmasi Data Unit';
+      document.getElementById('editRowIndex').value = isEdit ? index : '';
+      document.getElementById('inputSuffix').value = suffix;
+      document.getElementById('inputNoUnit').value = noUnit;
+      
+      if (isEdit && index !== null) {
+        const item = localDatabase[index];
+        document.getElementById('inputProblem').value = item.problemDetail || '';
+        document.getElementById('checkWip').checked = item.isWip;
+        document.querySelector(`input[name="statusResult"][value="${item.status}"]`).checked = true;
+      } else {
+        document.getElementById('inputProblem').value = '';
+        document.getElementById('checkWip').checked = false;
+        document.querySelector(`input[name="statusResult"][value="OK"]`).checked = true;
+      }
+
+      document.getElementById('modalForm').classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function openConfigModal() {
+      document.getElementById('modalConfig').classList.remove('hidden');
+    }
+
+    function saveGasUrl() {
+      const url = document.getElementById('gasUrlInput').value.trim();
+      localStorage.setItem('gas_web_app_url', url);
+      gasWebAppUrl = url;
+      closeModal('modalConfig');
+      alert('URL Database disimpan!');
+      if (url) fetchFromGAS();
+    }
+
+    // --- SAVE / EDIT DATA LOGIC ---
+    function handleSaveData(e) {
+      e.preventDefault();
+      
+      const suffix = document.getElementById('inputSuffix').value.trim().toUpperCase();
+      const noUnit = document.getElementById('inputNoUnit').value.trim();
+      const problemDetail = document.getElementById('inputProblem').value.trim();
+      const isWip = document.getElementById('checkWip').checked;
+      const status = document.querySelector('input[name="statusResult"]:checked').value;
+      const editIndex = document.getElementById('editRowIndex').value;
+
+      const currentShiftDate = getShiftDate(new Date());
+      const timestamp = new Date().toISOString();
+
+      const newRecord = {
+        id: editIndex !== '' ? localDatabase[editIndex].id : 'ID_' + Date.now(),
+        shiftDate: currentShiftDate,
+        suffix: suffix,
+        noUnit: noUnit,
+        problemDetail: problemDetail,
+        isWip: isWip,
+        status: status, // OK atau NG
+        timestamp: timestamp
+      };
+
+      if (editIndex !== '') {
+        // Mode Edit
+        localDatabase[editIndex] = newRecord;
+      } else {
+        // Mode Tambah Baru
+        localDatabase.unshift(newRecord);
+      }
+
+      saveLocalDB();
+      renderTodayTable();
+      closeModal('modalForm');
+
+      // Sync ke Google Sheets jika URL diset
+      if (gasWebAppUrl) {
+        syncToGAS(editIndex !== '' ? 'update' : 'create', newRecord);
+      }
+    }
+
+    function deleteRecord(index) {
+      if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+        const deletedItem = localDatabase[index];
+        localDatabase.splice(index, 1);
+        saveLocalDB();
+        renderTodayTable();
+        closeModal('modalForm');
+
+        if (gasWebAppUrl) {
+          syncToGAS('delete', deletedItem);
+        }
+      }
+    }
+
+    function saveLocalDB() {
+      localStorage.setItem('unit_app_db', JSON.stringify(localDatabase));
+    }
+
+    // --- RENDER TABLE TODAY ---
+    function renderTodayTable() {
+      const todayShift = getShiftDate(new Date());
+      const todayData = localDatabase.filter(item => item.shiftDate === todayShift);
+      const tbody = document.getElementById('todayTableBody');
+      tbody.innerHTML = '';
+
+      if (todayData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-500 italic">Belum ada data input hari ini.</td></tr>`;
+        return;
+      }
+
+      todayData.forEach((item) => {
+        const realIndex = localDatabase.findIndex(x => x.id === item.id);
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/50 cursor-pointer transition select-none active:bg-slate-800";
+        
+        // Format Tampilan Status/Problem
+        const statusClass = item.status === 'OK' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+        const wipBadge = item.isWip ? '<span class="ml-1 px-1.5 py-0.5 text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded">WIP</span>' : '';
+        const problemDisplay = item.problemDetail ? item.problemDetail : '-';
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-mono font-semibold text-sky-300">${item.suffix}</td>
+          <td class="py-2.5 px-3 font-mono text-slate-200">${item.noUnit}</td>
+          <td class="py-2.5 px-3 ${statusClass}">
+            [${item.status}] ${problemDisplay} ${wipBadge}
+          </td>
+        `;
+
+        // LONG PRESS / CLICK TAHAN TRIGGER FOR EDIT/DELETE
+        let timer;
+        const startHold = () => {
+          timer = setTimeout(() => {
+            openInputModal(item.suffix, item.noUnit, true, realIndex);
+            // Tambahkan tombol hapus di modal edit secara dinamis
+            addDeleteBtnToModal(realIndex);
+          }, 600); // Hold 600ms
+        };
+        const endHold = () => clearTimeout(timer);
+
+        tr.addEventListener('mousedown', startHold);
+        tr.addEventListener('touchstart', startHold);
+        tr.addEventListener('mouseup', endHold);
+        tr.addEventListener('touchend', endHold);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addDeleteBtnToModal(index) {
+      const form = document.getElementById('unitDataForm');
+      let delBtn = document.getElementById('btnDynamicDelete');
+      if (!delBtn) {
+        delBtn = document.createElement('button');
+        delBtn.id = 'btnDynamicDelete';
+        delBtn.type = 'button';
+        delBtn.className = 'w-full py-2 bg-rose-600/20 text-rose-400 border border-rose-500/30 font-bold rounded-xl text-xs mt-2 hover:bg-rose-600 hover:text-white transition';
+        delBtn.innerHTML = `<i class="fa-solid fa-trash-can mr-1"></i> Hapus Data Ini`;
+        form.appendChild(delBtn);
+      }
+      delBtn.onclick = () => deleteRecord(index);
+    }
+
+    // --- TAB SWITCHING & HISTORY ---
+    function switchTab(tab) {
+      const tabInput = document.getElementById('tabInput');
+      const tabHistory = document.getElementById('tabHistory');
+      const btnInput = document.getElementById('tabInputBtn');
+      const btnHistory = document.getElementById('tabHistoryBtn');
+
+      if (tab === 'input') {
+        tabInput.classList.remove('hidden');
+        tabHistory.classList.add('hidden');
+        btnInput.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-md";
+        btnHistory.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200";
+        renderTodayTable();
+      } else {
+        tabInput.classList.add('hidden');
+        tabHistory.classList.remove('hidden');
+        btnHistory.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-md";
+        btnInput.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200";
+        renderHistoryDates();
+      }
+    }
+
+    function renderHistoryDates() {
+      const listContainer = document.getElementById('historyDatesList');
+      listContainer.innerHTML = '';
+
+      // Group data by Shift Date
+      const dates = [...new Set(localDatabase.map(item => item.shiftDate))].sort().reverse();
+
+      if (dates.length === 0) {
+        listContainer.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Belum ada riwayat data.</p>`;
+        return;
+      }
+
+      dates.forEach(dateStr => {
+        const count = localDatabase.filter(i => i.shiftDate === dateStr).length;
+        const card = document.createElement('div');
+        card.className = "flex justify-between items-center bg-slate-900/80 p-3 rounded-xl border border-slate-800 hover:border-slate-700 cursor-pointer transition";
+        card.onclick = () => openHistoryDetail(dateStr);
+        card.innerHTML = `
+          <div>
+            <p class="text-xs font-bold text-slate-200">${formatIndonesianDate(dateStr)}</p>
+            <p class="text-[10px] text-slate-400">${count} Unit Terinspeksi</p>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    function openHistoryDetail(dateStr) {
+      const items = localDatabase.filter(i => i.shiftDate === dateStr);
+      document.getElementById('historyDetailTitle').innerText = `Data Unit (${formatIndonesianDate(dateStr)})`;
+      
+      const tbody = document.getElementById('historyTableBody');
+      tbody.innerHTML = '';
+
+      items.forEach(item => {
+        const tr = document.createElement('tr');
+        const statusClass = item.status === 'OK' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+        const problemDisplay = item.problemDetail ? item.problemDetail : '-';
+        tr.innerHTML = `
+          <td class="py-2 px-3 font-mono text-sky-300">${item.suffix}</td>
+          <td class="py-2 px-3 font-mono text-slate-200">${item.noUnit}</td>
+          <td class="py-2 px-3 ${statusClass}">[${item.status}] ${problemDisplay}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('btnSendHistoryWA').onclick = () => sendWAText(dateStr, items);
+      document.getElementById('modalHistoryDetail').classList.remove('hidden');
+    }
+
+    // --- WHATSAPP REPORT GENERATOR ---
+    function sendTodayToWA() {
+      const todayShift = getShiftDate(new Date());
+      const todayData = localDatabase.filter(item => item.shiftDate === todayShift);
+      if (todayData.length === 0) {
+        alert("Belum ada data untuk dikirim hari ini.");
+        return;
+      }
+      sendWAText(todayShift, todayData);
+    }
+
+    function sendWAText(dateStr, dataList) {
+      let text = `*LAPORAN INSPEKSI UNIT*\n`;
+      text += `Tanggal: ${formatIndonesianDate(dateStr)}\n`;
+      text += `Total Unit: ${dataList.length}\n`;
+      text += `-----------------------------------\n\n`;
+
+      dataList.forEach((item, idx) => {
+        text += `${idx + 1}. *[${item.suffix}]* - Unit: ${item.noUnit}\n`;
+        text += `   Status: *${item.status}* ${item.isWip ? '(WIP)' : ''}\n`;
+        if (item.problemDetail) text += `   Problem: ${item.problemDetail}\n`;
+        text += `\n`;
+      });
+
+      const encodedText = encodeURIComponent(text);
+      window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+    }
+
+    // --- GOOGLE APPS SCRIPT DATABASE INTEGRATION ---
+    function syncToGAS(action, record) {
+      if (!gasWebAppUrl) return;
+
+      fetch(gasWebAppUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action, data: record })
+      }).catch(err => console.error('Error Sync GAS:', err));
+    }
+
+    function fetchFromGAS() {
+      if (!gasWebAppUrl) return;
+      
+      fetch(gasWebAppUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            localDatabase = data;
+            saveLocalDB();
+            renderTodayTable();
+          }
+        })
+        .catch(err => console.log('Gagal mengambil data dari Google Sheets:', err));
+    }
+  </script>
+</body>
+</html>
