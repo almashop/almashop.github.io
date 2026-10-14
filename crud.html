@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unit Tracker App</title>
+  <title>Unit Inspection Tracker</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- HTML5-QRCode Scanner Library -->
@@ -30,11 +30,6 @@
     .custom-scroll::-webkit-scrollbar-thumb {
       background: #334155;
       border-radius: 4px;
-    }
-    /* Touch Feedback */
-    .touch-active {
-      transform: scale(0.98);
-      transition: transform 0.1s ease;
     }
   </style>
 </head>
@@ -128,7 +123,7 @@
     </section>
   </main>
 
-  <!-- MODAL 1: FORM INPUT BARU / EDIT (HASIL SCAN) -->
+  <!-- MODAL FORM INPUT BARU / EDIT -->
   <div id="modalForm" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
     <div class="glass-card w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-700 relative animate-fade-in">
       <button onclick="closeModal('modalForm')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
@@ -158,7 +153,7 @@
           <textarea id="inputProblem" rows="2" placeholder="Masukkan deskripsi problem..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"></textarea>
         </div>
 
-        <!-- STATUS OPTIONS (WIP & OK/NG) -->
+        <!-- STATUS OPTIONS -->
         <div class="space-y-2 pt-1">
           <label class="text-[11px] font-semibold text-slate-400">Status Check</label>
           
@@ -191,7 +186,7 @@
     </div>
   </div>
 
-  <!-- MODAL 2: DETAIL RIWAYAT TANGGAL -->
+  <!-- MODAL DETAIL RIWAYAT -->
   <div id="modalHistoryDetail" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
     <div class="glass-card w-full max-w-md rounded-2xl p-5 shadow-2xl border border-slate-700 relative">
       <button onclick="closeModal('modalHistoryDetail')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
@@ -243,14 +238,12 @@
     </div>
   </div>
 
-  <!-- JAVASCRIPT APP LOGIC -->
   <script>
     // --- STATE & GLOBAL VARIABLES ---
     let localDatabase = JSON.parse(localStorage.getItem('unit_app_db') || '[]');
     let gasWebAppUrl = localStorage.getItem('gas_web_app_url') || '';
     let html5QrCode = null;
     let isScanning = false;
-    let holdTimer = null;
 
     // --- INITIALIZATION ---
     document.addEventListener("DOMContentLoaded", () => {
@@ -258,13 +251,12 @@
       renderTodayTable();
       document.getElementById('gasUrlInput').value = gasWebAppUrl;
       
-      // Auto Sync jika ada URL Apps Script
       if (gasWebAppUrl) {
         fetchFromGAS();
       }
     });
 
-    // --- FORMAL SHIFT DATE LOGIC (07:30 BOUNDARY) ---
+    // --- SHIFT DATE LOGIC (07:30 CUTOFF) ---
     function getShiftDate(dateObj = new Date()) {
       const year = dateObj.getFullYear();
       const month = dateObj.getMonth();
@@ -272,7 +264,6 @@
       const hours = dateObj.getHours();
       const minutes = dateObj.getMinutes();
 
-      // Shift cutoff: 07:30 AM
       const isBeforeCutoff = (hours < 7) || (hours === 7 && minutes < 30);
       
       let targetDate = new Date(year, month, date);
@@ -287,10 +278,18 @@
     }
 
     function formatIndonesianDate(dateStr) {
+      if (!dateStr || typeof dateStr !== 'string' || !dateStr.includes('-')) {
+        return dateStr || '-';
+      }
+      
       const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
       const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
       
-      const d = new Date(dateStr + "T00:00:00");
+      const parts = dateStr.split('-');
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      
+      if (isNaN(d.getTime())) return dateStr;
+
       const dayName = days[d.getDay()];
       const day = String(d.getDate()).padStart(2, '0');
       const monthName = months[d.getMonth()];
@@ -303,27 +302,29 @@
       document.getElementById('currentDateDisplay').innerText = formatIndonesianDate(todayShift);
     }
 
-    // --- BARCODE PARSING LOGIC ---
+    // --- REVISED BARCODE PARSING (SUFFIX: URUTAN 6 & 5 DARI BELAKANG) ---
     function parseBarcodeString(str) {
       let suffix = "";
       let noUnit = "";
 
-      // 1. Suffix: Karakter ke-5 dan ke-4 urutan dari belakang
-      if (str.length >= 5) {
-        suffix = str.substring(str.length - 5, str.length - 3);
+      // Suffix: Karakter urutan ke-6 dan ke-5 dari belakang
+      if (str.length >= 6) {
+        suffix = str.substring(str.length - 6, str.length - 4);
+      } else if (str.length >= 2) {
+        suffix = str.substring(0, 2);
       }
 
-      // 2. No Unit: Karakter 12 sampai 17 dari depan (Indeks 11 s/d 17)
+      // No Unit: Karakter 12 sampai 17 dari depan
       if (str.length >= 17) {
         noUnit = str.substring(11, 17);
       } else {
-        noUnit = str; // Fallback jika string lebih pendek
+        noUnit = str;
       }
 
       return { suffix, noUnit };
     }
 
-    // --- CAMERA SCANNER CONTROL ---
+    // --- CAMERA SCANNER ---
     function toggleCamera() {
       const container = document.getElementById('scannerContainer');
       const btn = document.getElementById('btnStartScan');
@@ -346,12 +347,11 @@
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 150 } },
           (decodedText) => {
-            // Success Callback
-            toggleCamera(); // Tutup kamera
+            toggleCamera();
             const parsed = parseBarcodeString(decodedText);
             openInputModal(parsed.suffix, parsed.noUnit);
           },
-          (errorMessage) => { /* scanning... */ }
+          (errorMessage) => {}
         ).catch(err => {
           alert("Gagal membuka kamera: " + err);
           toggleCamera();
@@ -366,11 +366,15 @@
       document.getElementById('inputSuffix').value = suffix;
       document.getElementById('inputNoUnit').value = noUnit;
       
+      const dynamicDelBtn = document.getElementById('btnDynamicDelete');
+      if (dynamicDelBtn) dynamicDelBtn.remove();
+
       if (isEdit && index !== null) {
         const item = localDatabase[index];
         document.getElementById('inputProblem').value = item.problemDetail || '';
-        document.getElementById('checkWip').checked = item.isWip;
-        document.querySelector(`input[name="statusResult"][value="${item.status}"]`).checked = true;
+        document.getElementById('checkWip').checked = item.isWip || false;
+        const statusVal = item.status || 'OK';
+        document.querySelector(`input[name="statusResult"][value="${statusVal}"]`).checked = true;
       } else {
         document.getElementById('inputProblem').value = '';
         document.getElementById('checkWip').checked = false;
@@ -397,7 +401,7 @@
       if (url) fetchFromGAS();
     }
 
-    // --- SAVE / EDIT DATA LOGIC ---
+    // --- CRUD OPERATIONS ---
     function handleSaveData(e) {
       e.preventDefault();
       
@@ -413,20 +417,18 @@
 
       const newRecord = {
         id: editIndex !== '' ? localDatabase[editIndex].id : 'ID_' + Date.now(),
-        shiftDate: currentShiftDate,
+        shiftDate: editIndex !== '' ? localDatabase[editIndex].shiftDate : currentShiftDate,
         suffix: suffix,
         noUnit: noUnit,
         problemDetail: problemDetail,
         isWip: isWip,
-        status: status, // OK atau NG
+        status: status,
         timestamp: timestamp
       };
 
       if (editIndex !== '') {
-        // Mode Edit
         localDatabase[editIndex] = newRecord;
       } else {
-        // Mode Tambah Baru
         localDatabase.unshift(newRecord);
       }
 
@@ -434,7 +436,6 @@
       renderTodayTable();
       closeModal('modalForm');
 
-      // Sync ke Google Sheets jika URL diset
       if (gasWebAppUrl) {
         syncToGAS(editIndex !== '' ? 'update' : 'create', newRecord);
       }
@@ -458,7 +459,7 @@
       localStorage.setItem('unit_app_db', JSON.stringify(localDatabase));
     }
 
-    // --- RENDER TABLE TODAY ---
+    // --- RENDER TABLES ---
     function renderTodayTable() {
       const todayShift = getShiftDate(new Date());
       const todayData = localDatabase.filter(item => item.shiftDate === todayShift);
@@ -475,27 +476,24 @@
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-800/50 cursor-pointer transition select-none active:bg-slate-800";
         
-        // Format Tampilan Status/Problem
         const statusClass = item.status === 'OK' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
         const wipBadge = item.isWip ? '<span class="ml-1 px-1.5 py-0.5 text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded">WIP</span>' : '';
         const problemDisplay = item.problemDetail ? item.problemDetail : '-';
 
         tr.innerHTML = `
-          <td class="py-2.5 px-3 font-mono font-semibold text-sky-300">${item.suffix}</td>
-          <td class="py-2.5 px-3 font-mono text-slate-200">${item.noUnit}</td>
+          <td class="py-2.5 px-3 font-mono font-semibold text-sky-300">${item.suffix || '-'}</td>
+          <td class="py-2.5 px-3 font-mono text-slate-200">${item.noUnit || '-'}</td>
           <td class="py-2.5 px-3 ${statusClass}">
-            [${item.status}] ${problemDisplay} ${wipBadge}
+            [${item.status || 'OK'}] ${problemDisplay} ${wipBadge}
           </td>
         `;
 
-        // LONG PRESS / CLICK TAHAN TRIGGER FOR EDIT/DELETE
         let timer;
         const startHold = () => {
           timer = setTimeout(() => {
             openInputModal(item.suffix, item.noUnit, true, realIndex);
-            // Tambahkan tombol hapus di modal edit secara dinamis
             addDeleteBtnToModal(realIndex);
-          }, 600); // Hold 600ms
+          }, 600);
         };
         const endHold = () => clearTimeout(timer);
 
@@ -548,8 +546,8 @@
       const listContainer = document.getElementById('historyDatesList');
       listContainer.innerHTML = '';
 
-      // Group data by Shift Date
-      const dates = [...new Set(localDatabase.map(item => item.shiftDate))].sort().reverse();
+      const validItems = localDatabase.filter(item => item && item.shiftDate);
+      const dates = [...new Set(validItems.map(item => item.shiftDate))].sort().reverse();
 
       if (dates.length === 0) {
         listContainer.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Belum ada riwayat data.</p>`;
@@ -557,7 +555,7 @@
       }
 
       dates.forEach(dateStr => {
-        const count = localDatabase.filter(i => i.shiftDate === dateStr).length;
+        const count = validItems.filter(i => i.shiftDate === dateStr).length;
         const card = document.createElement('div');
         card.className = "flex justify-between items-center bg-slate-900/80 p-3 rounded-xl border border-slate-800 hover:border-slate-700 cursor-pointer transition";
         card.onclick = () => openHistoryDetail(dateStr);
@@ -584,9 +582,9 @@
         const statusClass = item.status === 'OK' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
         const problemDisplay = item.problemDetail ? item.problemDetail : '-';
         tr.innerHTML = `
-          <td class="py-2 px-3 font-mono text-sky-300">${item.suffix}</td>
-          <td class="py-2 px-3 font-mono text-slate-200">${item.noUnit}</td>
-          <td class="py-2 px-3 ${statusClass}">[${item.status}] ${problemDisplay}</td>
+          <td class="py-2 px-3 font-mono text-sky-300">${item.suffix || '-'}</td>
+          <td class="py-2 px-3 font-mono text-slate-200">${item.noUnit || '-'}</td>
+          <td class="py-2 px-3 ${statusClass}">[${item.status || 'OK'}] ${problemDisplay}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -595,7 +593,7 @@
       document.getElementById('modalHistoryDetail').classList.remove('hidden');
     }
 
-    // --- WHATSAPP REPORT GENERATOR ---
+    // --- WHATSAPP REPORT ---
     function sendTodayToWA() {
       const todayShift = getShiftDate(new Date());
       const todayData = localDatabase.filter(item => item.shiftDate === todayShift);
@@ -613,8 +611,8 @@
       text += `-----------------------------------\n\n`;
 
       dataList.forEach((item, idx) => {
-        text += `${idx + 1}. *[${item.suffix}]* - Unit: ${item.noUnit}\n`;
-        text += `   Status: *${item.status}* ${item.isWip ? '(WIP)' : ''}\n`;
+        text += `${idx + 1}. *[${item.suffix || '-'}]* - Unit: ${item.noUnit || '-'}\n`;
+        text += `   Status: *${item.status || 'OK'}* ${item.isWip ? '(WIP)' : ''}\n`;
         if (item.problemDetail) text += `   Problem: ${item.problemDetail}\n`;
         text += `\n`;
       });
@@ -623,7 +621,7 @@
       window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
     }
 
-    // --- GOOGLE APPS SCRIPT DATABASE INTEGRATION ---
+    // --- GOOGLE APPS SCRIPT SYNC ---
     function syncToGAS(action, record) {
       if (!gasWebAppUrl) return;
 
@@ -642,12 +640,29 @@
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
-            localDatabase = data;
+            // Normalisasi data dari GAS untuk mencegah error riwayat
+            localDatabase = data.map(item => {
+              let parsedShiftDate = item.shiftDate;
+              if (parsedShiftDate && parsedShiftDate.includes('T')) {
+                parsedShiftDate = parsedShiftDate.split('T')[0];
+              }
+              return {
+                id: item.id || 'ID_' + Date.now(),
+                shiftDate: parsedShiftDate || getShiftDate(new Date()),
+                suffix: item.suffix || '',
+                noUnit: item.noUnit || '',
+                problemDetail: item.problemDetail || '',
+                isWip: item.isWip === true || item.isWip === "YA",
+                status: item.status || 'OK',
+                timestamp: item.timestamp || new Date().toISOString()
+              };
+            });
+            
             saveLocalDB();
             renderTodayTable();
           }
         })
-        .catch(err => console.log('Gagal mengambil data dari Google Sheets:', err));
+        .catch(err => console.log('Gagal Sinkronisasi Google Sheets:', err));
     }
   </script>
 </body>
