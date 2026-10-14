@@ -40,7 +40,7 @@
     <div class="max-w-md mx-auto flex justify-between items-center">
       <div>
         <h1 class="text-xl font-extrabold bg-gradient-to-r from-indigo-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent">
-          Unit Inspection Tracker
+          WIP RM
         </h1>
         <p id="currentDateDisplay" class="text-xs font-medium text-slate-400 mt-0.5"></p>
       </div>
@@ -98,7 +98,7 @@
           <thead class="bg-slate-800/90 text-slate-400 uppercase tracking-wider sticky top-0">
             <tr>
               <th class="py-2.5 px-3">Suffix</th>
-              <th class="py-2.5 px-3">No Unit</th>
+              <th class="py-2.5 px-3">Nomer</th>
               <th class="py-2.5 px-3">Problem</th>
             </tr>
           </thead>
@@ -202,7 +202,7 @@
           <thead class="bg-slate-800 text-slate-400 uppercase">
             <tr>
               <th class="py-2 px-3">Suffix</th>
-              <th class="py-2 px-3">No Unit</th>
+              <th class="py-2 px-3">Nomer</th>
               <th class="py-2 px-3">Problem</th>
             </tr>
           </thead>
@@ -493,7 +493,7 @@
           <td class="py-2.5 px-3 font-mono font-semibold text-sky-300">${item.suffix || '-'}</td>
           <td class="py-2.5 px-3 font-mono text-slate-200">${item.noUnit || '-'}</td>
           <td class="py-2.5 px-3 ${statusClass}">
-            ${item.status || 'OK'} ${problemDisplay} ${wipBadge}
+            ${problemDisplay}
           </td>
         `;
 
@@ -614,13 +614,13 @@
     }
 
     function sendWAText(dateStr, dataList) {
-      let text = `*LAPORAN INSPEKSI UNIT*\n`;
-      text += `Tanggal: ${formatIndonesianDate(dateStr)}\n`;
+      let text = `*LAPORAN UNIT WIP*\n`;
+      text += `${formatIndonesianDate(dateStr)}\n`;
       text += `Total Unit: ${dataList.length}\n`;
       text += `-----------------------------------\n\n`;
 
       dataList.forEach((item, idx) => {
-        text += `${idx + 1}. *[${item.suffix || '-'}]* - Unit: ${item.noUnit || '-'}\n`;
+        text += `${idx + 1}. *${item.suffix || '-'} - ${item.noUnit || '-'}*\n`;
         text += `   Status: *${item.status || 'OK'}* ${item.isWip ? '(WIP)' : ''}\n`;
         if (item.problemDetail) text += `   Problem: ${item.problemDetail}\n`;
         text += `\n`;
