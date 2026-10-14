@@ -593,7 +593,7 @@
         tr.innerHTML = `
           <td class="py-2 px-3 font-mono text-sky-300">${item.suffix || '-'}</td>
           <td class="py-2 px-3 font-mono text-slate-200">${item.noUnit || '-'}</td>
-          <td class="py-2 px-3 ${statusClass}">[${item.status || 'OK'}] ${problemDisplay}</td>
+          <td class="py-2 px-3 ${statusClass}"> ${problemDisplay}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -621,8 +621,7 @@
 
       dataList.forEach((item, idx) => {
         text += `${idx + 1}. *${item.suffix || '-'} - ${item.noUnit || '-'}*\n`;
-        text += `   Status: *${item.status || 'OK'}* ${item.isWip ? '(WIP)' : ''}\n`;
-        if (item.problemDetail) text += `   Problem: ${item.problemDetail}\n`;
+        if (item.problemDetail) text += `   Problem: ${item.problemDetail} *${item.status || 'OK'}* ${item.isWip ? '(WIP)' : ''} \n`;
         text += `\n`;
       });
 
