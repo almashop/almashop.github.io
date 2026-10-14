@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unit Inspection Tracker</title>
+  <title>Wip RM 0</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- HTML5-QRCode Scanner Library -->
@@ -40,7 +40,7 @@
     <div class="max-w-md mx-auto flex justify-between items-center">
       <div>
         <h1 class="text-xl font-extrabold bg-gradient-to-r from-indigo-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent">
-          WIP RM
+          WIP RM 0
         </h1>
         <p id="currentDateDisplay" class="text-xs font-medium text-slate-400 mt-0.5"></p>
       </div>
@@ -98,7 +98,7 @@
           <thead class="bg-slate-800/90 text-slate-400 uppercase tracking-wider sticky top-0">
             <tr>
               <th class="py-2.5 px-3">Suffix</th>
-              <th class="py-2.5 px-3">Nomer</th>
+              <th class="py-2.5 px-3">Nomor</th>
               <th class="py-2.5 px-3">Problem</th>
             </tr>
           </thead>
@@ -202,7 +202,7 @@
           <thead class="bg-slate-800 text-slate-400 uppercase">
             <tr>
               <th class="py-2 px-3">Suffix</th>
-              <th class="py-2 px-3">Nomer</th>
+              <th class="py-2 px-3">No Unit</th>
               <th class="py-2 px-3">Problem</th>
             </tr>
           </thead>
@@ -493,7 +493,7 @@
           <td class="py-2.5 px-3 font-mono font-semibold text-sky-300">${item.suffix || '-'}</td>
           <td class="py-2.5 px-3 font-mono text-slate-200">${item.noUnit || '-'}</td>
           <td class="py-2.5 px-3 ${statusClass}">
-            ${problemDisplay}
+            ${problemDisplay} ${wipBadge}
           </td>
         `;
 
@@ -602,7 +602,7 @@
       document.getElementById('modalHistoryDetail').classList.remove('hidden');
     }
 
-    // --- WHATSAPP REPORT GENERATOR ---
+    // --- WHATSAPP REPORT GENERATOR (DENGAN SIMBOL CHECK & CROSS) ---
     function sendTodayToWA() {
       const activeShiftDate = getShiftDate(new Date());
       const todayData = localDatabase.filter(item => item.shiftDate === activeShiftDate);
@@ -614,14 +614,20 @@
     }
 
     function sendWAText(dateStr, dataList) {
-      let text = `*LAPORAN UNIT WIP*\n`;
-      text += `${formatIndonesianDate(dateStr)}\n`;
+      let text = `*LAPORAN UNIT WIP RM 0* ${formatIndonesianDate(dateStr)}\n`;
       text += `Total Unit: ${dataList.length}\n`;
       text += `-----------------------------------\n\n`;
 
       dataList.forEach((item, idx) => {
-        text += `${idx + 1}. *${item.suffix || '-'} - ${item.noUnit || '-'}*\n`;
-        if (item.problemDetail) text += `   Problem: ${item.problemDetail} *${item.status || 'OK'}* ${item.isWip ? '(WIP)' : ''} \n`;
+        const statusIcon = item.status === 'OK' ? '✅' : '❌';
+        const wipTag = item.isWip ? ' (WIP)' : '';
+
+        text += `${idx + 1}. *${item.suffix || '-'} - ${item.noUnit || '-'}* ${statusIcon}\n`;
+        text += `   Status: *${item.status || 'OK'}*${wipTag}\n`;
+        
+        if (item.problemDetail) {
+          text += `   - ${item.problemDetail}\n`;
+        }
         text += `\n`;
       });
 
