@@ -614,13 +614,14 @@
     }
 
     function sendWAText(dateStr, dataList) {
-      let text = `*LAPORAN UNIT WIP RM 0* ${formatIndonesianDate(dateStr)}\n`;
+      let text = `*DATA UNIT WIP RM 0*\n
+${formatIndonesianDate(dateStr)}\n`;
       text += `Total Unit: ${dataList.length}\n`;
       text += `-----------------------------------\n\n`;
 
       dataList.forEach((item, idx) => {
         const statusIcon = item.status === 'OK' ? '✅' : '❌';
-        const wipTag = item.isWip ? ' (WIP)' : '';
+        const wipTag = item.isWip ? ' (WIP - NO SCAN)' : '';
 
         text += `${idx + 1}. *${item.suffix || '-'} - ${item.noUnit || '-'}* ${statusIcon}\n`;
         text += `   Status: *${item.status || 'OK'}*${wipTag}\n`;
@@ -628,7 +629,7 @@
         if (item.problemDetail) {
           text += `   - ${item.problemDetail}\n`;
         }
-        text += `\n`;
+        text += `TERIMAKASIH\n`;
       });
 
       const encodedText = encodeURIComponent(text);
