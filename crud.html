@@ -614,8 +614,8 @@
     }
 
     function sendWAText(dateStr, dataList) {
-      let text = `*DATA UNIT WIP RM 0*\n
-${formatIndonesianDate(dateStr)}\n`;
+      let text = `*DATA UNIT WIP RM 0*\n`;
+      text += `${formatIndonesianDate(dateStr)}\n`;
       text += `Total Unit: ${dataList.length}\n`;
       text += `-----------------------------------\n\n`;
 
