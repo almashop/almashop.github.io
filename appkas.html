@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aplikasi Kelola Kas</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+        :root {
+            --primary: #4776E6;
+            --secondary: #8E54E9;
+            --bg-color: #f4f7f6;
+            --text-dark: #333;
+            --white: #ffffff;
+            --success: #28a745;
+            --danger: #dc3545;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            transition: all 0.3s;
+        }
+
+        /* Card Saldo */
+        .card-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 20px;
+        }
+
+        .card-container.moved-up {
+            flex: 0;
+            margin-top: 20px;
+            align-items: flex-start;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.5);
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 5px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+        }
+
+        .saldo-title { font-size: 14px; color: #666; margin-bottom: 10px; }
+        .saldo-amount { font-size: 32px; font-weight: 700; color: var(--text-dark); margin-bottom: 20px; }
+        
+        .btn-detail {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            pointer-events: none; /* Let card handle the click */
+        }
+
+        /* Area Aksi (Tombol Masuk/Keluar) */
+        .action-area {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: none; /* Muncul setelah swipe */
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(245, 247, 250, 0.95);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            gap: 10px;
+        }
+
+        .action-area.shrunk {
+            padding: 5px 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-area.shrunk .btn-action {
+            padding: 8px;
+            font-size: 12px;
+            border-radius: 10px;
+        }
+
+        .btn-in { background: var(--success); }
+        .btn-out { background: var(--danger); }
+
+        /* Display Data Bulanan */
+        .display-area {
+            display: none;
+            padding: 20px;
+            padding-bottom: 100px;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .month-item {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .month-item:active { transform: scale(0.98); }
+
+        .month-name { font-weight: 700; font-size: 16px; }
+        .month-stats { text-align: right; font-size: 12px; }
+        .text-in { color: var(--success); font-weight: 600; }
+        .text-out { color: var(--danger); font-weight: 600; }
+
+        /* Modal / Popups */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            transform: translateY(50px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .modal.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal h2 { margin-bottom: 20px; font-size: 20px; text-align: center; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 5px; }
+        .form-group input {
+            width: 100%; padding: 12px 15px; border: 1px solid #ddd;
+            border-radius: 10px; font-size: 16px;
+            outline: none; transition: border 0.3s;
+        }
+        .form-group input:focus { border-color: var(--primary); }
+
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+        .btn-cancel { background: #eee; color: #333; }
+        .btn-save { background: linear-gradient(to right, var(--primary), var(--secondary)); color: white; }
+
+        /* Info Popup List */
+        .transaction-list { max-height: 300px; overflow-y: auto; margin-bottom: 15px; }
+        .tr-item { padding: 10px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 14px; }
+        .tr-item:last-child { border-bottom: none; }
+        .tr-item .desc { color: #666; font-size: 12px; }
+
+    </style>
+</head>
+<body>
+
+    <header id="main-header">Buku KasKu</header>
+
+    <!-- Card Utama -->
+    <div class="card-container" id="card-container">
+        <div class="card" id="main-card">
+            <div class="saldo-title">Saldo Akhir Saat Ini</div>
+            <div class="saldo-amount" id="total-saldo">Rp. 0</div>
+            <button class="btn-detail">Lihat Detail</button>
+            <div style="font-size: 10px; color: #aaa; margin-top: 15px;">Swipe kiri untuk menu | Tahan untuk kelola</div>
+        </div>
+    </div>
+
+    <!-- Tombol Aksi (Muncul setelah swipe) -->
+    <div class="action-area" id="action-area">
+        <button class="btn-action btn-in" onclick="openModal('pemasukan')">+ Pemasukan</button>
+        <button class="btn-action btn-out" onclick="openModal('pengeluaran')">- Pengeluaran</button>
+    </div>
+
+    <!-- Display Data Bulanan -->
+    <div class="display-area" id="display-area">
+        <!-- Data akan di-render di sini oleh JS -->
+    </div>
+
+    <!-- Modal Input Transaksi -->
+    <div class="modal-overlay" id="input-modal-overlay">
+        <div class="modal" id="input-modal">
+            <h2 id="modal-title">Transaksi</h2>
+            <div class="form-group">
+                <label>Nominal</label>
+                <input type="text" id="input-nominal" placeholder="Rp. 0" oninput="formatRupiahInput(this)">
+            </div>
+            <div class="form-group">
+                <label>Keterangan</label>
+                <input type="text" id="input-keterangan" placeholder="Contoh: Gaji / Beli Makan">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal btn-cancel" onclick="closeModal('input-modal-overlay')">Batal</button>
+                <button class="btn-modal btn-save" onclick="simpanTransaksi()">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Info Bulanan -->
+    <div class="modal-overlay" id="info-modal-overlay">
+        <div class="modal" id="info-modal">
+            <h2 id="info-month-title">Detail Bulan</h2>
+            <div class="transaction-list" id="info-tr-list"></div>
+            <button class="btn-modal btn-cancel" style="width: 100%" onclick="closeModal('info-modal-overlay')">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Modal Kelola (Edit/Hapus) -->
+    <div class="modal-overlay" id="manage-modal-overlay">
+        <div class="modal" id="manage-modal">
+            <h2>Kelola Transaksi</h2>
+            <p style="font-size: 12px; color: #666; text-align: center; margin-bottom: 15px;">Fitur edit/hapus transaksi (Sinkronisasi dengan Sheet 2)</p>
+            <div class="transaction-list" id="manage-tr-list"></div>
+            <button class="btn-modal btn-cancel" style="width: 100%" onclick="closeModal('manage-modal-overlay')">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        // GANTI URL INI DENGAN URL DEPLOYMENT GOOGLE APPS SCRIPT ANDA
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyYiv482Rh2mr6aOU7u-gpsLmZp8dna2mWmwoCoqPBXLhaLjSdlVYr9QQjLt_WaL1Ly/exec'; 
+
+        // State Data
+        let isDetailOpen = false;
+        let currentTxType = ''; // 'in' or 'out'
+        let transactions = [ // Dummy data untuk preview awal
+            { id: 1, tanggal: '2023-10-01', bulan: 'Oktober 2023', jenis: 'in', nominal: 5000000, ket: 'Gaji' },
+            { id: 2, tanggal: '2023-10-05', bulan: 'Oktober 2023', jenis: 'out', nominal: 250000, ket: 'Listrik' },
+            { id: 3, tanggal: '2023-11-02', bulan: 'November 2023', jenis: 'out', nominal: 150000, ket: 'Makan' }
+        ];
+
+        // --- GESTURE & INTERACTION HANDLING ---
+        const card = document.getElementById('main-card');
+        const cardContainer = document.getElementById('card-container');
+        const displayArea = document.getElementById('display-area');
+        const actionArea = document.getElementById('action-area');
+
+        // 1. Klik Card -> Pindah ke Atas & Buka Detail
+        card.addEventListener('click', (e) => {
+            if(!isDetailOpen) {
+                cardContainer.classList.add('moved-up');
+                displayArea.style.display = 'block';
+                actionArea.style.display = 'none'; // Sembunyikan tombol jika detail terbuka
+                isDetailOpen = true;
+                renderBulanan();
+            }
+        });
+
+        // 2. Touch Gestures (Swipe & Long Press)
+        let startX, startY, startTime;
+        let pressTimer;
+
+        card.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            startTime = new Date().getTime();
+            
+            // Long Press Trigger (800ms)
+            pressTimer = setTimeout(() => {
+                openManageData();
+            }, 800);
+        });
+
+        card.addEventListener('touchmove', (e) => {
+            clearTimeout(pressTimer); // Batalkan long press jika jari bergerak
+        });
+
+        card.addEventListener('touchend', (e) => {
+            clearTimeout(pressTimer);
+            let endX = e.changedTouches[0].clientX;
+            let endY = e.changedTouches[0].clientY;
+            let diffX = startX - endX;
+            let timeDiff = new Date().getTime() - startTime;
+
+            // Deteksi Swipe Kanan ke Kiri
+            if (diffX > 50 && Math.abs(startY - endY) < 50 && timeDiff < 500) {
+                // Tutup detail jika sedang terbuka
+                if (isDetailOpen) {
+                    cardContainer.classList.remove('moved-up');
+                    displayArea.style.display = 'none';
+                    isDetailOpen = false;
+                }
+                // Tampilkan dua tombol aksi
+                actionArea.style.display = 'flex';
+            }
+        });
+
+        // 3. Scroll Behavior (Sticky Shrink)
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                actionArea.classList.add('shrunk');
+                document.getElementById('main-header').style.fontSize = '18px';
+            } else {
+                actionArea.classList.remove('shrunk');
+                document.getElementById('main-header').style.fontSize = '24px';
+            }
+        });
+
+        // --- FORMATTING LOGIC ---
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        }
+
+        function formatRupiahInput(input) {
+            let value = input.value.replace(/[^,\d]/g, '').toString();
+            let split = value.split(',');
+            let sisa = split[0].length % 3;
+            let rupiah = split[0].substr(0, sisa);
+            let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+            if (ribuan) {
+                let separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+            input.value = rupiah ? 'Rp. ' + rupiah : '';
+        }
+
+        // --- RENDER DATA ---
+        function calculateSummary() {
+            let total = 0;
+            transactions.forEach(t => {
+                if(t.jenis === 'in') total += t.nominal;
+                if(t.jenis === 'out') total -= t.nominal;
+            });
+            document.getElementById('total-saldo').innerText = formatRupiah(total);
+        }
+
+        function renderBulanan() {
+            calculateSummary();
+            // Grupkan berdasarkan bulan
+            const grouped = transactions.reduce((acc, curr) => {
+                if(!acc[curr.bulan]) acc[curr.bulan] = { in: 0, out: 0, txs: [] };
+                if(curr.jenis === 'in') acc[curr.bulan].in += curr.nominal;
+                if(curr.jenis === 'out') acc[curr.bulan].out += curr.nominal;
+                acc[curr.bulan].txs.push(curr);
+                return acc;
+            }, {});
+
+            displayArea.innerHTML = '';
+            for (const [bulan, data] of Object.entries(grouped)) {
+                let div = document.createElement('div');
+                div.className = 'month-item';
+                div.innerHTML = `
+                    <div class="month-name">${bulan}</div>
+                    <div class="month-stats">
+                        <div class="text-in">+ ${formatRupiah(data.in)}</div>
+                        <div class="text-out">- ${formatRupiah(data.out)}</div>
+                    </div>
+                `;
+                div.onclick = () => openInfoBulan(bulan, data.txs);
+                displayArea.appendChild(div);
+            }
+        }
+
+        // --- MODAL LOGIC ---
+        function openModal(jenis) {
+            currentTxType = jenis === 'pemasukan' ? 'in' : 'out';
+            document.getElementById('modal-title').innerText = jenis === 'pemasukan' ? 'Uang Masuk' : 'Uang Keluar';
+            document.getElementById('input-nominal').value = '';
+            document.getElementById('input-keterangan').value = '';
+            
+            const overlay = document.getElementById('input-modal-overlay');
+            const modal = document.getElementById('input-modal');
+            overlay.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeModal(id) {
+            const overlay = document.getElementById(id);
+            const modal = overlay.querySelector('.modal');
+            modal.classList.remove('show');
+            setTimeout(() => overlay.style.display = 'none', 300);
+        }
+
+        function openInfoBulan(bulan, txs) {
+            document.getElementById('info-month-title').innerText = bulan;
+            const list = document.getElementById('info-tr-list');
+            list.innerHTML = '';
+            txs.forEach(t => {
+                let colorClass = t.jenis === 'in' ? 'text-in' : 'text-out';
+                let sign = t.jenis === 'in' ? '+' : '-';
+                list.innerHTML += `
+                    <div class="tr-item">
+                        <div>
+                            <div>${t.tanggal}</div>
+                            <div class="desc">${t.ket}</div>
+                        </div>
+                        <div class="${colorClass}">${sign} ${formatRupiah(t.nominal)}</div>
+                    </div>
+                `;
+            });
+            const overlay = document.getElementById('info-modal-overlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => document.getElementById('info-modal').classList.add('show'), 10);
+        }
+
+        function openManageData() {
+            const list = document.getElementById('manage-tr-list');
+            list.innerHTML = '';
+            transactions.forEach(t => {
+                list.innerHTML += `
+                    <div class="tr-item" style="align-items: center;">
+                        <div>
+                            <div style="font-weight:bold">${t.tanggal} - ${t.ket}</div>
+                            <div class="${t.jenis === 'in' ? 'text-in' : 'text-out'}">${formatRupiah(t.nominal)}</div>
+                        </div>
+                        <div>
+                            <button onclick="hapusTx(${t.id})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px;">Hapus</button>
+                        </div>
+                    </div>
+                `;
+            });
+            const overlay = document.getElementById('manage-modal-overlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => document.getElementById('manage-modal').classList.add('show'), 10);
+        }
+
+        // --- DATABASE OPERATIONS (MOCKUP TO GOOGLE SHEETS) ---
+        function simpanTransaksi() {
+            let nominalStr = document.getElementById('input-nominal').value.replace(/[^0-9]/g, '');
+            let ket = document.getElementById('input-keterangan').value;
+            let nominal = parseInt(nominalStr);
+
+            if(!nominal || !ket) return alert("Lengkapi data!");
+
+            const now = new Date();
+            const bulanArr = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            let newTx = {
+                id: new Date().getTime(),
+                tanggal: now.toISOString().split('T')[0],
+                bulan: `${bulanArr[now.getMonth()]} ${now.getFullYear()}`,
+                jenis: currentTxType,
+                nominal: nominal,
+                ket: ket
+            };
+
+            // Tambah ke array lokal agar UI langsung update
+            transactions.push(newTx);
+            closeModal('input-modal-overlay');
+            if(isDetailOpen) renderBulanan();
+            calculateSummary();
+
+            // SINKRONISASI KE GOOGLE SHEETS
+            // Hapus komentar blok fetch di bawah jika Apps Script sudah disetup
+            /*
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'add', data: newTx })
+            }).then(res => res.json()).then(res => console.log(res));
+            */
+        }
+
+        function hapusTx(id) {
+            if(confirm('Hapus transaksi ini?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                closeModal('manage-modal-overlay');
+                if(isDetailOpen) renderBulanan();
+                calculateSummary();
+                
+                // Fetch delete ke Apps Script
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'delete', id: id })
+                });
+            }
+        }
+
+        // Init
+        calculateSummary();
+
+    </script>
+</body>
+</html>
