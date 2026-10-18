@@ -61,7 +61,7 @@
             <!-- Card Saldo -->
             <div id="kas-card" class="card-container bg-gradient-to-r from-teal-500 to-teal-400 rounded-xl shadow-lg p-6 text-white cursor-pointer select-none">
                 <div class="text-sm font-medium mb-1 opacity-80">Saldo Akhir</div>
-                <div class="text-3xl font-bold mb-4" id="saldo-akhir">Rp 0</div>
+                <div class="text-3xl font-bold mb-4 transition-all duration-300" id="saldo-akhir">Rp 0</div>
                 <button onclick="toggleDetail()" class="text-xs underline opacity-90 hover:opacity-100">
                     Lihat detail
                 </button>
@@ -107,7 +107,7 @@
 
             <!-- Detail Akumulasi Per Bulan (Muncul saat 'Lihat detail' diklik) -->
             <div id="detail-bulanan" class="hidden mt-4 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                <h3 class="font-bold text-gray-700 mb-2 border-b pb-2">Detail Bulan Ini</h3>
+                <h3 class="font-bold text-gray-700 mb-2 border-b pb-2">Detail Transaksi (Total)</h3>
                 <div class="flex justify-between mb-1 text-sm">
                     <span class="text-gray-500">Pemasukan</span>
                     <span class="text-green-600 font-semibold" id="total-pemasukan">Rp 0</span>
@@ -251,8 +251,9 @@
             btnElement.disabled = true;
 
             try {
-                // Hapus komentar blok di bawah ini jika URL Web App Anda sudah valid!
-                /*
+                // Pastikan SCRIPT_URL sudah valid, lalu jalankan fetch ini.
+                // Jika belum diganti dengan URL valid, fetch akan gagal.
+                
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(transaksiBaru)
@@ -262,11 +263,7 @@
                 if(result.status !== "success") {
                     throw new Error("Gagal menyimpan ke database");
                 }
-                */
                 
-                // --- Simulasi Delay Jaringan (Hapus jika menggunakan Fetch Asli di atas) ---
-                await new Promise(r => setTimeout(r, 800));
-
                 // Simpan ke array lokal setelah sukses
                 transaksiBaru.tanggalObj = new Date(); // Objek date lokal untuk sorting/display
                 dataTransaksi.push(transaksiBaru);
@@ -279,7 +276,7 @@
                 ketInput.value = '';
                 
             } catch (error) {
-                alert('Terjadi kesalahan atau koneksi gagal.');
+                alert('Terjadi kesalahan atau koneksi gagal. Pastikan SCRIPT_URL sudah diganti dengan URL Web App yang benar.');
                 console.error(error);
             } finally {
                 btnElement.innerText = textAsli;
@@ -330,7 +327,7 @@
 
         card.addEventListener('pointerleave', () => clearTimeout(cTimer));
         card.addEventListener('pointercancel', () => clearTimeout(cTimer));
-        // Matikan klik kanan bawaan browser (untuk versi desktop/HP) di Card
+        // Matikan klik kanan bawaan browser di Card
         card.addEventListener('contextmenu', e => e.preventDefault());
 
 
@@ -363,11 +360,11 @@
                 const color = tx.jenis === 'pemasukan' ? 'text-blue-600' : 'text-red-600';
 
                 // Format tanggal misal: 12 Okt 2026
-                const dateStr = tx.tanggalObj ? tx.tanggalObj.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : 'Baru saja';
+                const dateStr = tx.tanggalObj ? tx.tanggalObj.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : '-';
 
                 const el = document.createElement('div');
                 el.className = 'tx-item bg-white p-4 rounded-xl shadow-sm flex items-center justify-between border-l-4 ' + (tx.jenis === 'pemasukan' ? 'border-blue-500' : 'border-red-500');
-                el.dataset.id = tx.id; // Simpan ID di elemen
+                el.dataset.id = tx.id;
 
                 el.innerHTML = `
                     <div class="flex items-center gap-3 pointer-events-none">
@@ -424,12 +421,10 @@
             document.getElementById('popup-aksi-item').classList.remove('hidden');
             document.getElementById('overlay-aksi').classList.remove('hidden');
             
-            // Sedikit delay agar transisi CSS berjalan
             setTimeout(() => {
                 document.getElementById('popup-aksi-item').classList.remove('translate-y-full');
             }, 10);
             
-            // Vibrasi pada HP jika didukung
             if(navigator.vibrate) navigator.vibrate(50);
         }
 
@@ -444,16 +439,14 @@
 
         function hapusTransaksi() {
             if (!idItemTerpilih) return;
-            const konfirmasi = confirm("Apakah Anda yakin ingin menghapus transaksi ini?");
+            const konfirmasi = confirm("Apakah Anda yakin ingin menghapus transaksi ini dari daftar lokal?");
             if (konfirmasi) {
-                // Di sini Anda bisa menambahkan fetch() POST ke Google Apps Script action: "hapus_transaksi"
-                
-                // Hapus dari memori lokal
                 dataTransaksi = dataTransaksi.filter(tx => tx.id !== idItemTerpilih);
-                
                 updateTampilanUtama();
                 renderDaftarTransaksi();
                 tutupAksiItem();
+                // Catatan: Jika ingin menghapus dari Google Sheets juga, 
+                // perlu tambahan endpoint action "hapus_transaksi" di Apps Script
             }
         }
 
@@ -463,8 +456,60 @@
             tutupAksiItem();
         }
 
-        // Inisialisasi tampilan awal
-        updateTampilanUtama();
+        // --- LOGIKA MEMUAT DATA DARI GOOGLE SHEETS SAAT DIBUKA ---
+        async function muatDataAwal() {
+            const saldoEl = document.getElementById('saldo-akhir');
+            const teksAsli = saldoEl.innerText;
+            
+            // Tampilkan efek loading
+            saldoEl.innerText = "Memuat...";
+            saldoEl.classList.add('animate-pulse');
+
+            try {
+                // Jangan jalankan fetch jika URL belum diganti
+                if (SCRIPT_URL.includes("GANTI_DENGAN_URL_WEB_APP_ANDA")) {
+                    throw new Error("URL Web App belum diatur.");
+                }
+
+                const response = await fetch(SCRIPT_URL);
+                const result = await response.json();
+
+                if (result.status === "success" && result.data) {
+                    dataTransaksi = []; // Kosongkan array lokal
+
+                    result.data.forEach(row => {
+                        // Array dari Sheets berformat: [ID, Tanggal, Jenis, Keterangan, Nominal]
+                        if (row[0] && row[1]) {
+                            dataTransaksi.push({
+                                id: row[0].toString(),
+                                tanggalObj: new Date(row[1]),
+                                jenis: row[2].toString().toLowerCase(),
+                                keterangan: row[3].toString(),
+                                nominal: parseInt(row[4]) || 0
+                            });
+                        }
+                    });
+                } else {
+                    console.error("Format data tidak valid atau kosong.");
+                }
+            } catch (error) {
+                console.error("Gagal memuat data:", error);
+                // Hanya tampilkan alert jika URL sudah diisi tetapi gagal memuat
+                if (!SCRIPT_URL.includes("GANTI_DENGAN_URL_WEB_APP_ANDA")) {
+                    alert("Gagal terhubung ke database. Menampilkan data kosong.");
+                }
+            } finally {
+                saldoEl.classList.remove('animate-pulse');
+                updateTampilanUtama();
+                
+                if (document.getElementById('page-transaksi').classList.contains('active')) {
+                    renderDaftarTransaksi();
+                }
+            }
+        }
+
+        // Panggil fungsi saat seluruh elemen HTML selesai dimuat
+        window.addEventListener('DOMContentLoaded', muatDataAwal);
     </script>
 </body>
 </html>
