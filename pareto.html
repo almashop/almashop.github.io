@@ -50,14 +50,14 @@
                     <i class="fa-solid me-0.5 fa-microchip text-xl text-amber-300"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide">QC Pareto System</h1>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide"> Pareto Sistem</h1>
                     <p class="text-xs text-indigo-200">Pengelolaan Problem Unit RM0</p>
                 </div>
             </div>
-            <button onclick="resetDataDummy()" title="Reset Data Dummy" class="text-xs bg-white/10 hover:bg-white/20 active:bg-white/30 text-white px-2.5 py-1.5 rounded-lg border border-white/20 transition flex items-center gap-1.5">
+            <!--<button onclick="resetDataDummy()" title="Reset Data Dummy" class="text-xs bg-white/10 hover:bg-white/20 active:bg-white/30 text-white px-2.5 py-1.5 rounded-lg border border-white/20 transition flex items-center gap-1.5">
                 <i class="fa-solid fa-rotate-right text-xs"></i>
                 <span>Reset</span>
-            </button>
+            </button>-->
         </div>
     </header>
 
@@ -74,22 +74,22 @@
                     </div>
                     <div class="inline-flex items-center gap-1.5 bg-indigo-500/30 border border-indigo-400/30 px-3 py-1 rounded-full text-xs font-medium text-indigo-200 mb-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Shift Aktif (Cut-off 07:30 WIB)
+                        Aktif
                     </div>
                     <h2 class="text-2xl font-black text-amber-400 tracking-wide uppercase">Problem RM0</h2>
-                    <p class="text-xs text-slate-300 mt-0.5">Monitoring & Registrasi Defect Unit</p>
+                    <p class="text-xs text-slate-300 mt-0.5">Monitoring Deffect Pareto</p>
                     
                     <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
                         <div>
-                            <p class="text-xs text-slate-400 font-medium">Tanggal Shift Target:</p>
+                            <p class="text-xs text-slate-400 font-medium">Tanggal :</p>
                             <p id="cardTanggalShift" class="text-base font-bold text-slate-100 mt-0.5">Loading...</p>
                         </div>
-                        <div class="text-right">
+                        <!--<div class="text-right">
                             <p class="text-xs text-slate-400 font-medium">Status Jam:</p>
                             <span id="badgeShiftStatus" class="inline-block text-xs font-semibold px-2.5 py-0.5 rounded-md bg-indigo-900 text-indigo-200 mt-0.5">
                                 -
                             </span>
-                        </div>
+                        </div>-->
                     </div>
                 </div>
 
@@ -109,7 +109,7 @@
                             <i class="fa-solid fa-triangle-exclamation text-lg"></i>
                         </div>
                         <div>
-                            <span class="block text-xs font-medium text-slate-500">Pareto (>=3)</span>
+                            <span class="block text-xs font-medium text-slate-500">Pareto</span>
                             <span id="statTotalPareto" class="text-lg font-bold text-amber-600">0 Defect</span>
                         </div>
                     </div>
@@ -121,7 +121,7 @@
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                         <i class="fa-solid fa-list-check text-indigo-600"></i>
-                        Unit Masuk Shift Ini
+                       Data Unit
                     </h3>
                     <span id="counterUnitShift" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-2 py-0.5 rounded-full">0</span>
                 </div>
@@ -140,7 +140,7 @@
                         <i class="fa-solid fa-arrow-left"></i>
                     </button>
                     <div>
-                        <h2 class="font-bold text-slate-800 text-base">Problem Pareto (>= 3)</h2>
+                        <h2 class="font-bold text-slate-800 text-base">Problem Pareto</h2>
                         <p id="subtitleParetoShift" class="text-xs text-slate-500">-</p>
                     </div>
                 </div>
@@ -189,7 +189,7 @@
                 <div>
                     <h4 class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        Problem Pareto (> 3 / >= 3)
+                        Problem Pareto
                     </h4>
                     <div id="contentHistoriPareto" class="space-y-2">
                         <!-- JS content -->
@@ -288,19 +288,19 @@
                 <form id="formUnitData" onsubmit="simpanDataUnit(event)" class="space-y-3">
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Suffix (Karakter -5 & -4)</label>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Suffix</label>
                             <input type="text" id="inputSuffix" required placeholder="Contoh: AB" maxlength="10"
                                 class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 uppercase focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">No Unit (Karakter 12-17)</label>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">No Unit</label>
                             <input type="text" id="inputNoUnit" required placeholder="Contoh: 123456" maxlength="15"
                                 class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 uppercase focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Problem / Defect</label>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Problem</label>
                         <div class="relative">
                             <input type="text" id="inputProblem" required list="listProblemRekomendasi" placeholder="Pilih atau Ketik Problem..."
                                 class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
