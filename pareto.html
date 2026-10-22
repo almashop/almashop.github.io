@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Kelola Unit - Pareto RM0</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- HTML5-QRCode Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- SweetAlert2 for polished notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Glassmorphism background */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-blue-600 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                    <i class="fa-solid me-0.5 fa-microchip text-xl text-amber-300"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide">QC Pareto System</h1>
+                    <p class="text-xs text-indigo-200">Pengelolaan Problem Unit RM0</p>
+                </div>
+            </div>
+            <button onclick="resetDataDummy()" title="Reset Data Dummy" class="text-xs bg-white/10 hover:bg-white/20 active:bg-white/30 text-white px-2.5 py-1.5 rounded-lg border border-white/20 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-right text-xs"></i>
+                <span>Reset</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-md mx-auto w-full flex-1 p-4 pb-24 space-y-4">
+
+        <!-- VIEW 1: HOME (DEFAULT VIEW) -->
+        <section id="viewHome" class="space-y-4">
+            <!-- Card Dashboard Utama RM0 -->
+            <div class="glass-card rounded-2xl shadow-xl border border-slate-100 overflow-hidden relative">
+                <div class="bg-gradient-to-r from-slate-900 to-indigo-950 p-5 text-white relative">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i class="fa-solid fa-chart-line text-8xl"></i>
+                    </div>
+                    <div class="inline-flex items-center gap-1.5 bg-indigo-500/30 border border-indigo-400/30 px-3 py-1 rounded-full text-xs font-medium text-indigo-200 mb-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Shift Aktif (Cut-off 07:30 WIB)
+                    </div>
+                    <h2 class="text-2xl font-black text-amber-400 tracking-wide uppercase">Problem RM0</h2>
+                    <p class="text-xs text-slate-300 mt-0.5">Monitoring & Registrasi Defect Unit</p>
+                    
+                    <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">Tanggal Shift Target:</p>
+                            <p id="cardTanggalShift" class="text-base font-bold text-slate-100 mt-0.5">Loading...</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-slate-400 font-medium">Status Jam:</p>
+                            <span id="badgeShiftStatus" class="inline-block text-xs font-semibold px-2.5 py-0.5 rounded-md bg-indigo-900 text-indigo-200 mt-0.5">
+                                -
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ringkasan Statistik Shift Ini -->
+                <div class="p-4 grid grid-cols-2 gap-3 bg-slate-50/50">
+                    <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm flex items-center space-x-3">
+                        <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+                            <i class="fa-solid fa-car-side text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-medium text-slate-500">Total Input</span>
+                            <span id="statTotalUnit" class="text-lg font-bold text-slate-800">0 Unit</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm flex items-center space-x-3">
+                        <div class="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
+                            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-medium text-slate-500">Pareto (>=3)</span>
+                            <span id="statTotalPareto" class="text-lg font-bold text-amber-600">0 Defect</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List Unit Terkini Pada Shift Ini -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-600"></i>
+                        Unit Masuk Shift Ini
+                    </h3>
+                    <span id="counterUnitShift" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-2 py-0.5 rounded-full">0</span>
+                </div>
+                
+                <div id="listUnitHariIni" class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                    <!-- Akan diisi secara dinamis oleh JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: PARETO PROBLEM (DARI ICON MAIL) -->
+        <section id="viewPareto" class="hidden space-y-4">
+            <div class="flex items-center justify-between bg-white p-3.5 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex items-center space-x-3">
+                    <button onclick="switchTab('home')" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-base">Problem Pareto (>= 3)</h2>
+                        <p id="subtitleParetoShift" class="text-xs text-slate-500">-</p>
+                    </div>
+                </div>
+                <button onclick="kirimWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-md shadow-emerald-600/20 transition">
+                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                    <span>Kirim WA</span>
+                </button>
+            </div>
+
+            <!-- Container List Pareto -->
+            <div id="containerPareto" class="space-y-3">
+                <!-- Diisi via JS -->
+            </div>
+        </section>
+
+        <!-- VIEW 3: HISTORI SHIFT (DARI ICON HISTORI) -->
+        <section id="viewHistori" class="hidden space-y-4">
+            <div class="flex items-center space-x-3 bg-white p-3.5 rounded-xl shadow-sm border border-slate-200">
+                <button onclick="switchTab('home')" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h2 class="font-bold text-slate-800 text-base">Histori Tanggal Shift</h2>
+                    <p class="text-xs text-slate-500">Pilih tanggal untuk melihat rincian</p>
+                </div>
+            </div>
+
+            <!-- List Tanggal Shift -->
+            <div id="listDaftarTanggal" class="space-y-2.5">
+                <!-- Diisi via JS -->
+            </div>
+
+            <!-- Detail Histori Tanggal Terpilih -->
+            <div id="detailHistoriTanggal" class="hidden bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <div>
+                        <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Rincian Tanggal</span>
+                        <h3 id="judulHistoriTerpilih" class="font-bold text-slate-800 text-base">-</h3>
+                    </div>
+                    <button onclick="tutupDetailHistori()" class="text-xs text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Rangkuman Pareto Histori -->
+                <div>
+                    <h4 class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Problem Pareto (> 3 / >= 3)
+                    </h4>
+                    <div id="contentHistoriPareto" class="space-y-2">
+                        <!-- JS content -->
+                    </div>
+                </div>
+
+                <!-- List Semua Unit Histori -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-car"></i>
+                        Semua Unit Diinput
+                    </h4>
+                    <div id="contentHistoriUnit" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        <!-- JS content -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR (3 ICON UTAMA) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-20 shadow-lg">
+        <div class="max-w-md mx-auto flex justify-around items-center h-16 px-4">
+            <!-- Icon Histori -->
+            <button onclick="switchTab('histori')" id="navHistori" class="flex flex-col items-center justify-center w-16 h-full text-slate-400 hover:text-indigo-600 transition relative">
+                <i class="fa-solid fa-clock-rotate-left text-xl mb-0.5"></i>
+                <span class="text-[10px] font-medium">Histori</span>
+            </button>
+
+            <!-- Icon Tambah (TOMBOL UTAMA MIDDLE) -->
+            <div class="relative -top-5">
+                <button onclick="bukaModalInput()" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/40 border-4 border-slate-100 transition duration-150">
+                    <i class="fa-solid fa-plus text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Icon Mail (Pareto Notification) -->
+            <button onclick="switchTab('pareto')" id="navMail" class="flex flex-col items-center justify-center w-16 h-full text-slate-400 hover:text-indigo-600 transition relative">
+                <div class="relative">
+                    <i class="fa-solid fa-envelope text-xl mb-0.5"></i>
+                    <!-- Badge Counter Pareto -->
+                    <span id="badgeParetoCount" class="hidden absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full min-w-[18px] text-center border-2 border-white animate-pulse">
+                        0
+                    </span>
+                </div>
+                <span class="text-[10px] font-medium">Pareto</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODAL CHOOSER & INPUT (POPUP DITENGAH LAYAR) -->
+    <div id="modalInput" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 transform transition-all">
+            <!-- Modal Header -->
+            <div class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-square-plus text-indigo-400 text-lg"></i>
+                    <h3 id="modalTitle" class="font-bold text-sm">Input Defect Unit RM0</h3>
+                </div>
+                <button onclick="tutupModalInput()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4">
+
+                <!-- OPSI TABS: SCAN VS MANUAL -->
+                <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl">
+                    <button id="tabBtnScan" onclick="toggleInputMode('scan')" class="py-2 text-xs font-bold rounded-lg transition text-slate-700 bg-white shadow-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-qrcode text-indigo-600"></i> Scan Barcode
+                    </button>
+                    <button id="tabBtnManual" onclick="toggleInputMode('manual')" class="py-2 text-xs font-bold rounded-lg transition text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-keyboard"></i> Manual Input
+                    </button>
+                </div>
+
+                <!-- SECTION 1: SCAN BARCODE MODE -->
+                <div id="sectionScan" class="space-y-3">
+                    <div class="relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 flex flex-col items-center justify-center min-h-[180px]">
+                        <div id="reader" class="w-full"></div>
+                        <div id="readerPlaceholder" class="p-6 text-center text-slate-400 flex flex-col items-center space-y-2">
+                            <i class="fa-solid fa-camera text-3xl text-slate-500 mb-1"></i>
+                            <p class="text-xs">Klik tombol di bawah untuk mengaktifkan Kamera Scanner Barcode</p>
+                        </div>
+                    </div>
+                    <button id="btnStartScan" onclick="mulaiScanner()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-camera"></i> Buka Kamera Scanner
+                    </button>
+                    <button id="btnStopScan" onclick="hentikanScanner()" class="hidden w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-stop"></i> Matikan Kamera
+                    </button>
+                </div>
+
+                <!-- SECTION FORM HASIL SCAN / MANUAL -->
+                <form id="formUnitData" onsubmit="simpanDataUnit(event)" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Suffix (Karakter -5 & -4)</label>
+                            <input type="text" id="inputSuffix" required placeholder="Contoh: AB" maxlength="10"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 uppercase focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">No Unit (Karakter 12-17)</label>
+                            <input type="text" id="inputNoUnit" required placeholder="Contoh: 123456" maxlength="15"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 uppercase focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Problem / Defect</label>
+                        <div class="relative">
+                            <input type="text" id="inputProblem" required list="listProblemRekomendasi" placeholder="Pilih atau Ketik Problem..."
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+                            <datalist id="listProblemRekomendasi">
+                                <option value="Baret Bumper Depan"></option>
+                                <option value="Noise Engine RM0"></option>
+                                <option value="Gap Door Tidak Presisi"></option>
+                                <option value="Penyok Panel Kap Mesin"></option>
+                                <option value="Fungsi Sensor ABS Error"></option>
+                                <option value="Lampu Headlamp Bening Embun"></option>
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <!-- Button Simpan -->
+                    <div class="pt-2">
+                        <button type="submit" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i> Simpan Data Unit
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Key LocalStorage
+        const STORAGE_KEY = 'QC_PARETO_RM0_DATA_V1';
+
+        // State Global
+        let html5QrcodeScanner = null;
+        let isScannerActive = false;
+
+        // --- 1. LOGIKA SHIFT & TANGGAL (CUT OFF 07:30 WIB) ---
+        /**
+         * Mengembalikan tanggal shift (YYYY-MM-DD) berdasarkan aturan 07:30 WIB
+         * @param {Date} dateObj Optional
+         */
+        function getShiftDate(dateObj = new Date()) {
+            const now = new Date(dateObj);
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+
+            // Jika sebelum jam 07:30 WIB, masuk ke tanggal shift hari sebelumnya
+            if (hours < 7 || (hours === 7 && minutes < 30)) {
+                now.setDate(now.getDate() - 1);
+            }
+
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        /**
+         * Format string YYYY-MM-DD ke Bahasa Indonesia "Hari, DD MMMM YYYY"
+         */
+        function formatTanggalIndo(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            const date = new Date(parts[0], parts[1] - 1, parts[2]);
+            
+            const opsi = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            return date.toLocaleDateString('id-ID', opsi);
+        }
+
+        // --- 2. LOCAL STORAGE MANAGEMENT ---
+        function getStoredData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveStoredData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        // Insersi Data Dummy Pertama Kali Jika Kosong
+        function initDummyDataIfEmpty() {
+            const existing = getStoredData();
+            if (!existing || existing.length === 0) {
+                const shiftAktif = getShiftDate();
+                
+                // Tambahkan beberapa unit dengan problem yang sama (>=3) untuk mentrigger Pareto
+                const dummy = [
+                    { id: 1, suffix: 'AB', noUnit: '102938', problem: 'Noise Engine RM0', shiftDate: shiftAktif, timestamp: new Date().toISOString() },
+                    { id: 2, suffix: 'AB', noUnit: '102939', problem: 'Noise Engine RM0', shiftDate: shiftAktif, timestamp: new Date().toISOString() },
+                    { id: 3, suffix: 'AC', noUnit: '102940', problem: 'Noise Engine RM0', shiftDate: shiftAktif, timestamp: new Date().toISOString() },
+                    { id: 4, suffix: 'AC', noUnit: '102941', problem: 'Noise Engine RM0', shiftDate: shiftAktif, timestamp: new Date().toISOString() },
+                    { id: 5, suffix: 'BC', noUnit: '883920', problem: 'Baret Bumper Depan', shiftDate: shiftAktif, timestamp: new Date().toISOString() },
+                    { id: 6, suffix: 'BC', noUnit: '883921', problem: 'Baret Bumper Depan', shiftDate: shiftAktif, timestamp: new Date().toISOString() },
+                    { id: 7, suffix: 'BD', noUnit: '883922', problem: 'Baret Bumper Depan', shiftDate: shiftAktif, timestamp: new Date().toISOString() },
+                    { id: 8, suffix: 'XY', noUnit: '445123', problem: 'Gap Door Tidak Presisi', shiftDate: shiftAktif, timestamp: new Date().toISOString() },
+                ];
+                saveStoredData(dummy);
+            }
+        }
+
+        function resetDataDummy() {
+            Swal.fire({
+                title: 'Reset ke Data Dummy?',
+                text: "Semua data yang ada akan diganti dengan data sampel awal.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Reset!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    initDummyDataIfEmpty();
+                    renderAllViews();
+                    Swal.fire('Berhasil!', 'Data berhasil direset ke sampel dummy.', 'success');
+                }
+            });
+        }
+
+        // --- 3. BARCODE PARSING LOGIC ---
+        /**
+         * Mengurai Barcode String:
+         * Suffix: Karakter ke-5 dan ke-4 dari BELAKANG string.
+         * Nomer Unit: Karakter ke-12 s/d ke-17 dari DEPAN (indeks 11 s/d 17).
+         */
+        function parseBarcodeString(rawCode) {
+            const trimmed = rawCode.trim();
+            const len = trimmed.length;
+
+            let suffix = '';
+            let noUnit = '';
+
+            // Suffix: Karakter ke-5 dan ke-4 dari belakang
+            if (len >= 5) {
+                suffix = trimmed.substring(len - 5, len - 3);
+            } else {
+                suffix = trimmed.slice(-2); // Fallback
+            }
+
+            // No Unit: Karakter ke-12 s.d ke-17 dari depan
+            if (len >= 17) {
+                noUnit = trimmed.substring(11, 17);
+            } else if (len >= 6) {
+                noUnit = trimmed.substring(Math.max(0, len - 6)); // Fallback
+            } else {
+                noUnit = trimmed;
+            }
+
+            return {
+                suffix: suffix.toUpperCase(),
+                noUnit: noUnit.toUpperCase()
+            };
+        }
+
+        // --- 4. NAVIGATION & VIEWS ---
+        function switchTab(viewName) {
+            const vHome = document.getElementById('viewHome');
+            const vPareto = document.getElementById('viewPareto');
+            const vHistori = document.getElementById('viewHistori');
+
+            const nHistori = document.getElementById('navHistori');
+            const nMail = document.getElementById('navMail');
+
+            // Hide all
+            vHome.classList.add('hidden');
+            vPareto.classList.add('hidden');
+            vHistori.classList.add('hidden');
+
+            nHistori.classList.remove('text-indigo-600');
+            nMail.classList.remove('text-indigo-600');
+            nHistori.classList.add('text-slate-400');
+            nMail.classList.add('text-slate-400');
+
+            if (viewName === 'home') {
+                vHome.classList.remove('hidden');
+            } else if (viewName === 'pareto') {
+                vPareto.classList.remove('hidden');
+                nMail.classList.add('text-indigo-600');
+                nMail.classList.remove('text-slate-400');
+                renderParetoView();
+            } else if (viewName === 'histori') {
+                vHistori.classList.remove('hidden');
+                nHistori.classList.add('text-indigo-600');
+                nHistori.classList.remove('text-slate-400');
+                renderHistoriView();
+            }
+        }
+
+        // --- 5. RENDER UI FUNCTIONS ---
+        function renderAllViews() {
+            renderDashboardHome();
+            updateParetoBadge();
+        }
+
+        function renderDashboardHome() {
+            const shiftAktif = getShiftDate();
+            document.getElementById('cardTanggalShift').innerText = formatTanggalIndo(shiftAktif);
+
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const isBeforeShift = (hours < 7 || (hours === 7 && minutes < 30));
+            
+            const badgeShift = document.getElementById('badgeShiftStatus');
+            if (isBeforeShift) {
+                badgeShift.innerText = 'Pra-07:30 (Masuk Shift Kemarin)';
+                badgeShift.className = 'inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30';
+            } else {
+                badgeShift.innerText = 'Pasca-07:30 (Shift Hari Ini)';
+                badgeShift.className = 'inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            }
+
+            const allData = getStoredData();
+            const dataShift = allData.filter(d => d.shiftDate === shiftAktif);
+
+            // Set Stat Total Unit
+            document.getElementById('statTotalUnit').innerText = `${dataShift.length} Unit`;
+            document.getElementById('counterUnitShift').innerText = dataShift.length;
+
+            // Hitung Pareto
+            const paretoGroup = getParetoGrouped(dataShift);
+            document.getElementById('statTotalPareto').innerText = `${paretoGroup.length} Defect`;
+
+            // List Unit Hari Ini
+            const containerList = document.getElementById('listUnitHariIni');
+            if (dataShift.length === 0) {
+                containerList.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-inbox text-3xl mb-2 block opacity-50"></i>
+                        <p class="text-xs">Belum ada unit diinput pada shift ini.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render list (urutan terbaru diatas)
+            const sortedData = [...dataShift].reverse();
+            containerList.innerHTML = sortedData.map(item => `
+                <div class="p-3 bg-slate-50 hover:bg-indigo-50/50 rounded-xl border border-slate-200/70 transition flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 font-black text-xs flex items-center justify-center">
+                            ${item.suffix}
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">Unit: ${item.suffix}-${item.noUnit}</p>
+                            <p class="text-xs text-rose-600 font-medium">${item.problem}</p>
+                        </div>
+                    </div>
+                    <button onclick="hapusUnit(${item.id})" class="text-slate-300 hover:text-rose-500 p-2 transition">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Menghitung Problem dengan kemunculan >= 3
+        function getParetoGrouped(dataset) {
+            const counts = {};
+            dataset.forEach(item => {
+                const prob = item.problem.trim();
+                if (!counts[prob]) {
+                    counts[prob] = {
+                        problem: prob,
+                        units: []
+                    };
+                }
+                counts[prob].units.push(`${item.suffix}-${item.noUnit}`);
+            });
+
+            // Filter minimal 3 problem yang sama
+            return Object.values(counts).filter(group => group.units.length >= 3);
+        }
+
+        // Update Counter / Badge pada Icon Mail
+        function updateParetoBadge() {
+            const shiftAktif = getShiftDate();
+            const allData = getStoredData();
+            const dataShift = allData.filter(d => d.shiftDate === shiftAktif);
+            const pareto = getParetoGrouped(dataShift);
+
+            const badge = document.getElementById('badgeParetoCount');
+            if (pareto.length > 0) {
+                badge.innerText = pareto.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // Render Halaman Pareto (Icon Mail)
+        function renderParetoView() {
+            const shiftAktif = getShiftDate();
+            document.getElementById('subtitleParetoShift').innerText = formatTanggalIndo(shiftAktif);
+
+            const allData = getStoredData();
+            const dataShift = allData.filter(d => d.shiftDate === shiftAktif);
+            const pareto = getParetoGrouped(dataShift);
+
+            const container = document.getElementById('containerPareto');
+
+            if (pareto.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-200">
+                        <div class="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fa-solid fa-circle-check text-2xl"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-700 text-sm">Kondisi Aman</h3>
+                        <p class="text-xs text-slate-500 mt-1">Tidak ada problem dengan jumlah >= 3 unit pada shift ini.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pareto.map(p => `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-rose-100 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 bottom-0 w-1.5 bg-rose-500"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-slate-800 text-sm pr-2">Problem : ${p.problem}</h3>
+                        <span class="bg-rose-100 text-rose-700 text-xs font-black px-2.5 py-1 rounded-full whitespace-nowrap">
+                            Total : ${p.units.length} Unit
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 font-semibold mb-1">Unit terkait :</p>
+                    <p class="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200 font-mono">
+                        ${p.units.join(', ')}
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        // Kirim Pesan via WhatsApp
+        function kirimWhatsApp() {
+            const shiftAktif = getShiftDate();
+            const allData = getStoredData();
+            const dataShift = allData.filter(d => d.shiftDate === shiftAktif);
+            const pareto = getParetoGrouped(dataShift);
+
+            if (pareto.length === 0) {
+                Swal.fire('Info', 'Tidak ada data Pareto (>=3) pada shift ini untuk dikirim.', 'info');
+                return;
+            }
+
+            let text = `*Problem pareto RM0*\n`;
+            text += `Tanggal: ${formatTanggalIndo(shiftAktif)}\n\n`;
+
+            pareto.forEach((p, idx) => {
+                text += `Problem : ${p.problem}\n`;
+                text += `Total : ${p.units.length} Unit\n`;
+                text += `Unit terkait :\n`;
+                p.units.forEach((u, uIdx) => {
+                    text += `${uIdx + 1}. ${u}\n`;
+                });
+                text += `\n`;
+            });
+
+            const encodedText = encodeURIComponent(text);
+            const waUrl = `https://wa.me/?text=${encodedText}`;
+            window.open(waUrl, '_blank');
+        }
+
+        // Render Halaman Histori
+        function renderHistoriView() {
+            const allData = getStoredData();
+            
+            // Dapatkan list tanggal unik yang terurut dari terbaru
+            const uniqueDates = [...new Set(allData.map(item => item.shiftDate))].sort().reverse();
+
+            const container = document.getElementById('listDaftarTanggal');
+            document.getElementById('detailHistoriTanggal').classList.add('hidden');
+
+            if (uniqueDates.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-6 rounded-xl text-center text-slate-400 border border-slate-200">
+                        <p class="text-xs">Belum ada histori data tersimpan.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = uniqueDates.map(dateStr => {
+                const countUnit = allData.filter(d => d.shiftDate === dateStr).length;
+                const paretoCount = getParetoGrouped(allData.filter(d => d.shiftDate === dateStr)).length;
+
+                return `
+                    <div onclick="pilihHistoriTanggal('${dateStr}')" class="bg-white p-3.5 rounded-xl border border-slate-200 hover:border-indigo-400 shadow-sm cursor-pointer transition flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                <i class="fa-solid fa-calendar-day"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">${formatTanggalIndo(dateStr)}</h4>
+                                <p class="text-[11px] text-slate-500">${countUnit} Unit terdaftar</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${paretoCount > 0 ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">${paretoCount} Pareto</span>` : ''}
+                            <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function pilihHistoriTanggal(dateStr) {
+            const allData = getStoredData();
+            const dataOnDate = allData.filter(d => d.shiftDate === dateStr);
+            const paretoOnDate = getParetoGrouped(dataOnDate);
+
+            document.getElementById('judulHistoriTerpilih').innerText = formatTanggalIndo(dateStr);
+
+            // Render Rangkuman Pareto
+            const paretoContainer = document.getElementById('contentHistoriPareto');
+            if (paretoOnDate.length === 0) {
+                paretoContainer.innerHTML = `<p class="text-xs text-slate-400 italic">Tidak ada problem Pareto (>=3).</p>`;
+            } else {
+                paretoContainer.innerHTML = paretoOnDate.map(p => `
+                    <div class="bg-amber-50/60 p-2.5 rounded-xl border border-amber-200 text-xs">
+                        <div class="flex justify-between font-bold text-slate-800">
+                            <span>${p.problem}</span>
+                            <span class="text-amber-700">${p.units.length} Unit</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 font-mono mt-1">${p.units.join(', ')}</p>
+                    </div>
+                `).join('');
+            }
+
+            // Render Semua Unit
+            const unitContainer = document.getElementById('contentHistoriUnit');
+            unitContainer.innerHTML = dataOnDate.map(u => `
+                <div class="p-2 bg-slate-50 rounded-lg text-xs flex justify-between items-center border border-slate-100">
+                    <span class="font-bold text-slate-700">${u.suffix}-${u.noUnit}</span>
+                    <span class="text-rose-600 font-medium">${u.problem}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('detailHistoriTanggal').classList.remove('hidden');
+        }
+
+        function tutupDetailHistori() {
+            document.getElementById('detailHistoriTanggal').classList.add('hidden');
+        }
+
+        // --- 6. MODAL & SCANNER LOGIC ---
+        function bukaModalInput() {
+            document.getElementById('modalInput').classList.remove('hidden');
+            toggleInputMode('scan');
+        }
+
+        function tutupModalInput() {
+            hentikanScanner();
+            document.getElementById('modalInput').classList.add('hidden');
+            // Reset form
+            document.getElementById('inputSuffix').value = '';
+            document.getElementById('inputNoUnit').value = '';
+            document.getElementById('inputProblem').value = '';
+        }
+
+        function toggleInputMode(mode) {
+            const btnScan = document.getElementById('tabBtnScan');
+            const btnManual = document.getElementById('tabBtnManual');
+            const secScan = document.getElementById('sectionScan');
+
+            if (mode === 'scan') {
+                btnScan.className = 'py-2 text-xs font-bold rounded-lg transition text-slate-700 bg-white shadow-sm flex items-center justify-center gap-1.5';
+                btnManual.className = 'py-2 text-xs font-bold rounded-lg transition text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1.5';
+                secScan.classList.remove('hidden');
+            } else {
+                btnManual.className = 'py-2 text-xs font-bold rounded-lg transition text-slate-700 bg-white shadow-sm flex items-center justify-center gap-1.5';
+                btnScan.className = 'py-2 text-xs font-bold rounded-lg transition text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1.5';
+                secScan.classList.add('hidden');
+                hentikanScanner();
+            }
+        }
+
+        function mulaiScanner() {
+            document.getElementById('readerPlaceholder').classList.add('hidden');
+            document.getElementById('btnStartScan').classList.add('hidden');
+            document.getElementById('btnStopScan').classList.remove('hidden');
+
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5Qrcode("reader");
+            }
+
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText) => {
+                    // Success callback
+                    const parsed = parseBarcodeString(decodedText);
+                    document.getElementById('inputSuffix').value = parsed.suffix;
+                    document.getElementById('inputNoUnit').value = parsed.noUnit;
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Barcode berhasil discan!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+
+                    hentikanScanner();
+                },
+                (errorMessage) => {
+                    // Scan error ignore
+                }
+            ).catch(err => {
+                Swal.fire('Kamera Gagal', 'Gagal mengakses kamera. Gunakan Input Manual.', 'error');
+                hentikanScanner();
+            });
+
+            isScannerActive = true;
+        }
+
+        function hentikanScanner() {
+            if (html5QrcodeScanner && isScannerActive) {
+                html5QrcodeScanner.stop().then(() => {
+                    isScannerActive = false;
+                    document.getElementById('readerPlaceholder').classList.remove('hidden');
+                    document.getElementById('btnStartScan').classList.remove('hidden');
+                    document.getElementById('btnStopScan').classList.add('hidden');
+                }).catch(err => console.error(err));
+            }
+        }
+
+        // --- 7. SIMPAN DATA & HAPUS ---
+        function simpanDataUnit(e) {
+            e.preventDefault();
+
+            const suffix = document.getElementById('inputSuffix').value.trim().toUpperCase();
+            const noUnit = document.getElementById('inputNoUnit').value.trim().toUpperCase();
+            const problem = document.getElementById('inputProblem').value.trim();
+
+            if (!suffix || !noUnit || !problem) {
+                Swal.fire('Peringatan', 'Harap isi semua kolom data.', 'warning');
+                return;
+            }
+
+            const shiftTarget = getShiftDate();
+            const allData = getStoredData();
+
+            const newItem = {
+                id: Date.now(),
+                suffix: suffix,
+                noUnit: noUnit,
+                problem: problem,
+                shiftDate: shiftTarget,
+                timestamp: new Date().toISOString()
+            };
+
+            allData.push(newItem);
+            saveStoredData(allData);
+
+            tutupModalInput();
+            renderAllViews();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Data Berhasil Disimpan',
+                text: `Unit ${suffix}-${noUnit} dicatat pada shift ${formatTanggalIndo(shiftTarget)}`,
+                timer: 1800,
+                showConfirmButton: false
+            });
+        }
+
+        function hapusUnit(id) {
+            Swal.fire({
+                title: 'Hapus Unit Ini?',
+                text: "Data yang dihapus tidak bisa dikembalikan.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let allData = getStoredData();
+                    allData = allData.filter(item => item.id !== id);
+                    saveStoredData(allData);
+                    renderAllViews();
+                    Swal.fire('Terhapus', 'Data unit telah dihapus.', 'success');
+                }
+            });
+        }
+
+        // --- INIT APPLICATION ---
+        window.onload = function() {
+            initDummyDataIfEmpty();
+            renderAllViews();
+        };
+    </script>
+</body>
+</html>
