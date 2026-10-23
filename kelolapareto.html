@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Problem Pareto</title>
+    <!-- FontAwesome & Chart.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- HTML5 QRCode -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background-color: #f0f4f8; color: #333; padding-bottom: 90px; }
+        
+        /* Sticky Top Card */
+        .top-card {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            border-bottom-left-radius: 25px;
+            border-bottom-right-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .header-title { font-size: 1.2rem; font-weight: 600; text-align: center; letter-spacing: 1px;}
+        .date-shift { font-size: 0.85rem; text-align: center; background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; align-self: center; }
+        
+        .stats-row { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+        .stat-box { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; }
+        .stat-box i { font-size: 1.5rem; color: #00f2fe; }
+        
+        .filter-btn {
+            position: relative; background: rgba(255,255,255,0.2); padding: 10px;
+            border-radius: 12px; cursor: pointer; border: none; color: white;
+        }
+        .badge {
+            position: absolute; top: -5px; right: -5px; background: #ff4757;
+            color: white; font-size: 0.7rem; font-weight: bold; width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center; border-radius: 50%;
+        }
+
+        /* Container Pages */
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Item Cards */
+        .data-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #1e3c72; }
+        .data-card h4 { color: #e74c3c; margin-bottom: 5px; }
+        .data-card p { font-size: 0.9rem; color: #555; }
+        .data-card .time { font-size: 0.75rem; color: #999; float: right; }
+
+        /* Bottom Sticky Nav */
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%; background: white; display: flex;
+            justify-content: space-around; align-items: center; padding: 10px 0;
+            box-shadow: 0 -2px 15px rgba(0,0,0,0.1); border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 100;
+        }
+        .nav-item { color: #a4b0be; font-size: 1.5rem; cursor: pointer; transition: 0.3s; padding: 10px; }
+        .nav-item.active { color: #1e3c72; }
+        
+        .nav-scan {
+            background: linear-gradient(135deg, #ff4757, #ff6b81); color: white;
+            width: 65px; height: 65px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-size: 1.8rem;
+            transform: translateY(-25px); box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+            border: 5px solid #f0f4f8; cursor: pointer;
+        }
+
+        /* Modals */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 999; justify-content: center; align-items: center;
+        }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .modal-content h3 { margin-bottom: 15px; text-align: center; color: #1e3c72; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 0.85rem; margin-bottom: 5px; color: #666; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; }
+        .btn-save { width: 100%; background: #1e3c72; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 15px; }
+        .close-scanner { background: #ff4757; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; cursor: pointer; }
+
+        /* Pareto Page specific */
+        .header-action { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-wa { background: #25D366; color: white; padding: 10px 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        
+        /* History Accordion */
+        .history-date { background: #1e3c72; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; }
+        .history-content { display: none; margin-bottom: 15px; border-left: 2px solid #1e3c72; padding-left: 10px; }
+
+        canvas { background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+    <!-- Sticky Top Card -->
+    <div class="top-card">
+        <div class="header-title">KELOLA PROBLEM PARETO</div>
+        <div class="date-shift" id="display-date-shift">Memuat Waktu...</div>
+        <div class="stats-row">
+            <div class="stat-box">
+                <i class="fas fa-car"></i>
+                <div>
+                    <div style="font-size: 0.7rem; color: #ccc;">Total Unit Input</div>
+                    <strong id="total-unit">0</strong>
+                </div>
+            </div>
+            <button class="filter-btn" onclick="navTo('pareto-page')">
+                <i class="fas fa-filter"></i>
+                <div class="badge" id="pareto-badge">0</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN DISPLAY (HOME) -->
+    <div id="home-page" class="page active">
+        <h3 style="margin-bottom: 15px; color: #333;">Data Input Terakhir</h3>
+        <div id="home-display"></div>
+    </div>
+
+    <!-- PARETO PAGE -->
+    <div id="pareto-page" class="page">
+        <div class="header-action">
+            <h3>Data Unit Pareto (≥ 3)</h3>
+            <a href="#" class="btn-wa" onclick="sendWA()"><i class="fab fa-whatsapp"></i> Kirim WA</a>
+        </div>
+        <div id="pareto-display"></div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div id="history-page" class="page">
+        <h3 style="margin-bottom: 15px;">History Input</h3>
+        <div id="history-display"></div>
+    </div>
+
+    <!-- CHART PAGE -->
+    <div id="chart-page" class="page">
+        <h3 style="margin-bottom: 15px;">Grafik Problem Pareto</h3>
+        <canvas id="paretoChart"></canvas>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="navTo('home-page', this)"><i class="fas fa-home"></i></div>
+        <div class="nav-item" onclick="navTo('history-page', this)"><i class="fas fa-history"></i></div>
+        <div class="nav-scan" onclick="openScanner()"><i class="fas fa-barcode"></i></div>
+        <div class="nav-item" onclick="navTo('chart-page', this)"><i class="fas fa-chart-pie"></i></div>
+    </div>
+
+    <!-- MODAL SCANNER -->
+    <div class="modal" id="modal-scanner" style="display: flex; visibility: hidden; opacity: 0; transition: 0.2s;">
+        <div class="modal-content">
+            <h3>Scan Barcode</h3>
+            <div id="reader"></div>
+            <button class="close-scanner" onclick="closeScanner()">Batal</button>
+        </div>
+    </div>
+
+    <!-- MODAL INPUT MANUAL / HASIL SCAN -->
+    <div class="modal" id="modal-input" style="display: flex; visibility: hidden; opacity: 0; transition: 0.2s;">
+        <div class="modal-content">
+            <h3>Input Problem</h3>
+            <div class="input-group">
+                <label>Suffix (Karakter -6 dan -5)</label>
+                <input type="text" id="in-suffix" readonly>
+            </div>
+            <div class="input-group">
+                <label>Nomor Unit (Karakter 12-17)</label>
+                <input type="text" id="in-unit" readonly>
+            </div>
+            <div class="input-group">
+                <label>Nama Problem</label>
+                <input type="text" id="in-problem" placeholder="Ketik problem di sini..." autocomplete="off">
+            </div>
+            <button class="btn-save" onclick="saveData()">Simpan Data</button>
+            <button class="close-scanner" style="background: #ccc; color: #333; margin-top: 10px;" onclick="closeModalInput()">Batal</button>
+        </div>
+    </div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('paretoData')) || [];
+        let html5QrcodeScanner;
+        let chartInstance = null;
+
+        // SISTEM SHIFT OTOMATIS (Mulai 07:15)
+        function getShiftInfo() {
+            const now = new Date();
+            const h = now.getHours();
+            const m = now.getMinutes();
+            const totalMinutes = (h * 60) + m;
+            
+            let shiftName = "Night";
+            let shiftDate = new Date(now);
+            
+            // Shift Day: 07:15 (435 min) sampai 19:14 (1154 min)
+            if (totalMinutes >= 435 && totalMinutes < 1155) {
+                shiftName = "Day";
+            } else {
+                // Jika masih sebelum jam 07:15 pagi, masuk ke shift night hari sebelumnya
+                if (totalMinutes < 435) {
+                    shiftDate.setDate(shiftDate.getDate() - 1);
+                }
+            }
+            
+            const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+            const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            
+            const dayName = days[shiftDate.getDay()];
+            const date = shiftDate.getDate();
+            const monthName = months[shiftDate.getMonth()];
+            const year = shiftDate.getFullYear();
+            
+            const dateString = `${dayName}, ${date} ${monthName} ${year}`;
+            const shortDate = `${date}-${shiftDate.getMonth()+1}-${year}`;
+            
+            return { dateString, shortDate, shiftName };
+        }
+
+        // UPDATE UI KARTU ATAS
+        function updateTopCard() {
+            const info = getShiftInfo();
+            document.getElementById('display-date-shift').innerText = `${info.dateString} - Shift ${info.shiftName}`;
+            
+            document.getElementById('total-unit').innerText = db.length;
+            
+            // Hitung Notifikasi Pareto (Problem ≥ 3 kali)
+            const pareto = getParetoData();
+            document.getElementById('pareto-badge').innerText = Object.keys(pareto).length;
+        }
+
+        // DATA PARETO LOGIC
+        function getParetoData() {
+            let grouped = {};
+            db.forEach(item => {
+                const key = item.problem.toUpperCase();
+                if(!grouped[key]) grouped[key] = [];
+                grouped[key].push(item);
+            });
+            
+            let pareto = {};
+            for (let prob in grouped) {
+                if(grouped[prob].length >= 3) {
+                    pareto[prob] = grouped[prob];
+                }
+            }
+            return pareto;
+        }
+
+        // NAVIGASI ANTAR HALAMAN
+        function navTo(pageId, elm) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            
+            if(elm) {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                elm.classList.add('active');
+            }
+
+            if(pageId === 'home-page') renderHome();
+            if(pageId === 'pareto-page') renderPareto();
+            if(pageId === 'history-page') renderHistory();
+            if(pageId === 'chart-page') renderChart();
+        }
+
+        // RENDER HALAMAN AWAL (HOME)
+        function renderHome() {
+            const container = document.getElementById('home-display');
+            container.innerHTML = '';
+            if(db.length === 0) return container.innerHTML = '<p style="text-align:center; color:#999;">Belum ada data unit.</p>';
+            
+            // Tampilkan dari yang terbaru
+            const sortedDb = [...db].reverse();
+            sortedDb.forEach(item => {
+                container.innerHTML += `
+                    <div class="data-card">
+                        <span class="time">${item.time} | Shift ${item.shift}</span>
+                        <h4>${item.problem}</h4>
+                        <p><strong>Unit:</strong> ${item.suffix} - ${item.unitNo}</p>
+                    </div>
+                `;
+            });
+        }
+
+        // RENDER HALAMAN PARETO & WHATSAPP
+        function renderPareto() {
+            const container = document.getElementById('pareto-display');
+            container.innerHTML = '';
+            const pareto = getParetoData();
+            
+            if(Object.keys(pareto).length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#999;">Belum ada kelompok problem lebih dari 3 kali.</p>';
+                return;
+            }
+
+            for (let prob in pareto) {
+                let listHtml = '';
+                pareto[prob].forEach(u => {
+                    listHtml += `<p style="margin-left:10px;">- ${u.suffix} - ${u.unitNo}</p>`;
+                });
+                container.innerHTML += `
+                    <div class="data-card" style="border-left-color: #ff4757;">
+                        <h4>${prob} <span style="color:#333; font-size:0.9rem;">(${pareto[prob].length} Unit)</span></h4>
+                        ${listHtml}
+                    </div>
+                `;
+            }
+        }
+
+        function sendWA() {
+            const pareto = getParetoData();
+            const info = getShiftInfo();
+            let text = `*DATA UNIT PARETO*\nTanggal: ${info.dateString}\nShift: ${info.shiftName}\n\n`;
+            
+            for (let prob in pareto) {
+                text += `*Problem: ${prob}* (${pareto[prob].length} unit)\n`;
+                pareto[prob].forEach(u => {
+                    text += `- ${u.suffix} - ${u.unitNo}\n`;
+                });
+                text += `\n`;
+            }
+            
+            const waLink = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(waLink, '_blank');
+        }
+
+        // RENDER HISTORY BERDASARKAN TANGGAL
+        function renderHistory() {
+            const container = document.getElementById('history-display');
+            container.innerHTML = '';
+            
+            let groupedDate = {};
+            db.forEach(item => {
+                if(!groupedDate[item.dateStr]) groupedDate[item.dateStr] = [];
+                groupedDate[item.dateStr].push(item);
+            });
+
+            for (let dateStr in groupedDate) {
+                const idDiv = 'hist-' + dateStr.replace(/\s+/g, '');
+                let listHtml = '';
+                groupedDate[dateStr].forEach(item => {
+                    listHtml += `<div class="data-card" style="margin-top:10px;">
+                        <h4>${item.problem}</h4><p>${item.suffix} - ${item.unitNo} (${item.shift})</p>
+                    </div>`;
+                });
+
+                container.innerHTML += `
+                    <div class="history-date" onclick="toggleHist('${idDiv}')">
+                        <span><i class="fas fa-calendar-alt"></i> ${dateStr}</span>
+                        <span>${groupedDate[dateStr].length} Unit</span>
+                    </div>
+                    <div class="history-content" id="${idDiv}">
+                        ${listHtml}
+                    </div>
+                `;
+            }
+        }
+        function toggleHist(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // RENDER GRAFIK CHART.JS
+        function renderChart() {
+            const pareto = getParetoData();
+            const ctx = document.getElementById('paretoChart').getContext('2d');
+            
+            const labels = Object.keys(pareto);
+            const dataCounts = labels.map(l => pareto[l].length);
+
+            if(chartInstance) chartInstance.destroy();
+            
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Jumlah Unit',
+                        data: dataCounts,
+                        backgroundColor: '#ff4757',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        }
+
+        // FITUR SCANNER & INPUT BARCODE
+        function openScanner() {
+            const modal = document.getElementById('modal-scanner');
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 100 } },
+                (decodedText) => {
+                    html5QrcodeScanner.stop().then(() => {
+                        closeScanner();
+                        processBarcode(decodedText);
+                    });
+                },
+                (err) => {}
+            ).catch(err => {
+                alert("Kamera tidak dapat diakses.");
+                closeScanner();
+            });
+        }
+
+        function closeScanner() {
+            const modal = document.getElementById('modal-scanner');
+            modal.style.opacity = '0';
+            setTimeout(() => modal.style.visibility = 'hidden', 200);
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.stop().catch(e => console.log(e));
+            }
+        }
+
+        function processBarcode(code) {
+            let suffix = code;
+            let unitNo = code;
+            
+            // Filter panjang barcode (jika struktur VIN standar 17 karakter)
+            if(code.length >= 17) {
+                // Karakter ke 6 & 5 dari belakang menggunakan slice
+                suffix = code.slice(-6, -4);
+                // Karakter ke 12 sampai ke 17 (index 11 hingga 17)
+                unitNo = code.substring(11, 17);
+            }
+
+            document.getElementById('in-suffix').value = suffix;
+            document.getElementById('in-unit').value = unitNo;
+            document.getElementById('in-problem').value = '';
+            
+            const modal = document.getElementById('modal-input');
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+        }
+
+        function closeModalInput() {
+            const modal = document.getElementById('modal-input');
+            modal.style.opacity = '0';
+            setTimeout(() => modal.style.visibility = 'hidden', 200);
+        }
+
+        function saveData() {
+            const suffix = document.getElementById('in-suffix').value;
+            const unitNo = document.getElementById('in-unit').value;
+            const problem = document.getElementById('in-problem').value;
+
+            if(!problem.trim()) return alert("Nama problem wajib diisi!");
+
+            const info = getShiftInfo();
+            const nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            const newRecord = {
+                id: Date.now(),
+                suffix: suffix.toUpperCase(),
+                unitNo: unitNo.toUpperCase(),
+                problem: problem,
+                dateStr: info.dateString,
+                shift: info.shiftName,
+                time: nowTime
+            };
+
+            db.push(newRecord);
+            localStorage.setItem('paretoData', JSON.stringify(db));
+            
+            closeModalInput();
+            updateTopCard();
+            navTo('home-page', document.querySelector('.nav-item.active'));
+        }
+
+        // INISIALISASI AWAL
+        window.onload = () => {
+            updateTopCard();
+            renderHome();
+        };
+    </script>
+</body>
+</html>
