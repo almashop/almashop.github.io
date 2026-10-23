@@ -221,9 +221,8 @@
             const year = shiftDate.getFullYear();
             
             const dateString = `${dayName}, ${date} ${monthName} ${year}`;
-            const shortDate = `${date}-${shiftDate.getMonth()+1}-${year}`;
             
-            return { dateString, shortDate, shiftName };
+            return { dateString, shiftName };
         }
 
         // UPDATE UI KARTU ATAS
@@ -364,6 +363,7 @@
                 `;
             }
         }
+        
         function toggleHist(id) {
             const el = document.getElementById(id);
             el.style.display = el.style.display === 'block' ? 'none' : 'block';
@@ -399,7 +399,9 @@
             });
         }
 
-        // FITUR SCANNER & INPUT BARCODE
+        // ==========================================
+        // FITUR SCANNER & INPUT BARCODE (DIPERBARUI)
+        // ==========================================
         function openScanner() {
             const modal = document.getElementById('modal-scanner');
             modal.style.visibility = 'visible';
@@ -410,14 +412,24 @@
                 { facingMode: "environment" },
                 { fps: 10, qrbox: { width: 250, height: 100 } },
                 (decodedText) => {
+                    // 1. Langsung proses dan tampilkan form input SEBELUM kamera dimatikan
+                    processBarcode(decodedText);
+                    
+                    // 2. Matikan kamera di background
                     html5QrcodeScanner.stop().then(() => {
-                        closeScanner();
-                        processBarcode(decodedText);
+                        // Hanya menyembunyikan modal scanner, bukan modal input
+                        modal.style.opacity = '0';
+                        setTimeout(() => modal.style.visibility = 'hidden', 200);
+                    }).catch(err => {
+                        console.log("Kamera susah dihentikan: ", err);
+                        modal.style.visibility = 'hidden';
                     });
                 },
-                (err) => {}
+                (err) => {
+                    // Abaikan error saat proses mencari barcode
+                }
             ).catch(err => {
-                alert("Kamera tidak dapat diakses.");
+                alert("Kamera tidak dapat diakses. Pastikan izin kamera aktif.");
                 closeScanner();
             });
         }
@@ -432,24 +444,35 @@
         }
 
         function processBarcode(code) {
+            // Bersihkan spasi kosong di awal/akhir hasil scan
+            code = code.trim();
+            
             let suffix = code;
             let unitNo = code;
             
-            // Filter panjang barcode (jika struktur VIN standar 17 karakter)
-            if(code.length >= 17) {
-                // Karakter ke 6 & 5 dari belakang menggunakan slice
+            // Ambil karakter ke-6 dan ke-5 dari belakang
+            if(code.length >= 6) {
+                // slice(-6, -4) akan mengambil 2 karakter (ke 6 dan 5 dari belakang)
                 suffix = code.slice(-6, -4);
-                // Karakter ke 12 sampai ke 17 (index 11 hingga 17)
+            }
+            
+            // Ambil karakter ke 12 sampai ke 17 (index 11 sampai 17)
+            if(code.length >= 17) {
                 unitNo = code.substring(11, 17);
+            } else if (code.length >= 12) {
+                // Jaga-jaga jika panjang karakter cuma sampai belasan
+                unitNo = code.substring(11); 
             }
 
+            // Masukkan ke input form
             document.getElementById('in-suffix').value = suffix;
             document.getElementById('in-unit').value = unitNo;
             document.getElementById('in-problem').value = '';
             
-            const modal = document.getElementById('modal-input');
-            modal.style.visibility = 'visible';
-            modal.style.opacity = '1';
+            // Tampilkan modal form input
+            const modalInput = document.getElementById('modal-input');
+            modalInput.style.visibility = 'visible';
+            modalInput.style.opacity = '1';
         }
 
         function closeModalInput() {
