@@ -391,12 +391,12 @@
                 let listHtml = '';
                 groupedDate[dateStr].forEach(item => {
                     listHtml += `<div class="data-card" style="margin-top:10px;">
-                        <h6>${item.suffix} - ${item.unitNo}  ${item.problem}</h6>
+                        <h6>${item.suffix} - ${item.unitNo} (${item.shift}) ${item.problem}</h6>
                     </div>`;
                 });
                 container.innerHTML += `
                     <div class="history-date" onclick="toggleHist('${idDiv}')">
-                        <span><i class="fas fa-calendar-alt"></i> ${dateStr} ${item.shift}</span>
+                        <span><i class="fas fa-calendar-alt"></i> ${dateStr}</span>
                         <span>${groupedDate[dateStr].length} Unit</span>
                     </div>
                     <div class="history-content" id="${idDiv}">
