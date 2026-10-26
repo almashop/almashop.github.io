@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tabel Excel Online - JSONBin</title>
+<title>Tabel Laporan Harian (JSONBin)</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
   .container {
     background: #fff; padding: 20px; border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto;
+    overflow-x: auto;
   }
-  .controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   button { 
     padding: 8px 15px; cursor: pointer; background-color: #1a73e8;
     color: white; border: none; border-radius: 4px; font-weight: bold;
@@ -19,19 +20,19 @@
   button.success { background-color: #28a745; }
   button:disabled { background-color: #cccccc; cursor: not-allowed; }
   
-  table { border-collapse: collapse; width: 100%; margin-top: 15px; }
-  th, td { border: 1px solid #ddd; padding: 10px; text-align: left; min-width: 100px; }
-  th { background-color: #f1f3f4; color: #333; }
-  td { outline: none; }
+  table { border-collapse: collapse; width: 100%; margin-top: 15px; font-size: 14px; }
+  th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+  th { background-color: #f1f3f4; color: #333; white-space: nowrap; }
+  td { outline: none; min-width: 80px; }
   td[contenteditable="true"]:focus { background-color: #e8f0fe; border: 2px solid #1a73e8; }
   
-  #status { font-size: 14px; color: #555; margin-left: auto; align-self: center; }
+  #status { font-size: 14px; color: #555; margin-left: auto; }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Tabel Data Interaktif (JSONBin)</h2>
+  <h2>Tabel Data Laporan</h2>
   
   <div class="controls">
     <button onclick="addRow()">+ Tambah Baris</button>
@@ -42,11 +43,15 @@
 
   <table id="excelTable">
     <thead>
+      <!-- Header disesuaikan dengan field JSON -->
       <tr>
         <th>No</th>
-        <th>Item / Komponen</th>
-        <th>Jumlah</th>
-        <th>Keterangan</th>
+        <th>Suffix</th>
+        <th>Unit No</th>
+        <th>Problem</th>
+        <th>Tanggal</th>
+        <th>Shift</th>
+        <th>Waktu</th>
       </tr>
     </thead>
     <tbody>
@@ -59,8 +64,8 @@
   // ==========================================
   // KONFIGURASI JSONBIN (GANTI DENGAN MILIK ANDA)
   // ==========================================
-  const BIN_ID = '6aded063ac6210605a520e79'; // Contoh: 65123abc456def...
-  const API_KEY = '$2a$10$Ii1ep5GX66sB9lery6p2suxzNGrSMg2iwncn5Z2y/HT5WjaHRrf1q'; // Contoh: $2a$10$abcdef...
+  const BIN_ID = 'GANTI_DENGAN_BIN_ID_ANDA'; 
+  const API_KEY = 'GANTI_DENGAN_API_KEY_ANDA'; 
   
   const BASE_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
   const tbody = document.querySelector('#excelTable tbody');
@@ -73,63 +78,71 @@
     try {
       const response = await fetch(BASE_URL, {
         method: 'GET',
-        headers: {
-          'X-Master-Key': API_KEY
-        }
+        headers: { 'X-Master-Key': API_KEY }
       });
       
       if (!response.ok) throw new Error('Gagal mengambil data');
       
       const result = await response.json();
-      const data = result.record; // JSONBin menyimpan array kita di dalam properti 'record'
+      const data = result.record; 
       
       renderTable(data);
       statusEl.innerText = "Status: Data berhasil dimuat.";
     } catch (error) {
       console.error(error);
       statusEl.innerText = "Status: Error / Bin belum ada isinya.";
-      renderTable([]); // Render tabel kosong jika gagal
+      renderTable([]); 
     }
   }
 
-  // 2. Merender data JSON ke dalam format HTML
+  // 2. Merender data JSON ke tabel (Disesuaikan dengan field JSON Anda)
   function renderTable(dataArray) {
     tbody.innerHTML = '';
     
-    if (dataArray.length === 0) {
-      // Jika data kosong, buat 3 baris kosong default
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
       for(let i = 0; i < 3; i++) addRow();
       return;
     }
 
     dataArray.forEach((rowObj, index) => {
       const tr = document.createElement('tr');
+      // Menyimpan ID bawaan dari database secara tersembunyi (dataset)
+      tr.dataset.id = rowObj.id || Date.now() + index; 
+      
       tr.innerHTML = `
         <td>${index + 1}</td>
-        <td contenteditable="true">${rowObj.item || ''}</td>
-        <td contenteditable="true">${rowObj.jumlah || ''}</td>
-        <td contenteditable="true">${rowObj.keterangan || ''}</td>
+        <td contenteditable="true">${rowObj.suffix || ''}</td>
+        <td contenteditable="true">${rowObj.unitNo || ''}</td>
+        <td contenteditable="true">${rowObj.problem || ''}</td>
+        <td contenteditable="true">${rowObj.dateStr || ''}</td>
+        <td contenteditable="true">${rowObj.shift || ''}</td>
+        <td contenteditable="true">${rowObj.time || ''}</td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  // 3. Mengumpulkan data dari tabel HTML dan mengubahnya menjadi Array JSON
+  // 3. Mengubah tabel HTML kembali menjadi Array JSON (Disesuaikan dengan field JSON Anda)
   function getTableDataAsJSON() {
     const data = [];
     const rows = tbody.querySelectorAll('tr');
     
     rows.forEach(row => {
       const cells = row.querySelectorAll('td');
-      // Lewati baris jika benar-benar kosong semua (opsional)
+      
+      // Lewati baris jika suffix, unit no, dan problem kosong semua
       if(cells[1].innerText.trim() === '' && cells[2].innerText.trim() === '' && cells[3].innerText.trim() === '') {
           return; 
       }
       
       data.push({
-        item: cells[1].innerText.trim(),
-        jumlah: cells[2].innerText.trim(),
-        keterangan: cells[3].innerText.trim()
+        id: Number(row.dataset.id), // Mengambil ID bawaan dari dataset
+        suffix: cells[1].innerText.trim(),
+        unitNo: cells[2].innerText.trim(),
+        problem: cells[3].innerText.trim(),
+        dateStr: cells[4].innerText.trim(),
+        shift: cells[5].innerText.trim(),
+        time: cells[6].innerText.trim()
       });
     });
     
@@ -157,7 +170,7 @@
       if (!response.ok) throw new Error('Gagal menyimpan data');
       
       statusEl.innerText = `Status: Disimpan pada ${new Date().toLocaleTimeString()}`;
-      updateRowNumbers(); // Rapikan nomor urut setelah disimpan
+      updateRowNumbers(); 
     } catch (error) {
       console.error(error);
       statusEl.innerText = "Status: Gagal menyimpan data.";
@@ -167,12 +180,17 @@
     }
   }
 
-  // 5. Fungsi utilitas untuk tabel
+  // 5. Fungsi untuk menambahkan baris baru (Dengan format 7 kolom)
   function addRow() {
     const tr = document.createElement('tr');
     const rowCount = tbody.children.length + 1;
+    tr.dataset.id = Date.now(); // Buat ID timestamp baru untuk baris baru
+    
     tr.innerHTML = `
       <td>${rowCount}</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
       <td contenteditable="true"></td>
       <td contenteditable="true"></td>
       <td contenteditable="true"></td>
@@ -181,7 +199,7 @@
   }
 
   function clearTable() {
-    if(confirm('Kosongkan tabel di layar? (Tidak akan menghapus data di cloud sampai Anda menekan Simpan)')) {
+    if(confirm('Kosongkan tabel di layar?')) {
       tbody.innerHTML = '';
       for(let i = 0; i < 3; i++) addRow();
     }
@@ -194,7 +212,7 @@
     });
   }
 
-  // Jalankan saat pertama kali dibuka
+  // Jalankan saat halaman dibuka
   loadDataFromCloud();
 </script>
 
