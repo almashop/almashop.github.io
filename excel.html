@@ -2,8 +2,9 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
+<!-- Mencegah auto-zoom saat mengetik di HP -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Aplikasi Laporan Harian Mobile</title>
+<title>Tabel Laporan (Tampilan Excel)</title>
 <style>
   :root {
     --primary-color: #1a73e8;
@@ -13,7 +14,7 @@
   }
 
   body { 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    font-family: Arial, sans-serif; 
     margin: 0; 
     padding: 15px; 
     background-color: var(--bg-color); 
@@ -21,8 +22,8 @@
 
   .container {
     background: #fff; 
-    padding: 20px; 
-    border-radius: 12px;
+    padding: 15px; 
+    border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
     max-width: 1000px; 
     margin: 0 auto;
@@ -36,24 +37,21 @@
   }
   
   .controls { 
-    margin-bottom: 20px; 
+    margin-bottom: 15px; 
     display: flex; 
-    gap: 10px; 
+    gap: 8px; 
     flex-wrap: wrap; 
-    align-items: center; 
   }
 
   button { 
-    padding: 12px 15px; 
+    padding: 10px 15px; 
     cursor: pointer; 
     background-color: var(--primary-color);
     color: white; 
     border: none; 
-    border-radius: 8px; 
+    border-radius: 6px; 
     font-weight: bold;
     font-size: 14px;
-    flex: 1; 
-    min-width: 120px;
     transition: opacity 0.2s;
   }
   button:active { opacity: 0.8; }
@@ -65,87 +63,51 @@
     font-size: 13px; 
     color: #555; 
     width: 100%; 
-    text-align: center; 
+    text-align: left; 
     margin-top: 5px; 
-    font-weight: 500;
   }
 
-  /* --- STYLE TABEL DESKTOP --- */
+  /* --- BUNGKUSAN TABEL AGAR BISA DI-SCROLL DI HP --- */
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto; /* Memunculkan scroll horizontal jika tabel melebihi layar */
+    -webkit-overflow-scrolling: touch; /* Scroll halus di HP iOS */
+    border: 1px solid #ddd;
+  }
+
+  /* --- STYLE TABEL EXCEL --- */
   table { 
     border-collapse: collapse; 
     width: 100%; 
-    font-size: 14px; 
+    font-size: 14px;
+    white-space: nowrap; /* Mencegah teks turun ke bawah seperti Excel */
   }
   th, td { 
-    border: 1px solid #e0e0e0; 
-    padding: 12px; 
+    border: 1px solid #ddd; 
+    padding: 10px; 
     text-align: left; 
   }
   th { 
-    background-color: #f8f9fa; 
+    background-color: #f1f3f4; 
     color: #333; 
-    white-space: nowrap; 
   }
-  td { outline: none; }
+  td { outline: none; min-width: 80px; }
+  
+  /* Efek saat sel sedang diketik */
   td[contenteditable="true"]:focus { 
     background-color: #e8f0fe; 
     border: 2px solid var(--primary-color); 
   }
 
-  /* --- STYLE KHUSUS HP (MOBILE VIEW) --- */
+  /* --- PENGATURAN KHUSUS HP --- */
   @media screen and (max-width: 768px) {
-    .container { padding: 15px; }
-    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    /* Tombol lebih rapi di HP */
+    .controls { display: grid; grid-template-columns: 1fr 1fr; }
     .controls .success { grid-column: span 2; }
     
-    /* Class untuk menyembunyikan kolom tertentu di HP */
+    /* Menyembunyikan kolom Tanggal, Shift, Waktu di HP */
     .hide-on-mobile {
       display: none !important;
-    }
-
-    table, thead, tbody, th, td, tr { 
-      display: block; 
-    }
-    thead { display: none; } 
-    
-    tr { 
-      margin-bottom: 15px; 
-      border: 1px solid #ddd; 
-      border-radius: 10px; 
-      background: #fff; 
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      padding: 10px;
-    }
-    
-    td { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      border: none; 
-      border-bottom: 1px solid #f0f0f0; 
-      padding: 10px 5px; 
-    }
-    td:last-child { border-bottom: none; }
-    
-    td::before { 
-      content: attr(data-label); 
-      font-weight: 600; 
-      color: #555; 
-      width: 35%; 
-    }
-    
-    td[contenteditable="true"] { 
-      width: 65%; 
-      text-align: right; 
-      background-color: #fafafa;
-      border: 1px solid #eee;
-      border-radius: 6px;
-      padding: 8px;
-    }
-    
-    td[contenteditable="true"]:focus { 
-      text-align: left;
-      background-color: #fff;
     }
   }
 </style>
@@ -153,32 +115,35 @@
 <body>
 
 <div class="container">
-  <h2>Laporan Harian Unit</h2>
+  <h2>Tabel Data Laporan</h2>
   
   <div class="controls">
-    <button onclick="addRow()">+ Tambah</button>
+    <button onclick="addRow()">+ Tambah Baris</button>
     <button class="danger" onclick="clearTable()">Kosongkan</button>
     <button class="success" id="saveBtn" onclick="saveDataToCloud()">Simpan ke Cloud</button>
     <div id="status">Status: Menunggu koneksi...</div>
   </div>
 
-  <table id="excelTable">
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>Suffix</th>
-        <th>Unit No</th>
-        <th>Problem</th>
-        <!-- Tambahkan class hide-on-mobile pada header yang ingin disembunyikan di HP -->
-        <th class="hide-on-mobile">Tanggal</th>
-        <th class="hide-on-mobile">Shift</th>
-        <th class="hide-on-mobile">Waktu</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Data dari JSONBin -->
-    </tbody>
-  </table>
+  <!-- Table Wrapper untuk fitur geser kanan/kiri di HP -->
+  <div class="table-wrapper">
+    <table id="excelTable">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Suffix</th>
+          <th>Unit No</th>
+          <th>Problem</th>
+          <!-- Class hide-on-mobile untuk menyembunyikan kolom ini di HP -->
+          <th class="hide-on-mobile">Tanggal</th>
+          <th class="hide-on-mobile">Shift</th>
+          <th class="hide-on-mobile">Waktu</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Data dari JSONBin -->
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
@@ -224,15 +189,14 @@
       const tr = document.createElement('tr');
       tr.dataset.id = rowObj.id || Date.now() + index; 
       
-      // Class hide-on-mobile ditambahkan pada kolom ke-5, 6, dan 7
       tr.innerHTML = `
-        <td data-label="No">${index + 1}</td>
-        <td data-label="Suffix" contenteditable="true">${rowObj.suffix || ''}</td>
-        <td data-label="Unit No" contenteditable="true">${rowObj.unitNo || ''}</td>
-        <td data-label="Problem" contenteditable="true">${rowObj.problem || ''}</td>
-        <td data-label="Tanggal" contenteditable="true" class="hide-on-mobile">${rowObj.dateStr || ''}</td>
-        <td data-label="Shift" contenteditable="true" class="hide-on-mobile">${rowObj.shift || ''}</td>
-        <td data-label="Waktu" contenteditable="true" class="hide-on-mobile">${rowObj.time || ''}</td>
+        <td>${index + 1}</td>
+        <td contenteditable="true">${rowObj.suffix || ''}</td>
+        <td contenteditable="true">${rowObj.unitNo || ''}</td>
+        <td contenteditable="true">${rowObj.problem || ''}</td>
+        <td contenteditable="true" class="hide-on-mobile">${rowObj.dateStr || ''}</td>
+        <td contenteditable="true" class="hide-on-mobile">${rowObj.shift || ''}</td>
+        <td contenteditable="true" class="hide-on-mobile">${rowObj.time || ''}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -279,31 +243,27 @@
     }
   }
 
-  // 4. Tambah Baris Baru dengan Pengisian Waktu Otomatis
+  // 4. Tambah Baris Baru dengan Pengisian Otomatis
   function addRow() {
     const tr = document.createElement('tr');
     const rowCount = tbody.children.length + 1;
     tr.dataset.id = Date.now(); 
     
-    // Logika untuk mengisi Shift, Tanggal, dan Waktu secara otomatis
     const now = new Date();
     const opsionalTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const dateStrOtomatis = now.toLocaleDateString('id-ID', opsionalTanggal);
     const timeStrOtomatis = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    
-    // Menentukan Shift (Contoh: Day 07:00 - 19:00, selebihnya Night)
     const jam = now.getHours();
     const shiftOtomatis = (jam >= 7 && jam < 19) ? 'Day' : 'Night';
 
     tr.innerHTML = `
-      <td data-label="No">${rowCount}</td>
-      <td data-label="Suffix" contenteditable="true"></td>
-      <td data-label="Unit No" contenteditable="true"></td>
-      <td data-label="Problem" contenteditable="true"></td>
-      <!-- Data di bawah ini tersembunyi di HP, tapi sudah terisi otomatis dari sistem -->
-      <td data-label="Tanggal" contenteditable="true" class="hide-on-mobile">${dateStrOtomatis}</td>
-      <td data-label="Shift" contenteditable="true" class="hide-on-mobile">${shiftOtomatis}</td>
-      <td data-label="Waktu" contenteditable="true" class="hide-on-mobile">${timeStrOtomatis}</td>
+      <td>${rowCount}</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true" class="hide-on-mobile">${dateStrOtomatis}</td>
+      <td contenteditable="true" class="hide-on-mobile">${shiftOtomatis}</td>
+      <td contenteditable="true" class="hide-on-mobile">${timeStrOtomatis}</td>
     `;
     tbody.appendChild(tr);
   }
