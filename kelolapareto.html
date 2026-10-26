@@ -86,7 +86,7 @@
         /* General Utilities */
         .header-action { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .btn-wa { background: #25D366; color: white; padding: 10px 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: bold; }
-        .history-date { background: #1e3c72; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; }
+        .history-date { background: #1e3c72; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .history-content { display: none; margin-bottom: 15px; border-left: 2px solid #1e3c72; padding-left: 10px; }
         canvas { background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     </style>
@@ -118,7 +118,7 @@
 
     <!-- MAIN DISPLAY (HOME - HANYA SHIFT INI) -->
     <div id="home-page" class="page active">
-        <h3 style="margin-bottom: 15px; color: #333;">Data Input</h3>
+        <h3 style="margin-bottom: 15px; color: #333;">Data Input (Shift Saat Ini)</h3>
         <div id="home-display"></div>
     </div>
 
@@ -131,7 +131,7 @@
         <div id="pareto-display"></div>
     </div>
 
-    <!-- HISTORY PAGE (SEMUA DATA) -->
+    <!-- HISTORY PAGE (SEMUA DATA, DIKELOMPOKKAN TANGGAL & SHIFT) -->
     <div id="history-page" class="page">
         <h3 style="margin-bottom: 15px;">History Seluruh Input</h3>
         <div id="history-display"></div>
@@ -139,7 +139,7 @@
 
     <!-- CHART PAGE -->
     <div id="chart-page" class="page">
-        <h3 style="margin-bottom: 15px;">Grafik Pareto</h3>
+        <h3 style="margin-bottom: 15px;">Grafik Pareto (Shift Ini)</h3>
         <canvas id="paretoChart"></canvas>
     </div>
 
@@ -155,7 +155,6 @@
 
     <!-- BOTTOM NAV -->
     <div class="bottom-nav">
-        <!-- ICON HOME TELAH DIHAPUS -->
         <div class="nav-item" onclick="navTo('history-page', this)"><i class="fas fa-history"></i></div>
         <div class="nav-scan" onclick="openScanner()"><i class="fas fa-barcode"></i></div>
         <div class="nav-item" onclick="navTo('chart-page', this)"><i class="fas fa-chart-pie"></i></div>
@@ -183,7 +182,7 @@
                 <input type="text" id="in-unit" readonly>
             </div>
             <div class="input-group">
-                <label>Problem</label>
+                <label>Nama Problem</label>
                 <input type="text" id="in-problem" placeholder="Ketik problem di sini..." autocomplete="off">
             </div>
             <button class="btn-save" onclick="saveData()">Simpan Data</button>
@@ -215,7 +214,7 @@
                 <input type="text" id="edit-unit">
             </div>
             <div class="input-group">
-                <label>Problem</label>
+                <label>Nama Problem</label>
                 <input type="text" id="edit-problem" autocomplete="off">
             </div>
             <button class="btn-save" style="background: #27ae60;" onclick="saveEditData()">Update Data</button>
@@ -293,7 +292,7 @@
         // ==========================================
         function updateTopCard() {
             const info = getShiftInfo();
-            document.getElementById('display-date-shift').innerText = `${info.dateString} - ${info.shiftName} Shift`;
+            document.getElementById('display-date-shift').innerText = `${info.dateString} - Shift ${info.shiftName}`;
             
             const currentData = getCurrentShiftData();
             document.getElementById('total-unit').innerText = currentData.length;
@@ -304,7 +303,6 @@
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             
-            // Hapus status active pada nav-item jika pindah ke halaman selain navigasi bawah (Home/Admin)
             if(elm) {
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
                 elm.classList.add('active');
@@ -331,8 +329,7 @@
                 container.innerHTML += `
                     <div class="data-card">
                         <span class="time">${item.time}</span>
-                        <h4>${item.problem}</h4>
-                        <p><strong>Unit:</strong> ${item.suffix} - ${item.unitNo}</p>
+                        <h4>${item.suffix} - ${item.unitNo} ${item.problem}</h4>
                     </div>
                 `;
             });
@@ -343,7 +340,7 @@
             container.innerHTML = '';
             const pareto = getParetoData(getCurrentShiftData());
             
-            if(Object.keys(pareto).length === 0) return container.innerHTML = '<p style="text-align:center; color:#999;">Belum ada problem pareto.</p>';
+            if(Object.keys(pareto).length === 0) return container.innerHTML = '<p style="text-align:center; color:#999;">Belum ada kelompok problem lebih dari 3 kali di shift ini.</p>';
 
             for (let prob in pareto) {
                 let listHtml = '';
@@ -376,28 +373,40 @@
             });
         }
 
+        // FUNGSI HISTORY YANG DIPERBARUI (SORTIR BY TANGGAL + SHIFT)
         function renderHistory() {
             const container = document.getElementById('history-display');
             container.innerHTML = '';
             
-            let groupedDate = {};
+            if(db.length === 0) return container.innerHTML = '<p style="text-align:center; color:#999;">Belum ada data history.</p>';
+
+            let groupedDateShift = {};
             db.forEach(item => {
-                if(!groupedDate[item.dateStr]) groupedDate[item.dateStr] = [];
-                groupedDate[item.dateStr].push(item);
+                // Menggabungkan tanggal dan shift menjadi satu kategori
+                const groupKey = `${item.dateStr} - ${item.shift} Shift`;
+                if(!groupedDateShift[groupKey]) groupedDateShift[groupKey] = [];
+                groupedDateShift[groupKey].push(item);
             });
 
-            for (let dateStr in groupedDate) {
-                const idDiv = 'hist-' + dateStr.replace(/\s+/g, '');
+            for (let groupKey in groupedDateShift) {
+                // Hapus karakter non-alphanumeric untuk membuat ID HTML yang valid
+                const idDiv = 'hist-' + groupKey.replace(/[^a-zA-Z0-9]/g, '');
+                
                 let listHtml = '';
-                groupedDate[dateStr].forEach(item => {
-                    listHtml += `<div class="data-card" style="margin-top:10px;">
-                        <h6>${item.suffix} - ${item.unitNo} (${item.shift}) ${item.problem}</h6>
-                    </div>`;
+                groupedDateShift[groupKey].forEach(item => {
+                    listHtml += `
+                        <div class="data-card" style="margin-top:10px;">
+                            <span class="time" style="font-size:0.75rem; color:#999; float:right;">${item.time}</span>
+                            <h4>${item.problem}</h4>
+                            <p>${item.suffix} - ${item.unitNo}</p>
+                        </div>
+                    `;
                 });
+
                 container.innerHTML += `
                     <div class="history-date" onclick="toggleHist('${idDiv}')">
-                        <span><i class="fas fa-calendar-alt"></i> ${dateStr}</span>
-                        <span>${groupedDate[dateStr].length} Unit</span>
+                        <span style="font-size: 0.9rem;"><i class="fas fa-calendar-alt"></i> ${groupKey}</span>
+                        <span style="font-size: 0.9rem;">${groupedDateShift[groupKey].length} Unit</span>
                     </div>
                     <div class="history-content" id="${idDiv}">
                         ${listHtml}
@@ -405,6 +414,7 @@
                 `;
             }
         }
+        
         function toggleHist(id) {
             const el = document.getElementById(id);
             el.style.display = el.style.display === 'block' ? 'none' : 'block';
