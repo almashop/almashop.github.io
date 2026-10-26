@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabel Excel Online - JSONBin</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
+  .container {
+    background: #fff; padding: 20px; border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto;
+  }
+  .controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+  button { 
+    padding: 8px 15px; cursor: pointer; background-color: #1a73e8;
+    color: white; border: none; border-radius: 4px; font-weight: bold;
+  }
+  button.danger { background-color: #dc3545; }
+  button.success { background-color: #28a745; }
+  button:disabled { background-color: #cccccc; cursor: not-allowed; }
+  
+  table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+  th, td { border: 1px solid #ddd; padding: 10px; text-align: left; min-width: 100px; }
+  th { background-color: #f1f3f4; color: #333; }
+  td { outline: none; }
+  td[contenteditable="true"]:focus { background-color: #e8f0fe; border: 2px solid #1a73e8; }
+  
+  #status { font-size: 14px; color: #555; margin-left: auto; align-self: center; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Tabel Data Interaktif (JSONBin)</h2>
+  
+  <div class="controls">
+    <button onclick="addRow()">+ Tambah Baris</button>
+    <button class="success" id="saveBtn" onclick="saveDataToCloud()">Simpan ke Cloud</button>
+    <button class="danger" onclick="clearTable()">Kosongkan Tabel</button>
+    <span id="status">Status: Menunggu sinkronisasi...</span>
+  </div>
+
+  <table id="excelTable">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Item / Komponen</th>
+        <th>Jumlah</th>
+        <th>Keterangan</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Data dari JSONBin akan dimuat di sini -->
+    </tbody>
+  </table>
+</div>
+
+<script>
+  // ==========================================
+  // KONFIGURASI JSONBIN (GANTI DENGAN MILIK ANDA)
+  // ==========================================
+  const BIN_ID = '6aded063ac6210605a520e79'; // Contoh: 65123abc456def...
+  const API_KEY = '$2a$10$Ii1ep5GX66sB9lery6p2suxzNGrSMg2iwncn5Z2y/HT5WjaHRrf1q'; // Contoh: $2a$10$abcdef...
+  
+  const BASE_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+  const tbody = document.querySelector('#excelTable tbody');
+  const statusEl = document.getElementById('status');
+  const saveBtn = document.getElementById('saveBtn');
+
+  // 1. Mengambil data dari JSONBin
+  async function loadDataFromCloud() {
+    statusEl.innerText = "Status: Mengambil data...";
+    try {
+      const response = await fetch(BASE_URL, {
+        method: 'GET',
+        headers: {
+          'X-Master-Key': API_KEY
+        }
+      });
+      
+      if (!response.ok) throw new Error('Gagal mengambil data');
+      
+      const result = await response.json();
+      const data = result.record; // JSONBin menyimpan array kita di dalam properti 'record'
+      
+      renderTable(data);
+      statusEl.innerText = "Status: Data berhasil dimuat.";
+    } catch (error) {
+      console.error(error);
+      statusEl.innerText = "Status: Error / Bin belum ada isinya.";
+      renderTable([]); // Render tabel kosong jika gagal
+    }
+  }
+
+  // 2. Merender data JSON ke dalam format HTML
+  function renderTable(dataArray) {
+    tbody.innerHTML = '';
+    
+    if (dataArray.length === 0) {
+      // Jika data kosong, buat 3 baris kosong default
+      for(let i = 0; i < 3; i++) addRow();
+      return;
+    }
+
+    dataArray.forEach((rowObj, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td contenteditable="true">${rowObj.item || ''}</td>
+        <td contenteditable="true">${rowObj.jumlah || ''}</td>
+        <td contenteditable="true">${rowObj.keterangan || ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 3. Mengumpulkan data dari tabel HTML dan mengubahnya menjadi Array JSON
+  function getTableDataAsJSON() {
+    const data = [];
+    const rows = tbody.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      // Lewati baris jika benar-benar kosong semua (opsional)
+      if(cells[1].innerText.trim() === '' && cells[2].innerText.trim() === '' && cells[3].innerText.trim() === '') {
+          return; 
+      }
+      
+      data.push({
+        item: cells[1].innerText.trim(),
+        jumlah: cells[2].innerText.trim(),
+        keterangan: cells[3].innerText.trim()
+      });
+    });
+    
+    return data;
+  }
+
+  // 4. Menyimpan data JSON ke JSONBin
+  async function saveDataToCloud() {
+    const dataToSave = getTableDataAsJSON();
+    
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Menyimpan...";
+    statusEl.innerText = "Status: Sedang menyimpan...";
+
+    try {
+      const response = await fetch(BASE_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': API_KEY
+        },
+        body: JSON.stringify(dataToSave)
+      });
+
+      if (!response.ok) throw new Error('Gagal menyimpan data');
+      
+      statusEl.innerText = `Status: Disimpan pada ${new Date().toLocaleTimeString()}`;
+      updateRowNumbers(); // Rapikan nomor urut setelah disimpan
+    } catch (error) {
+      console.error(error);
+      statusEl.innerText = "Status: Gagal menyimpan data.";
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Simpan ke Cloud";
+    }
+  }
+
+  // 5. Fungsi utilitas untuk tabel
+  function addRow() {
+    const tr = document.createElement('tr');
+    const rowCount = tbody.children.length + 1;
+    tr.innerHTML = `
+      <td>${rowCount}</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  function clearTable() {
+    if(confirm('Kosongkan tabel di layar? (Tidak akan menghapus data di cloud sampai Anda menekan Simpan)')) {
+      tbody.innerHTML = '';
+      for(let i = 0; i < 3; i++) addRow();
+    }
+  }
+
+  function updateRowNumbers() {
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+      row.querySelector('td').innerText = index + 1;
+    });
+  }
+
+  // Jalankan saat pertama kali dibuka
+  loadDataFromCloud();
+</script>
+
+</body>
+</html>
