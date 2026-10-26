@@ -2,48 +2,167 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tabel Laporan Harian (JSONBin)</title>
+<!-- Meta viewport ini sangat penting agar tidak terlihat zoom-out di HP -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Aplikasi Laporan Harian Mobile</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
+  :root {
+    --primary-color: #1a73e8;
+    --danger-color: #dc3545;
+    --success-color: #28a745;
+    --bg-color: #f0f2f5;
+  }
+
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    margin: 0; 
+    padding: 15px; 
+    background-color: var(--bg-color); 
+  }
+
   .container {
-    background: #fff; padding: 20px; border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 1000px; margin: 0 auto;
-    overflow-x: auto;
+    background: #fff; 
+    padding: 20px; 
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+    max-width: 1000px; 
+    margin: 0 auto;
   }
-  .controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  h2 {
+    margin-top: 0;
+    font-size: 20px;
+    color: #333;
+    text-align: center;
+  }
+  
+  .controls { 
+    margin-bottom: 20px; 
+    display: flex; 
+    gap: 10px; 
+    flex-wrap: wrap; 
+    align-items: center; 
+  }
+
   button { 
-    padding: 8px 15px; cursor: pointer; background-color: #1a73e8;
-    color: white; border: none; border-radius: 4px; font-weight: bold;
+    padding: 12px 15px; 
+    cursor: pointer; 
+    background-color: var(--primary-color);
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    font-weight: bold;
+    font-size: 14px;
+    flex: 1; /* Membuat tombol sejajar di HP */
+    min-width: 120px;
+    transition: opacity 0.2s;
   }
-  button.danger { background-color: #dc3545; }
-  button.success { background-color: #28a745; }
+  button:active { opacity: 0.8; }
+  button.danger { background-color: var(--danger-color); }
+  button.success { background-color: var(--success-color); }
   button:disabled { background-color: #cccccc; cursor: not-allowed; }
   
-  table { border-collapse: collapse; width: 100%; margin-top: 15px; font-size: 14px; }
-  th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-  th { background-color: #f1f3f4; color: #333; white-space: nowrap; }
-  td { outline: none; min-width: 80px; }
-  td[contenteditable="true"]:focus { background-color: #e8f0fe; border: 2px solid #1a73e8; }
-  
-  #status { font-size: 14px; color: #555; margin-left: auto; }
+  #status { 
+    font-size: 13px; 
+    color: #555; 
+    width: 100%; 
+    text-align: center; 
+    margin-top: 5px; 
+    font-weight: 500;
+  }
+
+  /* --- STYLE TABEL DESKTOP --- */
+  table { 
+    border-collapse: collapse; 
+    width: 100%; 
+    font-size: 14px; 
+  }
+  th, td { 
+    border: 1px solid #e0e0e0; 
+    padding: 12px; 
+    text-align: left; 
+  }
+  th { 
+    background-color: #f8f9fa; 
+    color: #333; 
+    white-space: nowrap; 
+  }
+  td { outline: none; }
+  td[contenteditable="true"]:focus { 
+    background-color: #e8f0fe; 
+    border: 2px solid var(--primary-color); 
+  }
+
+  /* --- STYLE KHUSUS HP (MOBILE VIEW) --- */
+  @media screen and (max-width: 768px) {
+    .container { padding: 15px; }
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .controls .success { grid-column: span 2; } /* Tombol simpan dibuat penuh/lebar */
+    
+    /* Mengubah tabel menjadi bentuk Kartu (Card) */
+    table, thead, tbody, th, td, tr { 
+      display: block; 
+    }
+    thead { display: none; } /* Sembunyikan header tabel di HP */
+    
+    tr { 
+      margin-bottom: 15px; 
+      border: 1px solid #ddd; 
+      border-radius: 10px; 
+      background: #fff; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      padding: 10px;
+    }
+    
+    td { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      border: none; 
+      border-bottom: 1px solid #f0f0f0; 
+      padding: 10px 5px; 
+    }
+    td:last-child { border-bottom: none; }
+    
+    /* Memunculkan Label Header di setiap sel */
+    td::before { 
+      content: attr(data-label); 
+      font-weight: 600; 
+      color: #555; 
+      width: 35%; 
+    }
+    
+    td[contenteditable="true"] { 
+      width: 65%; 
+      text-align: right; 
+      background-color: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 6px;
+      padding: 8px;
+    }
+    
+    /* Saat diketik di HP, teks rata kiri agar mudah dibaca */
+    td[contenteditable="true"]:focus { 
+      text-align: left;
+      background-color: #fff;
+    }
+  }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Tabel Data Laporan</h2>
+  <h2>Laporan Harian Unit</h2>
   
   <div class="controls">
-    <button onclick="addRow()">+ Tambah Baris</button>
+    <button onclick="addRow()">+ Tambah</button>
+    <button class="danger" onclick="clearTable()">Kosongkan</button>
     <button class="success" id="saveBtn" onclick="saveDataToCloud()">Simpan ke Cloud</button>
-    <button class="danger" onclick="clearTable()">Kosongkan Tabel</button>
-    <span id="status">Status: Menunggu sinkronisasi...</span>
+    <div id="status">Status: Menunggu koneksi...</div>
   </div>
 
   <table id="excelTable">
     <thead>
-      <!-- Header disesuaikan dengan field JSON -->
       <tr>
         <th>No</th>
         <th>Suffix</th>
@@ -62,17 +181,17 @@
 
 <script>
   // ==========================================
-  // KONFIGURASI JSONBIN (GANTI DENGAN MILIK ANDA)
+  // KONFIGURASI JSONBIN
   // ==========================================
-  const BIN_ID = '6aded063ac6210605a520e79'; 
-  const API_KEY = '$2a$10$Ii1ep5GX66sB9lery6p2suxzNGrSMg2iwncn5Z2y/HT5WjaHRrf1q'; 
+  const BIN_ID = 'GANTI_DENGAN_BIN_ID_ANDA'; 
+  const API_KEY = 'GANTI_DENGAN_API_KEY_ANDA'; 
   
   const BASE_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
   const tbody = document.querySelector('#excelTable tbody');
   const statusEl = document.getElementById('status');
   const saveBtn = document.getElementById('saveBtn');
 
-  // 1. Mengambil data dari JSONBin
+  // 1. Mengambil data
   async function loadDataFromCloud() {
     statusEl.innerText = "Status: Mengambil data...";
     try {
@@ -80,63 +199,55 @@
         method: 'GET',
         headers: { 'X-Master-Key': API_KEY }
       });
-      
       if (!response.ok) throw new Error('Gagal mengambil data');
       
       const result = await response.json();
-      const data = result.record; 
-      
-      renderTable(data);
+      renderTable(result.record);
       statusEl.innerText = "Status: Data berhasil dimuat.";
     } catch (error) {
-      console.error(error);
-      statusEl.innerText = "Status: Error / Bin belum ada isinya.";
+      statusEl.innerText = "Status: Data kosong / Gagal memuat.";
       renderTable([]); 
     }
   }
 
-  // 2. Merender data JSON ke tabel (Disesuaikan dengan field JSON Anda)
+  // 2. Merender data (Menambahkan 'data-label' untuk tampilan HP)
   function renderTable(dataArray) {
     tbody.innerHTML = '';
-    
     if (!Array.isArray(dataArray) || dataArray.length === 0) {
-      for(let i = 0; i < 3; i++) addRow();
+      addRow(); // Buat 1 baris kosong di awal jika kosong
       return;
     }
 
     dataArray.forEach((rowObj, index) => {
       const tr = document.createElement('tr');
-      // Menyimpan ID bawaan dari database secara tersembunyi (dataset)
       tr.dataset.id = rowObj.id || Date.now() + index; 
       
+      // PERHATIKAN penambahan atribut data-label="..."
       tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td contenteditable="true">${rowObj.suffix || ''}</td>
-        <td contenteditable="true">${rowObj.unitNo || ''}</td>
-        <td contenteditable="true">${rowObj.problem || ''}</td>
-        <td contenteditable="true">${rowObj.dateStr || ''}</td>
-        <td contenteditable="true">${rowObj.shift || ''}</td>
-        <td contenteditable="true">${rowObj.time || ''}</td>
+        <td data-label="No">${index + 1}</td>
+        <td data-label="Suffix" contenteditable="true">${rowObj.suffix || ''}</td>
+        <td data-label="Unit No" contenteditable="true">${rowObj.unitNo || ''}</td>
+        <td data-label="Problem" contenteditable="true">${rowObj.problem || ''}</td>
+        <td data-label="Tanggal" contenteditable="true">${rowObj.dateStr || ''}</td>
+        <td data-label="Shift" contenteditable="true">${rowObj.shift || ''}</td>
+        <td data-label="Waktu" contenteditable="true">${rowObj.time || ''}</td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  // 3. Mengubah tabel HTML kembali menjadi Array JSON (Disesuaikan dengan field JSON Anda)
-  function getTableDataAsJSON() {
+  // 3. Simpan data
+  async function saveDataToCloud() {
     const data = [];
     const rows = tbody.querySelectorAll('tr');
     
     rows.forEach(row => {
       const cells = row.querySelectorAll('td');
-      
-      // Lewati baris jika suffix, unit no, dan problem kosong semua
-      if(cells[1].innerText.trim() === '' && cells[2].innerText.trim() === '' && cells[3].innerText.trim() === '') {
-          return; 
-      }
+      // Cegah simpan baris kosong
+      if(!cells[1].innerText.trim() && !cells[2].innerText.trim() && !cells[3].innerText.trim()) return; 
       
       data.push({
-        id: Number(row.dataset.id), // Mengambil ID bawaan dari dataset
+        id: Number(row.dataset.id),
         suffix: cells[1].innerText.trim(),
         unitNo: cells[2].innerText.trim(),
         problem: cells[3].innerText.trim(),
@@ -146,13 +257,6 @@
       });
     });
     
-    return data;
-  }
-
-  // 4. Menyimpan data JSON ke JSONBin
-  async function saveDataToCloud() {
-    const dataToSave = getTableDataAsJSON();
-    
     saveBtn.disabled = true;
     saveBtn.innerText = "Menyimpan...";
     statusEl.innerText = "Status: Sedang menyimpan...";
@@ -160,48 +264,44 @@
     try {
       const response = await fetch(BASE_URL, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Master-Key': API_KEY
-        },
-        body: JSON.stringify(dataToSave)
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify(data)
       });
-
-      if (!response.ok) throw new Error('Gagal menyimpan data');
-      
-      statusEl.innerText = `Status: Disimpan pada ${new Date().toLocaleTimeString()}`;
+      if (!response.ok) throw new Error('Gagal');
+      statusEl.innerText = `Berhasil disimpan pukul ${new Date().toLocaleTimeString('id-ID')}`;
       updateRowNumbers(); 
     } catch (error) {
-      console.error(error);
-      statusEl.innerText = "Status: Gagal menyimpan data.";
+      statusEl.innerText = "Status: Gagal menyimpan jaringan bermasalah.";
     } finally {
       saveBtn.disabled = false;
       saveBtn.innerText = "Simpan ke Cloud";
     }
   }
 
-  // 5. Fungsi untuk menambahkan baris baru (Dengan format 7 kolom)
+  // 4. Tambah Baris Baru
   function addRow() {
     const tr = document.createElement('tr');
     const rowCount = tbody.children.length + 1;
-    tr.dataset.id = Date.now(); // Buat ID timestamp baru untuk baris baru
+    tr.dataset.id = Date.now(); 
     
+    // Tambahkan data-label agar rapi di HP
     tr.innerHTML = `
-      <td>${rowCount}</td>
-      <td contenteditable="true"></td>
-      <td contenteditable="true"></td>
-      <td contenteditable="true"></td>
-      <td contenteditable="true"></td>
-      <td contenteditable="true"></td>
-      <td contenteditable="true"></td>
+      <td data-label="No">${rowCount}</td>
+      <td data-label="Suffix" contenteditable="true"></td>
+      <td data-label="Unit No" contenteditable="true"></td>
+      <td data-label="Problem" contenteditable="true"></td>
+      <td data-label="Tanggal" contenteditable="true"></td>
+      <td data-label="Shift" contenteditable="true"></td>
+      <td data-label="Waktu" contenteditable="true"></td>
     `;
     tbody.appendChild(tr);
   }
 
+  // 5. Utilitas
   function clearTable() {
-    if(confirm('Kosongkan tabel di layar?')) {
+    if(confirm('Hapus tampilan tabel di layar? (Data cloud tidak terhapus sebelum ditekan Simpan)')) {
       tbody.innerHTML = '';
-      for(let i = 0; i < 3; i++) addRow();
+      addRow();
     }
   }
 
@@ -212,7 +312,6 @@
     });
   }
 
-  // Jalankan saat halaman dibuka
   loadDataFromCloud();
 </script>
 
