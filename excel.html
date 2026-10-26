@@ -2,7 +2,6 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<!-- Meta viewport ini sangat penting agar tidak terlihat zoom-out di HP -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Aplikasi Laporan Harian Mobile</title>
 <style>
@@ -53,7 +52,7 @@
     border-radius: 8px; 
     font-weight: bold;
     font-size: 14px;
-    flex: 1; /* Membuat tombol sejajar di HP */
+    flex: 1; 
     min-width: 120px;
     transition: opacity 0.2s;
   }
@@ -97,13 +96,17 @@
   @media screen and (max-width: 768px) {
     .container { padding: 15px; }
     .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .controls .success { grid-column: span 2; } /* Tombol simpan dibuat penuh/lebar */
+    .controls .success { grid-column: span 2; }
     
-    /* Mengubah tabel menjadi bentuk Kartu (Card) */
+    /* Class untuk menyembunyikan kolom tertentu di HP */
+    .hide-on-mobile {
+      display: none !important;
+    }
+
     table, thead, tbody, th, td, tr { 
       display: block; 
     }
-    thead { display: none; } /* Sembunyikan header tabel di HP */
+    thead { display: none; } 
     
     tr { 
       margin-bottom: 15px; 
@@ -124,7 +127,6 @@
     }
     td:last-child { border-bottom: none; }
     
-    /* Memunculkan Label Header di setiap sel */
     td::before { 
       content: attr(data-label); 
       font-weight: 600; 
@@ -141,7 +143,6 @@
       padding: 8px;
     }
     
-    /* Saat diketik di HP, teks rata kiri agar mudah dibaca */
     td[contenteditable="true"]:focus { 
       text-align: left;
       background-color: #fff;
@@ -168,13 +169,14 @@
         <th>Suffix</th>
         <th>Unit No</th>
         <th>Problem</th>
-        <th>Tanggal</th>
-        <th>Shift</th>
-        <th>Waktu</th>
+        <!-- Tambahkan class hide-on-mobile pada header yang ingin disembunyikan di HP -->
+        <th class="hide-on-mobile">Tanggal</th>
+        <th class="hide-on-mobile">Shift</th>
+        <th class="hide-on-mobile">Waktu</th>
       </tr>
     </thead>
     <tbody>
-      <!-- Data dari JSONBin akan dimuat di sini -->
+      <!-- Data dari JSONBin -->
     </tbody>
   </table>
 </div>
@@ -199,7 +201,7 @@
         method: 'GET',
         headers: { 'X-Master-Key': API_KEY }
       });
-      if (!response.ok) throw new Error('Gagal mengambil data');
+      if (!response.ok) throw new Error('Gagal');
       
       const result = await response.json();
       renderTable(result.record);
@@ -210,11 +212,11 @@
     }
   }
 
-  // 2. Merender data (Menambahkan 'data-label' untuk tampilan HP)
+  // 2. Merender data 
   function renderTable(dataArray) {
     tbody.innerHTML = '';
     if (!Array.isArray(dataArray) || dataArray.length === 0) {
-      addRow(); // Buat 1 baris kosong di awal jika kosong
+      addRow(); 
       return;
     }
 
@@ -222,15 +224,15 @@
       const tr = document.createElement('tr');
       tr.dataset.id = rowObj.id || Date.now() + index; 
       
-      // PERHATIKAN penambahan atribut data-label="..."
+      // Class hide-on-mobile ditambahkan pada kolom ke-5, 6, dan 7
       tr.innerHTML = `
         <td data-label="No">${index + 1}</td>
         <td data-label="Suffix" contenteditable="true">${rowObj.suffix || ''}</td>
         <td data-label="Unit No" contenteditable="true">${rowObj.unitNo || ''}</td>
         <td data-label="Problem" contenteditable="true">${rowObj.problem || ''}</td>
-        <td data-label="Tanggal" contenteditable="true">${rowObj.dateStr || ''}</td>
-        <td data-label="Shift" contenteditable="true">${rowObj.shift || ''}</td>
-        <td data-label="Waktu" contenteditable="true">${rowObj.time || ''}</td>
+        <td data-label="Tanggal" contenteditable="true" class="hide-on-mobile">${rowObj.dateStr || ''}</td>
+        <td data-label="Shift" contenteditable="true" class="hide-on-mobile">${rowObj.shift || ''}</td>
+        <td data-label="Waktu" contenteditable="true" class="hide-on-mobile">${rowObj.time || ''}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -243,7 +245,6 @@
     
     rows.forEach(row => {
       const cells = row.querySelectorAll('td');
-      // Cegah simpan baris kosong
       if(!cells[1].innerText.trim() && !cells[2].innerText.trim() && !cells[3].innerText.trim()) return; 
       
       data.push({
@@ -278,21 +279,31 @@
     }
   }
 
-  // 4. Tambah Baris Baru
+  // 4. Tambah Baris Baru dengan Pengisian Waktu Otomatis
   function addRow() {
     const tr = document.createElement('tr');
     const rowCount = tbody.children.length + 1;
     tr.dataset.id = Date.now(); 
     
-    // Tambahkan data-label agar rapi di HP
+    // Logika untuk mengisi Shift, Tanggal, dan Waktu secara otomatis
+    const now = new Date();
+    const opsionalTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateStrOtomatis = now.toLocaleDateString('id-ID', opsionalTanggal);
+    const timeStrOtomatis = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    
+    // Menentukan Shift (Contoh: Day 07:00 - 19:00, selebihnya Night)
+    const jam = now.getHours();
+    const shiftOtomatis = (jam >= 7 && jam < 19) ? 'Day' : 'Night';
+
     tr.innerHTML = `
       <td data-label="No">${rowCount}</td>
       <td data-label="Suffix" contenteditable="true"></td>
       <td data-label="Unit No" contenteditable="true"></td>
       <td data-label="Problem" contenteditable="true"></td>
-      <td data-label="Tanggal" contenteditable="true"></td>
-      <td data-label="Shift" contenteditable="true"></td>
-      <td data-label="Waktu" contenteditable="true"></td>
+      <!-- Data di bawah ini tersembunyi di HP, tapi sudah terisi otomatis dari sistem -->
+      <td data-label="Tanggal" contenteditable="true" class="hide-on-mobile">${dateStrOtomatis}</td>
+      <td data-label="Shift" contenteditable="true" class="hide-on-mobile">${shiftOtomatis}</td>
+      <td data-label="Waktu" contenteditable="true" class="hide-on-mobile">${timeStrOtomatis}</td>
     `;
     tbody.appendChild(tr);
   }
