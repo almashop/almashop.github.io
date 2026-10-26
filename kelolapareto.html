@@ -89,6 +89,9 @@
         .history-date { background: #1e3c72; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .history-content { display: none; margin-bottom: 15px; border-left: 2px solid #1e3c72; padding-left: 10px; }
         canvas { background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        
+        /* Status Loading */
+        #sync-status { text-align: center; font-size: 0.75rem; color: #f1c40f; margin-top: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -99,12 +102,13 @@
          ontouchstart="startAdminPress()" ontouchend="cancelAdminPress()" ontouchmove="cancelAdminPress()">
          
         <div class="header-title" onclick="event.stopPropagation(); navTo('home-page');">KELOLA PROBLEM PARETO</div>
-        <div class="date-shift" id="display-date-shift">Memuat Waktu...</div>
+        <div class="date-shift" id="display-date-shift">Menghubungkan ke Server...</div>
+        <div id="sync-status"></div>
         <div class="stats-row">
             <div class="stat-box">
                 <i class="fas fa-car"></i>
                 <div>
-                    <div style="font-size: 0.7rem; color: #ccc;">Total Unit</div>
+                    <div style="font-size: 0.7rem; color: #ccc;">Total Unit </div>
                     <strong id="total-unit">0</strong>
                 </div>
             </div>
@@ -118,8 +122,10 @@
 
     <!-- MAIN DISPLAY (HOME - HANYA SHIFT INI) -->
     <div id="home-page" class="page active">
-        <h3 style="margin-bottom: 15px; color: #333;">Data Input (Shift Saat Ini)</h3>
-        <div id="home-display"></div>
+        <h3 style="margin-bottom: 15px; color: #333;">Data Input</h3>
+        <div id="home-display">
+            <p style="text-align:center; color:#999;">Memuat data dari server...</p>
+        </div>
     </div>
 
     <!-- PARETO PAGE -->
@@ -139,7 +145,7 @@
 
     <!-- CHART PAGE -->
     <div id="chart-page" class="page">
-        <h3 style="margin-bottom: 15px;">Grafik Pareto (Shift Ini)</h3>
+        <h3 style="margin-bottom: 15px;">Grafik Pareto</h3>
         <canvas id="paretoChart"></canvas>
     </div>
 
@@ -149,7 +155,7 @@
             <h3>Halaman Admin</h3>
             <button onclick="navTo('home-page')" style="background:#1e3c72;color:white;padding:8px 15px;border-radius:8px;border:none;cursor:pointer;">Tutup</button>
         </div>
-        <p style="font-size: 0.8rem; color: #666; margin-bottom: 15px;"><i>Klik dan tahan pada salah satu data di bawah untuk mengubah atau menghapusnya.</i></p>
+        <p style="font-size: 0.8rem; color: #666; margin-bottom: 15px;"><i></i></p>
         <div id="admin-display"></div>
     </div>
 
@@ -182,10 +188,10 @@
                 <input type="text" id="in-unit" readonly>
             </div>
             <div class="input-group">
-                <label>Nama Problem</label>
+                <label>Problem</label>
                 <input type="text" id="in-problem" placeholder="Ketik problem di sini..." autocomplete="off">
             </div>
-            <button class="btn-save" onclick="saveData()">Simpan Data</button>
+            <button class="btn-save" id="btn-save-input" onclick="saveData()">Simpan Data</button>
             <button class="close-scanner" style="background: #ccc; color: #333; margin-top: 10px;" onclick="closeModalInput()">Batal</button>
         </div>
     </div>
@@ -214,19 +220,76 @@
                 <input type="text" id="edit-unit">
             </div>
             <div class="input-group">
-                <label>Nama Problem</label>
+                <label>Problem</label>
                 <input type="text" id="edit-problem" autocomplete="off">
             </div>
-            <button class="btn-save" style="background: #27ae60;" onclick="saveEditData()">Update Data</button>
+            <button class="btn-save" id="btn-save-edit" style="background: #27ae60;" onclick="saveEditData()">Update Data</button>
             <button class="close-scanner" style="background: #ccc; color: #333; margin-top: 10px;" onclick="closeEditModal()">Batal</button>
         </div>
     </div>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('paretoData')) || [];
+        // ==========================================
+        // KONFIGURASI JSONBIN.IO
+        // ==========================================
+        const BIN_ID = '6aded063ac6210605a520e79';     // Contoh: 652a1b...
+        const API_KEY = '$2a$10$Ii1ep5GX66sB9lery6p2suxzNGrSMg2iwncn5Z2y/HT5WjaHRrf1q';   // Contoh: $2a$10$...
+        const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        
+        let db = []; // Data awal kosong sebelum ditarik
+        
         let html5QrcodeScanner;
         let chartInstance = null;
         let selectedDataId = null; 
+
+        // ==========================================
+        // FUNGSI API JSONBIN (BACA & TULIS)
+        // ==========================================
+        async function loadDataFromBin() {
+            try {
+                const response = await fetch(BIN_URL, {
+                    method: 'GET',
+                    headers: { 'X-Master-Key': API_KEY }
+                });
+                const result = await response.json();
+                
+                // Menghindari error jika BIN masih kosong
+                if (result.record && Array.isArray(result.record)) {
+                    db = result.record;
+                } else {
+                    db = [];
+                }
+                
+                document.getElementById('sync-status').innerText = "";
+                updateTopCard();
+                renderHome();
+            } catch (error) {
+                console.error(error);
+                document.getElementById('display-date-shift').innerText = "Gagal memuat server!";
+                document.getElementById('sync-status').innerText = "Cek koneksi atau API Key Anda.";
+            }
+        }
+
+        async function syncToBin() {
+            const statusEl = document.getElementById('sync-status');
+            statusEl.innerText = "⏳ Menyimpan ke server...";
+            try {
+                await fetch(BIN_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify(db)
+                });
+                statusEl.innerText = "✅ Tersimpan!";
+                setTimeout(() => statusEl.innerText = "", 2000);
+            } catch (error) {
+                console.error(error);
+                statusEl.innerText = "❌ Gagal menyimpan ke server!";
+                alert("Perhatian: Data gagal disimpan ke server. Pastikan koneksi internet Anda stabil.");
+            }
+        }
 
         // ==========================================
         // FITUR LONG PRESS (ADMIN & DATA)
@@ -292,7 +355,7 @@
         // ==========================================
         function updateTopCard() {
             const info = getShiftInfo();
-            document.getElementById('display-date-shift').innerText = `${info.dateString} - Shift ${info.shiftName}`;
+            document.getElementById('display-date-shift').innerText = `${info.dateString} - ${info.shiftName} Shift`;
             
             const currentData = getCurrentShiftData();
             document.getElementById('total-unit').innerText = currentData.length;
@@ -373,7 +436,6 @@
             });
         }
 
-        // FUNGSI HISTORY YANG DIPERBARUI (SORTIR BY TANGGAL + SHIFT)
         function renderHistory() {
             const container = document.getElementById('history-display');
             container.innerHTML = '';
@@ -382,27 +444,22 @@
 
             let groupedDateShift = {};
             db.forEach(item => {
-                // Menggabungkan tanggal dan shift menjadi satu kategori
-                const groupKey = `${item.dateStr} - ${item.shift} Shift`;
+                const groupKey = `${item.dateStr} - Shift ${item.shift}`;
                 if(!groupedDateShift[groupKey]) groupedDateShift[groupKey] = [];
                 groupedDateShift[groupKey].push(item);
             });
 
             for (let groupKey in groupedDateShift) {
-                // Hapus karakter non-alphanumeric untuk membuat ID HTML yang valid
                 const idDiv = 'hist-' + groupKey.replace(/[^a-zA-Z0-9]/g, '');
-                
                 let listHtml = '';
                 groupedDateShift[groupKey].forEach(item => {
                     listHtml += `
                         <div class="data-card" style="margin-top:10px;">
                             <span class="time" style="font-size:0.75rem; color:#999; float:right;">${item.time}</span>
-                            <h4>${item.problem}</h4>
-                            <p>${item.suffix} - ${item.unitNo}</p>
+                            <h4>${item.suffix} - ${item.unitNo} ${item.problem}</h4>
                         </div>
                     `;
                 });
-
                 container.innerHTML += `
                     <div class="history-date" onclick="toggleHist('${idDiv}')">
                         <span style="font-size: 0.9rem;"><i class="fas fa-calendar-alt"></i> ${groupKey}</span>
@@ -432,8 +489,7 @@
                          onmousedown="startDataPress(${item.id})" onmouseup="cancelDataPress()" onmouseleave="cancelDataPress()" 
                          ontouchstart="startDataPress(${item.id})" ontouchend="cancelDataPress()" ontouchmove="cancelDataPress()">
                         <span class="time">${item.dateStr} | ${item.time}</span>
-                        <h4>${item.problem}</h4>
-                        <p><strong>Unit:</strong> ${item.suffix} - ${item.unitNo} (Shift ${item.shift})</p>
+                        <h4>${item.suffix} - ${item.unitNo} ${item.problem}</h4>
                     </div>
                 `;
             });
@@ -453,19 +509,21 @@
         }
 
         // ==========================================
-        // LOGIKA ADMIN (EDIT/HAPUS)
+        // LOGIKA ADMIN (EDIT/HAPUS) -> JSONBIN
         // ==========================================
         function closeActionModal() {
             const modal = document.getElementById('modal-action');
             modal.style.opacity = '0'; setTimeout(() => modal.style.visibility = 'hidden', 200);
         }
-        function deleteData() {
+        
+        async function deleteData() {
             if(confirm("Yakin ingin menghapus data problem ini?")) {
                 db = db.filter(item => item.id !== selectedDataId);
-                localStorage.setItem('paretoData', JSON.stringify(db));
                 closeActionModal(); updateTopCard(); renderAdmin(); renderHome();
+                await syncToBin(); // Simpan perubahan ke cloud
             }
         }
+
         function openEditModal() {
             const item = db.find(x => x.id === selectedDataId);
             if(item) {
@@ -478,27 +536,32 @@
                 modalEdit.style.visibility = 'visible'; modalEdit.style.opacity = '1';
             }
         }
+        
         function closeEditModal() {
             const modalEdit = document.getElementById('modal-edit');
             modalEdit.style.opacity = '0'; setTimeout(() => modalEdit.style.visibility = 'hidden', 200);
         }
-        function saveEditData() {
+        
+        async function saveEditData() {
             const id = parseInt(document.getElementById('edit-id').value);
             const suffix = document.getElementById('edit-suffix').value.toUpperCase();
             const unitNo = document.getElementById('edit-unit').value.toUpperCase();
             const problem = document.getElementById('edit-problem').value;
+            
             if(!problem.trim()) return alert("Nama problem wajib diisi!");
+            
             const index = db.findIndex(x => x.id === id);
             if(index !== -1) {
                 db[index].suffix = suffix; db[index].unitNo = unitNo; db[index].problem = problem;
-                localStorage.setItem('paretoData', JSON.stringify(db));
+                
                 closeEditModal(); updateTopCard(); renderAdmin(); renderHome();
+                await syncToBin(); // Simpan perubahan ke cloud
                 alert("Data berhasil diupdate!");
             }
         }
 
         // ==========================================
-        // SCANNER DAN INPUT
+        // SCANNER DAN INPUT -> JSONBIN
         // ==========================================
         function openScanner() {
             const modal = document.getElementById('modal-scanner');
@@ -542,7 +605,7 @@
             modal.style.opacity = '0'; setTimeout(() => modal.style.visibility = 'hidden', 200);
         }
 
-        function saveData() {
+        async function saveData() {
             const suffix = document.getElementById('in-suffix').value;
             const unitNo = document.getElementById('in-unit').value;
             const problem = document.getElementById('in-problem').value;
@@ -554,15 +617,24 @@
                 id: Date.now(), suffix: suffix.toUpperCase(), unitNo: unitNo.toUpperCase(), problem: problem,
                 dateStr: info.dateString, shift: info.shiftName, time: nowTime
             };
-            db.push(newRecord);
-            localStorage.setItem('paretoData', JSON.stringify(db));
             
-            closeModalInput(); updateTopCard(); navTo('home-page');
+            db.push(newRecord);
+            
+            // Tutup modal dan langsung perbarui layar (Optimistic Update)
+            closeModalInput(); 
+            updateTopCard(); 
+            navTo('home-page');
+
+            // Proses simpan ke cloud berjalan di belakang layar
+            await syncToBin(); 
         }
 
+        // ==========================================
+        // INISIALISASI (LOAD DATA SAAT APLIKASI DIBUKA)
+        // ==========================================
         window.onload = () => {
-            updateTopCard();
-            renderHome();
+            // Memuat data dari server JSONBin, lalu memproses UI setelahnya
+            loadDataFromBin();
         };
     </script>
 </body>
