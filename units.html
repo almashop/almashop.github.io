@@ -3,313 +3,384 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pengelola Unit App</title>
-    <!-- Tailwind CSS -->
+    <title>Pengelola Unit</title>
+    <!-- Resource Eksternal -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome untuk Ikon -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #0f172a; color: #e2e8f0; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .neon-text { text-shadow: 0 0 10px rgba(6, 182, 212, 0.8); }
-        .neon-border { box-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+        body {
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-text {
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Hide scrollbar for clean UI but allow scrolling */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        /* Anti-select untuk mencegah teks terblokir saat Long Press */
+        .select-none {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        /* Smooth Tab Transitions */
+        .view-section { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .view-section.active { display: block; opacity: 1; animation: slideUp 0.4s ease-out forwards; }
+        @keyframes slideUp {
+            from { transform: translateY(15px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .nav-btn { transition: all 0.2s ease; }
+        .nav-btn.active { color: #06b6d4; transform: scale(1.1); text-shadow: 0 0 10px rgba(6,182,212,0.5); }
     </style>
 </head>
-<body class="flex flex-col h-screen overflow-hidden">
+<body class="h-screen w-screen overflow-hidden flex flex-col relative select-none">
 
-    <!-- 1. LOADING SCREEN -->
-    <div id="loading-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900 transition-opacity duration-500">
+    <!-- ==================== 1. LOADING SCREEN ==================== -->
+    <div id="loading-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900 transition-opacity duration-500">
         <div class="relative w-20 h-20 mb-6">
             <div class="absolute inset-0 border-4 border-slate-700 rounded-full"></div>
             <div class="absolute inset-0 border-4 border-cyan-500 rounded-full border-t-transparent animate-spin shadow-[0_0_15px_rgba(6,182,212,0.6)]"></div>
         </div>
         <h2 class="text-xl font-bold text-white tracking-wider animate-pulse">Menyambungkan...</h2>
-        <p class="text-sm text-cyan-400 mt-2">Sinkronisasi JSONBin.io</p>
+        <p class="text-sm text-cyan-400 mt-2" id="loading-text">Mengambil data dari Server</p>
     </div>
 
-    <!-- 2. LOGIN PAGE -->
-    <div id="login-page" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900 p-6">
-        <div class="glass rounded-2xl p-8 w-full max-w-sm neon-border">
+    <!-- ==================== 2. LOGIN PAGE ==================== -->
+    <div id="login-page" class="fixed inset-0 z-40 bg-slate-900 flex flex-col items-center justify-center px-6 hidden">
+        <div class="glass w-full max-w-sm rounded-3xl p-8 shadow-2xl shadow-cyan-500/10">
             <div class="text-center mb-8">
-                <i class="fas fa-car-side text-4xl text-cyan-400 mb-3 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]"></i>
-                <h1 class="text-2xl font-bold text-white tracking-wide">PENGELOLA UNIT</h1>
+                <div class="w-16 h-16 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-500/30">
+                    <i class="fa-solid fa-car-side text-2xl text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold neon-text">PENGELOLA UNIT</h1>
+                <p class="text-xs text-slate-400 mt-1">Sistem Manajemen Perbaikan</p>
             </div>
-            <form id="login-form">
-                <div class="mb-4">
-                    <label class="block text-sm text-gray-400 mb-1">Username</label>
-                    <div class="relative">
-                        <i class="fas fa-user absolute left-3 top-3.5 text-gray-500"></i>
-                        <input type="text" id="login-username" class="w-full bg-slate-800 text-white rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Masukkan username">
-                    </div>
+            
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 pl-1">Username</label>
+                    <input type="text" id="login-username" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition" placeholder="Masukkan username">
                 </div>
-                <div class="mb-6">
-                    <label class="block text-sm text-gray-400 mb-1">Password</label>
-                    <div class="relative">
-                        <i class="fas fa-lock absolute left-3 top-3.5 text-gray-500"></i>
-                        <input type="password" id="login-password" class="w-full bg-slate-800 text-white rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Masukkan password">
-                    </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 pl-1">Password</label>
+                    <input type="password" id="login-password" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition" placeholder="••••••••">
                 </div>
-                <button type="button" id="btn-login" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 rounded-lg shadow-lg transition-transform active:scale-95">LOGIN</button>
+                <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl py-3 mt-2 shadow-lg shadow-cyan-500/20 active:scale-95 transition">
+                    MASUK
+                </button>
             </form>
-            <div class="mt-6 text-center text-xs text-gray-400 flex justify-between">
-                <a href="#" onclick="alert('Hubungi Administrator untuk mendaftarkan user baru.')" class="hover:text-cyan-400">User Baru?</a>
-                <a href="#" onclick="alert('Hubungi Administrator untuk mereset password.')" class="hover:text-cyan-400">Lupa Password?</a>
+            <div class="text-center mt-6">
+                <button onclick="alert('Silakan hubungi Administrator sistem untuk mereset password Anda.')" class="text-xs text-cyan-400 hover:text-cyan-300">Lupa Password?</button>
             </div>
         </div>
     </div>
 
-    <!-- 3. MAIN APPLICATION -->
-    <div id="main-app" class="hidden flex flex-col h-full w-full relative bg-slate-900">
+    <!-- ==================== 3. MAIN APPLICATION ==================== -->
+    <div id="main-app" class="flex-1 flex flex-col h-full hidden">
         
-        <!-- TOP NAVBAR (Sticky) -->
-        <header class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center shadow-md">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-car-side text-cyan-400 text-xl"></i>
-                <h1 class="text-lg font-bold tracking-wider text-white neon-text">PENGELOLA UNIT</h1>
+        <!-- TOP NAVBAR -->
+        <header class="glass sticky top-0 z-20 px-4 py-3 flex flex-col rounded-b-2xl shadow-md">
+            <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-car-side text-cyan-400 text-xl"></i>
+                    <h1 class="text-lg font-bold tracking-wide neon-text">PENGELOLA UNIT</h1>
+                </div>
+                <button onclick="prosesLogout()" class="text-slate-400 hover:text-red-400 transition">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
             </div>
-            <button id="btn-logout" class="text-gray-400 hover:text-red-400 p-2"><i class="fas fa-sign-out-alt"></i></button>
+            <div class="bg-slate-800/50 rounded-lg p-2 flex justify-between items-center border border-slate-700">
+                <div class="text-xs">
+                    <div id="live-date" class="text-slate-300 font-medium">Hari, 00 Bln 0000</div>
+                    <div id="live-shift" class="text-cyan-400 font-bold mt-0.5">Shift: -</div>
+                </div>
+                <div id="live-time" class="text-xl font-bold font-mono tracking-wider">00:00:00</div>
+            </div>
         </header>
 
         <!-- MAIN CONTENT AREA -->
-        <main class="flex-1 overflow-hidden relative">
+        <main class="flex-1 overflow-y-auto hide-scrollbar p-4 pb-24">
             
-            <!-- VIEW: HOME (List Unit) -->
-            <div id="view-home" class="h-full flex flex-col">
-                <!-- Live Clock & Shift -->
-                <div class="bg-slate-800/50 p-4 border-b border-white/5 text-center">
-                    <div id="clock-time" class="text-3xl font-bold text-cyan-400 tracking-wider mb-1">00:00:00</div>
-                    <div id="clock-date" class="text-sm text-gray-300">Hari, Tanggal Bulan Tahun</div>
-                    <div id="clock-shift" class="inline-block mt-2 px-4 py-1 rounded-full bg-cyan-900/50 text-cyan-300 text-xs font-semibold border border-cyan-700/50">Shift: -</div>
+            <!-- VIEW: HOME (Unit List) -->
+            <section id="view-home" class="view-section active">
+                <div class="glass rounded-2xl p-2 mb-4 flex justify-between gap-2 shadow-lg">
+                    <button onclick="setFilter('NG')" id="btn-filter-ng" class="flex-1 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/50 transition">
+                        <i class="fa-solid fa-car text-red-500"></i> NG
+                    </button>
+                    <button onclick="setFilter('KONFIRMASI')" id="btn-filter-konf" class="flex-1 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 text-slate-400 transition">
+                        <i class="fa-solid fa-car text-yellow-500"></i> PROSES
+                    </button>
+                    <button onclick="setFilter('OK')" id="btn-filter-ok" class="flex-1 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 text-slate-400 transition">
+                        <i class="fa-solid fa-car text-green-500"></i> OK
+                    </button>
                 </div>
-
-                <!-- Switcher NG / OK Card -->
-                <div class="p-4 z-10">
-                    <div class="glass p-1 rounded-xl flex">
-                        <button id="tab-ng" class="flex-1 py-2 flex justify-center items-center gap-2 rounded-lg bg-red-500/20 border border-red-500/50 text-white transition-all">
-                            <i class="fas fa-car text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]"></i> <span class="font-semibold">Unit NG</span>
-                        </button>
-                        <button id="tab-ok" class="flex-1 py-2 flex justify-center items-center gap-2 rounded-lg text-gray-400 hover:text-white transition-all">
-                            <i class="fas fa-car text-green-500"></i> <span class="font-semibold">Unit OK</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Scrollable List -->
-                <div class="flex-1 overflow-y-auto px-4 pb-24" id="unit-list-container">
-                    <!-- Unit items will be generated here by JS -->
-                </div>
-            </div>
-
-            <!-- VIEW: INPUT DATA UNIT -->
-            <div id="view-input" class="hidden h-full flex flex-col p-4 pb-24 overflow-y-auto">
-                <h2 class="text-xl font-bold text-white mb-6 border-b border-white/10 pb-2"><i class="fas fa-plus-circle text-cyan-400 mr-2"></i>Input Data Unit</h2>
-                
-                <div class="glass rounded-xl p-5 shadow-lg">
-                    <div class="mb-5">
-                        <label class="block text-sm text-gray-300 mb-2">Data Unit (No. Unit)</label>
-                        <input type="text" id="input-no-unit" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-3 px-4 text-white focus:border-cyan-500 focus:outline-none" placeholder="Masukkan Nomor Unit">
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-sm text-gray-300 mb-2">Problem / Masalah</label>
-                        <textarea id="input-problem" rows="3" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-3 px-4 text-white focus:border-cyan-500 focus:outline-none" placeholder="Deskripsikan kerusakan"></textarea>
-                    </div>
-                    <button id="btn-simpan-unit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg transition-transform active:scale-95"><i class="fas fa-save mr-2"></i>SIMPAN (NG)</button>
-                </div>
-            </div>
-
-            <!-- VIEW: KONFIRMASI -->
-            <div id="view-konfirmasi" class="hidden h-full flex flex-col p-4 pb-24 overflow-y-auto">
-                <button onclick="switchView('home')" class="text-gray-400 mb-4 flex items-center gap-2 w-max"><i class="fas fa-arrow-left"></i> Kembali</button>
-                
-                <div class="glass rounded-xl p-5 border-l-4 border-yellow-500 mb-4">
-                    <h3 class="text-sm text-gray-400">Konfirmasi Perbaikan</h3>
-                    <div class="text-xl font-bold text-white mt-1" id="konfirmasi-nounit">UNIT -</div>
-                    <div class="text-red-400 mt-2 font-medium bg-red-900/30 p-2 rounded inline-block" id="konfirmasi-problem">Problem: -</div>
-                </div>
-
-                <div id="konfirmasi-checklist-area" class="hidden mb-6">
-                    <h4 class="text-white font-semibold mb-3"><i class="fas fa-list-check text-cyan-400 mr-2"></i>Checklist Wajib (Sistem Rem)</h4>
-                    <div class="glass rounded-xl p-4 flex flex-col gap-3" id="konfirmasi-checklist">
-                        <!-- Checklist rem generated by JS -->
-                    </div>
-                </div>
-
-                <button id="btn-selesai-konfirmasi" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg mt-auto opacity-50 cursor-not-allowed transition-all"><i class="fas fa-check-circle mr-2"></i>TANDAI SELESAI (OK)</button>
-            </div>
+                <div id="unit-list-container" class="space-y-3"></div>
+            </section>
 
             <!-- VIEW: DASHBOARD (Pareto) -->
-            <div id="view-dashboard" class="hidden h-full flex flex-col p-4 pb-24 overflow-y-auto">
-                <h2 class="text-xl font-bold text-white mb-2 border-b border-white/10 pb-2"><i class="fas fa-chart-pie text-cyan-400 mr-2"></i>Dashboard Pareto</h2>
-                <p class="text-xs text-gray-400 mb-4" id="dashboard-shift-info">Shift Saat Ini: -</p>
+            <section id="view-dashboard" class="view-section">
+                <div class="glass rounded-2xl p-4 mb-4 shadow-lg border-cyan-500/30">
+                    <h2 class="text-sm font-bold text-cyan-400 mb-1">TOTAL PROBLEM > 3 KALI</h2>
+                    <p class="text-xs text-slate-400 mb-4" id="pareto-shift-info">Shift Ini</p>
+                    <div class="bg-slate-800/50 rounded-xl p-2 h-48 w-full relative">
+                        <canvas id="paretoChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass rounded-2xl p-4 shadow-lg">
+                    <h3 class="text-sm font-bold mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-cyan-400"></i> Daftar Pareto
+                    </h3>
+                    <div id="pareto-list" class="space-y-2"></div>
+                </div>
+            </section>
+
+            <!-- VIEW: INPUT UNIT -->
+            <section id="view-input" class="view-section">
+                <div class="glass rounded-2xl p-5 shadow-lg">
+                    <h2 class="text-lg font-bold mb-5 flex items-center gap-2 border-b border-slate-700 pb-3">
+                        <i class="fa-solid fa-plus-circle text-cyan-400"></i> Tambah Data Unit NG
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Data Unit (No Unit)</label>
+                            <input type="text" id="input-no-unit" class="w-full bg-slate-800/80 border border-slate-600 rounded-xl px-4 py-3 text-white text-lg font-mono focus:outline-none focus:border-cyan-500" placeholder="Contoh: AB 123456">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Problem / Kendala</label>
+                            <textarea id="input-problem" rows="3" class="w-full bg-slate-800/80 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500" placeholder="Deskripsikan masalah..."></textarea>
+                        </div>
+                        <button onclick="simpanUnitBaru()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl py-3 mt-4 flex items-center justify-center gap-2 transition shadow-lg shadow-cyan-500/20">
+                            <i class="fa-solid fa-save"></i> SIMPAN UNIT
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: HISTORY -->
+            <section id="view-history" class="view-section">
+                <div class="mb-2 text-xs text-slate-400 text-center"><i class="fa-solid fa-info-circle"></i> Tahan kartu grup shift untuk masuk Mode Admin</div>
+                <div id="history-group-list" class="space-y-3"></div>
                 
-                <div class="glass rounded-xl p-4 text-center mb-6">
-                    <div class="text-sm text-gray-300">Total Problem Sama (≥3) Shift Ini</div>
-                    <div class="text-4xl font-bold text-cyan-400 my-2" id="pareto-total-count">0</div>
-                    <div class="text-xs text-gray-500">Masalah</div>
+                <div id="history-detail-view" class="hidden">
+                    <button onclick="closeHistoryDetail()" class="mb-4 text-sm text-cyan-400 flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 w-fit">
+                        <i class="fa-solid fa-arrow-left"></i> Kembali
+                    </button>
+                    <h3 id="history-detail-title" class="font-bold text-lg mb-3">Detail Shift</h3>
+                    <div id="history-detail-list" class="space-y-3"></div>
                 </div>
+            </section>
 
-                <h3 class="font-semibold text-white mb-3">Daftar Pareto Problem:</h3>
-                <div id="pareto-list-container" class="flex flex-col gap-3">
-                    <!-- Pareto list generated by JS -->
+            <!-- VIEW: KONFIRMASI -->
+            <section id="view-konfirmasi" class="view-section">
+                <button onclick="switchView('home')" class="mb-4 text-sm text-slate-300 flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 w-fit shadow-md">
+                    <i class="fa-solid fa-arrow-left"></i> Batal & Kembali
+                </button>
+                <div class="glass rounded-2xl p-5 shadow-lg border-yellow-500/30">
+                    <div class="flex justify-between items-start mb-4 border-b border-slate-700 pb-3">
+                        <div>
+                            <h2 class="text-xl font-bold font-mono text-yellow-400" id="konf-no-unit">NO UNIT</h2>
+                            <p class="text-sm text-slate-300 mt-1"><i class="fa-solid fa-triangle-exclamation text-red-400"></i> <span id="konf-problem">Problem</span></p>
+                        </div>
+                    </div>
+                    <div id="konf-checklist-area" class="mb-6 hidden">
+                        <h3 class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Checklist Wajib</h3>
+                        <div class="space-y-2" id="konf-checklist-items"></div>
+                    </div>
+                    <button onclick="selesaikanUnit()" class="w-full bg-green-600 text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20">
+                        <i class="fa-solid fa-check-circle"></i> TANDAI SELESAI (OK)
+                    </button>
                 </div>
-            </div>
+            </section>
 
-            <!-- VIEW: HISTORI -->
-            <div id="view-history" class="hidden h-full flex flex-col p-4 pb-24 overflow-y-auto">
-                <h2 class="text-xl font-bold text-white mb-6 border-b border-white/10 pb-2"><i class="fas fa-history text-cyan-400 mr-2"></i>Histori Per Shift</h2>
-                <div id="history-list-container" class="flex flex-col gap-3">
-                    <!-- History dates generated by JS -->
+            <!-- VIEW: ADMIN KELOLA SHIFT (Long Press) -->
+            <section id="view-admin" class="view-section">
+                <button onclick="switchView('history')" class="mb-4 text-sm text-slate-300 flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 w-fit shadow-md">
+                    <i class="fa-solid fa-arrow-left"></i> Kembali ke Histori
+                </button>
+                <div class="glass rounded-2xl p-4 shadow-lg border-red-500/30">
+                    <div class="flex items-center gap-3 border-b border-slate-700 pb-3 mb-4">
+                        <i class="fa-solid fa-user-shield text-2xl text-red-400"></i>
+                        <div>
+                            <h2 class="text-lg font-bold text-white tracking-wide">KELOLA DATA (ADMIN)</h2>
+                            <p class="text-xs text-slate-400" id="admin-shift-title">Shift: -</p>
+                        </div>
+                    </div>
+                    <div id="admin-unit-list" class="space-y-3"></div>
                 </div>
-            </div>
-            
-            <!-- SUB-VIEW: DETAIL HISTORI SHIFT -->
-            <div id="view-history-detail" class="hidden absolute inset-0 bg-slate-900 z-20 flex flex-col p-4 pb-24 overflow-y-auto">
-                <button onclick="closeHistoryDetail()" class="text-gray-400 mb-4 flex items-center gap-2 w-max"><i class="fas fa-arrow-left"></i> Kembali ke Histori</button>
-                <h3 class="text-lg font-bold text-cyan-400 mb-4" id="history-detail-title">Tanggal Shift</h3>
-                <div id="history-detail-list" class="flex flex-col gap-2">
-                    <!-- Detail units generated by JS -->
-                </div>
-            </div>
+            </section>
 
         </main>
 
-        <!-- BOTTOM NAVBAR (Sticky) -->
-        <nav class="glass absolute bottom-0 w-full px-6 py-4 flex justify-between items-center z-30">
-            <button onclick="switchView('home')" class="nav-btn text-cyan-400 flex flex-col items-center transition-transform active:scale-90" data-target="home">
-                <i class="fas fa-home text-xl mb-1"></i><span class="text-[10px]">Home</span>
-            </button>
-            <button onclick="switchView('input')" class="nav-btn text-gray-500 hover:text-cyan-400 flex flex-col items-center transition-transform active:scale-90" data-target="input">
-                <div class="bg-cyan-600 text-white w-12 h-12 rounded-full flex items-center justify-center -mt-6 shadow-[0_0_10px_rgba(6,182,212,0.6)] border-4 border-slate-900">
-                    <i class="fas fa-plus text-xl"></i>
-                </div>
-                <span class="text-[10px] mt-1 text-cyan-400">Input</span>
-            </button>
-            <button onclick="switchView('dashboard')" class="nav-btn text-gray-500 hover:text-cyan-400 flex flex-col items-center transition-transform active:scale-90" data-target="dashboard">
-                <i class="fas fa-chart-bar text-xl mb-1"></i><span class="text-[10px]">Dashboard</span>
-            </button>
-            <button onclick="switchView('history')" class="nav-btn text-gray-500 hover:text-cyan-400 flex flex-col items-center transition-transform active:scale-90" data-target="history">
-                <i class="fas fa-clock-rotate-left text-xl mb-1"></i><span class="text-[10px]">Histori</span>
-            </button>
+        <!-- BOTTOM NAVBAR -->
+        <nav class="glass sticky bottom-0 z-20 border-t border-slate-700/50 pb-safe">
+            <div class="flex justify-around items-center py-2 px-1">
+                <button onclick="switchView('home')" class="nav-btn active flex flex-col items-center p-2 w-16" data-target="home">
+                    <i class="fa-solid fa-house text-xl mb-1"></i><span class="text-[10px] font-semibold">Home</span>
+                </button>
+                <button onclick="switchView('dashboard')" class="nav-btn text-slate-400 flex flex-col items-center p-2 w-16" data-target="dashboard">
+                    <i class="fa-solid fa-chart-pie text-xl mb-1"></i><span class="text-[10px] font-semibold">Dashboard</span>
+                </button>
+                <button onclick="switchView('input')" class="nav-btn text-slate-400 flex flex-col items-center p-2 w-16" data-target="input">
+                    <div class="bg-cyan-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg shadow-cyan-500/30 -mt-5 mb-1 border-4 border-[#0f172a]">
+                        <i class="fa-solid fa-plus text-lg"></i>
+                    </div>
+                    <span class="text-[10px] font-semibold">Input</span>
+                </button>
+                <button onclick="switchView('history')" class="nav-btn text-slate-400 flex flex-col items-center p-2 w-16" data-target="history">
+                    <i class="fa-solid fa-history text-xl mb-1"></i><span class="text-[10px] font-semibold">Histori</span>
+                </button>
+            </div>
         </nav>
     </div>
 
-    <!-- MODAL: PARETO DETAIL & WA SHARE -->
-    <div id="modal-pareto" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
-        <div class="glass w-full max-w-md rounded-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800">
-                <h3 class="font-bold text-white text-lg">Detail Problem</h3>
-                <button onclick="closeParetoModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-            </div>
-            <div class="p-4 overflow-y-auto flex-1">
-                <div class="text-red-400 font-semibold mb-3 bg-red-900/20 p-2 rounded text-center" id="modal-pareto-title">Problem Name</div>
-                <div class="text-sm text-gray-400 mb-2">Daftar Unit:</div>
-                <ul id="modal-pareto-unit-list" class="list-disc pl-5 text-white text-sm space-y-1">
-                    <!-- Injected by JS -->
-                </ul>
-            </div>
-            <div class="p-4 bg-slate-800/80 border-t border-white/10">
-                <button id="btn-share-wa" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95">
-                    <i class="fab fa-whatsapp text-xl"></i> Bagikan ke WhatsApp
-                </button>
+    <!-- ==================== MODALS ==================== -->
+    
+    <!-- Modal Aksi Unit NG -->
+    <div id="modal-aksi" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden transition-opacity opacity-0">
+        <div class="glass w-10/12 max-w-sm rounded-3xl p-6 transform scale-95 transition-transform duration-300" id="modal-aksi-content">
+            <h3 class="text-lg font-bold text-center mb-2">Tindakan Perbaikan</h3>
+            <p class="text-sm text-center text-slate-300 mb-6" id="modal-aksi-desc">Pilih tindakan.</p>
+            <div class="flex gap-3">
+                <button onclick="closeModalAksi()" class="flex-1 py-2.5 rounded-xl border border-slate-600 font-semibold">Batal</button>
+                <button onclick="mulaiProsesKonfirmasi()" class="flex-1 py-2.5 rounded-xl bg-yellow-500 text-yellow-950 font-bold">Konfirmasi</button>
             </div>
         </div>
     </div>
 
+    <!-- Modal Pareto -->
+    <div id="modal-pareto" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden transition-opacity opacity-0">
+        <div class="glass w-11/12 max-w-md h-3/4 rounded-3xl p-5 flex flex-col transform scale-95 transition-transform duration-300" id="modal-pareto-content">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+                <h3 class="text-lg font-bold text-cyan-400">Detail Problem</h3>
+                <button onclick="closeModalPareto()" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto hide-scrollbar space-y-4 mb-4" id="modal-pareto-list"></div>
+            <button onclick="kirimWhatsAppPareto()" class="w-full bg-[#25D366] text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2">
+                <i class="fa-brands fa-whatsapp text-xl"></i> BAGIKAN VIA WA
+            </button>
+        </div>
+    </div>
 
-    <!-- JAVASCRIPT -->
+    <!-- Modal Admin Aksi (Edit/Hapus) -->
+    <div id="modal-admin-action" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden transition-opacity opacity-0">
+        <div class="glass w-10/12 max-w-sm rounded-3xl p-6 transform scale-95 transition-transform duration-300" id="modal-admin-action-content">
+            <div class="flex justify-center mb-3"><i class="fa-solid fa-user-shield text-3xl text-red-400"></i></div>
+            <h3 class="text-lg font-bold text-center mb-1">Kelola Data Unit</h3>
+            <p class="text-xs text-center text-slate-300 mb-6 font-mono font-bold" id="admin-action-desc">-</p>
+            <div class="flex flex-col gap-3">
+                <button onclick="bukaModalEdit()" class="w-full py-3 rounded-xl bg-cyan-600 text-white font-bold flex justify-center items-center gap-2"><i class="fa-solid fa-edit"></i> Edit Data</button>
+                <button onclick="hapusDataUnit()" class="w-full py-3 rounded-xl bg-red-600/80 text-white font-bold flex justify-center items-center gap-2"><i class="fa-solid fa-trash"></i> Hapus Data</button>
+                <button onclick="closeAdminAction()" class="w-full py-2 mt-2 rounded-xl border border-slate-600 text-slate-300 font-semibold">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Admin Form Edit -->
+    <div id="modal-admin-edit" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden transition-opacity opacity-0">
+        <div class="glass w-11/12 max-w-sm rounded-3xl p-6 transform scale-95 transition-transform duration-300" id="modal-admin-edit-content">
+            <h3 class="text-lg font-bold mb-4 border-b border-slate-700 pb-2"><i class="fa-solid fa-edit text-cyan-400"></i> Edit Data Unit</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">No Unit</label>
+                    <input type="text" id="edit-no-unit" class="w-full bg-slate-800/80 border border-slate-600 rounded-xl px-4 py-2 text-white font-mono focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Problem</label>
+                    <textarea id="edit-problem" rows="3" class="w-full bg-slate-800/80 border border-slate-600 rounded-xl px-4 py-2 text-white focus:border-cyan-500"></textarea>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeModalEdit()" class="flex-1 py-2.5 rounded-xl border border-slate-600 font-semibold">Batal</button>
+                    <button onclick="simpanEditUnit()" class="flex-1 py-2.5 rounded-xl bg-cyan-600 text-white font-bold">Simpan Perubahan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT ==================== -->
     <script>
-        // ==========================================
-        // 1. KONFIGURASI JSONBIN (WAJIB DIISI)
-        // ==========================================
-        const BIN_ID = '6ae72de3ffd5d160539d1d21';     // Contoh: '652a...'
-        const API_KEY = '$2a$10$V.OboC87dzzE6UjcNPtp6.5IM/o52syCC3x1D44TbjiXInMVdjm/W';  // Contoh: '$2a$10$...'
+        // --- 1. KONFIGURASI JSONBIN ---
+        const BIN_ID = '6ae72de3ffd5d160539d1d21'; 
+        const API_KEY = '$2a$10$V.OboC87dzzE6UjcNPtp6.5IM/o52syCC3x1D44TbjiXInMVdjm/W'; 
         const BASE_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-        // ==========================================
-        // 2. VARIABEL GLOBAL & STATE
-        // ==========================================
+        // --- 2. GLOBAL STATE ---
         let appData = { users: [], units: [] };
-        let activeTab = 'NG'; // NG or OK
-        let currentActiveUnit = null; // Untuk halaman konfirmasi
-        let activeParetoData = null; // Untuk WA share
+        let activeFilter = 'NG';
+        let activeUnitId = null; 
+        let currentShiftData = {};
+        let chartInstance = null;
+        let paretoDataShift = []; 
+
+        // LONG PRESS VARIABLES
+        let pressTimer;
+        let isLongPress = false;
         
-        const KEYWORDS_REM = ["rem blong", "rem dalam", "rem abn", "rem magel"];
-        const DAFTAR_CEK_REM = [
-            "Cek reservoir minyak rem",
-            "Cek nepel rem",
-            "Runing test cek fungsi rem",
-            "DS",
-            "Cek abs",
-            "Cek vsc"
-        ];
+        // --- 3. LONG PRESS ENGINE ---
+        function startPressUnit(id, event) {
+            isLongPress = false;
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                openAdminAction(id);
+            }, 700);
+        }
 
-        // ==========================================
-        // 3. INISIALISASI & FETCH DATA (LOADING SCREEN)
-        // ==========================================
+        function startPressShift(dateStr, shift, label, event) {
+            isLongPress = false;
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                openAdminShift(dateStr, shift, label);
+            }, 700);
+        }
+
+        function cancelPress() { clearTimeout(pressTimer); }
+
+        // --- 4. INIT & LOADING ---
         window.onload = async () => {
-            try {
-                // Jangan fetch jika BIN_ID belum diisi (Bypass untuk testing UI lokal, hapus IF ini saat API sudah benar)
-                if(BIN_ID.includes('MASUKKAN_BIN_ID_ANDA')){
-                    alert("PERHATIAN: JSONBin belum dikonfigurasi. Menggunakan data dummy lokal.");
-                    appData = {
-                        users: [{username:"admin", password:"123"}],
-                        units: []
-                    };
-                    setTimeout(() => checkLoginSession(), 1000);
-                    return;
-                }
+            setInterval(updateClock, 1000);
+            updateClock();
+            
+            if(BIN_ID === '6ae72de3ffd5d160539d1d21') {
+                document.getElementById('loading-text').innerText = "Mode Demo Lokal";
+                appData = { users: [{username: 'admin', password: '123'}], units: [] };
+                setTimeout(arahKanHalaman, 1000);
+                return;
+            }
 
-                const response = await fetch(BASE_URL, {
-                    method: 'GET',
-                    headers: { 'X-Master-Key': API_KEY }
-                });
-                
-                if (!response.ok) throw new Error('Network response was not ok');
+            try {
+                const response = await fetch(BASE_URL, { method: 'GET', headers: { 'X-Master-Key': API_KEY } });
                 const result = await response.json();
-                appData = result.record; 
-                setTimeout(() => checkLoginSession(), 800);
+                appData = result.record;
+                setTimeout(arahKanHalaman, 800);
             } catch (error) {
-                console.error("Error fetching data:", error);
                 document.getElementById('loading-screen').innerHTML = `
-                    <div class="text-red-500 mb-4"><i class="fas fa-wifi text-4xl"></i></div>
+                    <div class="text-red-500 mb-4 text-4xl"><i class="fa-solid fa-wifi"></i></div>
                     <h2 class="text-xl font-bold text-red-400">Koneksi Gagal</h2>
-                    <p class="text-sm text-gray-400 mt-2">Periksa koneksi internet atau API Key.</p>
+                    <button onclick="location.reload()" class="mt-6 px-6 py-2 bg-red-500/20 text-red-400 border border-red-500 rounded-full">Coba Lagi</button>
                 `;
             }
         };
 
-        async function saveToCloud() {
-            if(BIN_ID.includes('MASUKKAN')){ return; } // Bypass dummy
-            try {
-                await fetch(BASE_URL, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-                    body: JSON.stringify(appData)
-                });
-            } catch (error) {
-                console.error("Gagal simpan ke cloud:", error);
-            }
-        }
-
-        // ==========================================
-        // 4. AUTENTIKASI (LOGIN / LOGOUT)
-        // ==========================================
-        function checkLoginSession() {
-            const loadingScreen = document.getElementById('loading-screen');
-            loadingScreen.classList.add('opacity-0');
-            
+        function arahKanHalaman() {
+            const ls = document.getElementById('loading-screen');
+            ls.classList.add('opacity-0');
             setTimeout(() => {
-                loadingScreen.classList.add('hidden');
+                ls.classList.add('hidden');
                 if (localStorage.getItem('isLoggedIn') === 'true') {
                     document.getElementById('main-app').classList.remove('hidden');
-                    startClock();
                     renderUnitList();
                 } else {
                     document.getElementById('login-page').classList.remove('hidden');
@@ -317,494 +388,350 @@
             }, 500);
         }
 
-        document.getElementById('btn-login').addEventListener('click', () => {
+        // --- LOGIN/LOGOUT ---
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
             const usn = document.getElementById('login-username').value.trim();
             const pass = document.getElementById('login-password').value.trim();
             
-            if(!usn || !pass) { alert("Isi Username dan Password"); return; }
-            
+            if (!usn || !pass) return alert('Isi username dan password terlebih dahulu!');
+            if (!appData || !appData.users) return alert('Sistem gagal membaca data pengguna. Pastikan struktur JSON di JSONBin memiliki properti "users".');
+
             const userValid = appData.users.find(u => u.username === usn && u.password === pass);
-            if(userValid) {
+            
+            if (userValid) {
                 localStorage.setItem('isLoggedIn', 'true');
-                document.getElementById('login-username').value = '';
-                document.getElementById('login-password').value = '';
                 document.getElementById('login-page').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
-                startClock();
+                document.getElementById('login-username').value = '';
+                document.getElementById('login-password').value = '';
                 renderUnitList();
             } else {
-                alert("Username atau Password Salah!");
-                document.getElementById('login-password').value = '';
+                alert('Username atau Password salah!');
             }
         });
 
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            if(confirm("Yakin ingin keluar?")) {
+        function prosesLogout() {
+            if(confirm('Yakin ingin keluar?')) {
                 localStorage.removeItem('isLoggedIn');
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('login-page').classList.remove('hidden');
-                switchView('home'); // reset view
+                switchView('home');
             }
-        });
-
-        // ==========================================
-        // 5. NAVIGATION & VIEWS
-        // ==========================================
-        function switchView(viewName) {
-            // Hide all views
-            ['home', 'input', 'dashboard', 'history', 'konfirmasi'].forEach(v => {
-                document.getElementById(`view-${v}`).classList.add('hidden');
-            });
-            
-            // Show target
-            document.getElementById(`view-${viewName}`).classList.remove('hidden');
-            document.getElementById('view-history-detail').classList.add('hidden'); // Selalu tutup sub-view
-            
-            // Reset Navbar styling
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                if(btn.dataset.target !== 'input') {
-                    btn.classList.remove('text-cyan-400');
-                    btn.classList.add('text-gray-500');
-                }
-            });
-
-            // Set active nav styling (kecuali konfirmasi yg ga ada di bottom nav)
-            if(viewName !== 'konfirmasi' && viewName !== 'input') {
-                const activeBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
-                if(activeBtn) {
-                    activeBtn.classList.remove('text-gray-500');
-                    activeBtn.classList.add('text-cyan-400');
-                }
-            }
-
-            // Trigger view specific logic
-            if(viewName === 'home') renderUnitList();
-            if(viewName === 'dashboard') renderDashboard();
-            if(viewName === 'history') renderHistory();
         }
 
-        // ==========================================
-        // 6. CLOCK & SHIFT LOGIC
-        // ==========================================
-        function getCurrentShiftData() {
+        // --- CLOCK & SHIFT ---
+        function updateClock() {
             const now = new Date();
-            const h = now.getHours();
-            const m = now.getMinutes();
-            const time = h + m/60;
-            
-            let shift = '';
-            let shiftDate = new Date(now);
+            const timeVal = now.getHours() + (now.getMinutes() / 60);
+            let shift = "Night", shiftDate = new Date(now);
 
-            // Shift Day: 07:20 (7.33) -> 20:30 (20.5)
-            if (time >= 7.333 && time < 20.5) {
-                shift = 'Day';
-            } else {
-                shift = 'Night';
-                if (time < 7.333) {
-                    shiftDate.setDate(shiftDate.getDate() - 1); // Belongs to previous day's shift
-                }
-            }
-            
-            const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-            const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-            
-            const dateID = `${shiftDate.getDate().toString().padStart(2,'0')}/${(shiftDate.getMonth()+1).toString().padStart(2,'0')}/${shiftDate.getFullYear()}`;
-            const fullDateID = `${days[shiftDate.getDay()]}, ${shiftDate.getDate()} ${months[shiftDate.getMonth()]} ${shiftDate.getFullYear()}`;
+            if (timeVal >= 7.333 && timeVal < 20.5) shift = "Day";
+            else { shift = "Night"; if (timeVal < 7.333) shiftDate.setDate(shiftDate.getDate() - 1); }
 
-            return {
-                shift: shift,
-                shiftDateCode: `${dateID}-${shift}`, // e.g., "15/10/2026-Day" (Unique key for grouping)
-                dateID: dateID,
-                fullDateStr: fullDateID,
-                shiftStr: shift
-            };
+            const fn = (num) => String(num).padStart(2, '0');
+            const dStr = `${shiftDate.getFullYear()}-${fn(shiftDate.getMonth()+1)}-${fn(shiftDate.getDate())}`;
+            const hariArr = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const blnArr = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+            
+            const displayDate = `${hariArr[now.getDay()]}, ${fn(now.getDate())} ${blnArr[now.getMonth()]} ${now.getFullYear()}`;
+            document.getElementById('live-time').innerText = `${fn(now.getHours())}:${fn(now.getMinutes())}:${fn(now.getSeconds())}`;
+            document.getElementById('live-date').innerText = displayDate;
+            document.getElementById('live-shift').innerText = `Shift: ${shift}`;
+
+            currentShiftData = { shift, shiftDateStr: dStr, displayDate };
         }
 
-        function startClock() {
-            setInterval(() => {
-                const now = new Date();
-                document.getElementById('clock-time').textContent = now.toLocaleTimeString('id-ID');
-                
-                const shiftData = getCurrentShiftData();
-                document.getElementById('clock-date').textContent = shiftData.fullDateStr;
-                document.getElementById('clock-shift').textContent = `Shift: ${shiftData.shiftStr}`;
-            }, 1000);
+        async function saveDataToCloud() {
+            if(BIN_ID === 'MASUKKAN_BIN_ID_ANDA_DISINI') return;
+            try { 
+                await fetch(BASE_URL, { 
+                    method: 'PUT', 
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY }, 
+                    body: JSON.stringify(appData) 
+                });
+            } catch (e) { alert('Gagal sinkron ke cloud.'); }
         }
 
-        // ==========================================
-        // 7. HOME (UNIT LIST & SWITCHER)
-        // ==========================================
-        document.getElementById('tab-ng').addEventListener('click', () => {
-            activeTab = 'NG';
-            document.getElementById('tab-ng').className = "flex-1 py-2 flex justify-center items-center gap-2 rounded-lg bg-red-500/20 border border-red-500/50 text-white transition-all";
-            document.getElementById('tab-ok').className = "flex-1 py-2 flex justify-center items-center gap-2 rounded-lg text-gray-400 hover:text-white transition-all";
-            renderUnitList();
-        });
+        // --- NAVIGATION ---
+        function switchView(targetId) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active', 'text-cyan-400'));
+            const aBtn = document.querySelector(`.nav-btn[data-target="${targetId}"]`);
+            if(aBtn) aBtn.classList.add('active', 'text-cyan-400');
+            
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(`view-${targetId}`).classList.add('active');
 
-        document.getElementById('tab-ok').addEventListener('click', () => {
-            activeTab = 'OK';
-            document.getElementById('tab-ok').className = "flex-1 py-2 flex justify-center items-center gap-2 rounded-lg bg-green-500/20 border border-green-500/50 text-white transition-all";
-            document.getElementById('tab-ng').className = "flex-1 py-2 flex justify-center items-center gap-2 rounded-lg text-gray-400 hover:text-white transition-all";
-            renderUnitList();
-        });
+            if (targetId === 'home') renderUnitList();
+            if (targetId === 'dashboard') renderDashboard();
+            if (targetId === 'history') renderHistoryGroups();
+        }
 
+        function setFilter(status) { activeFilter = status; switchView('home'); }
+
+        // --- HOME / RENDER UNIT ---
         function renderUnitList() {
             const container = document.getElementById('unit-list-container');
             container.innerHTML = '';
+            const filtered = appData.units.filter(u => u.status === activeFilter);
             
-            // Filter by active tab (NG tab shows both NG and KONFIRMASI)
-            const filteredUnits = appData.units.filter(u => {
-                if(activeTab === 'NG') return u.status === 'NG' || u.status === 'KONFIRMASI';
-                return u.status === 'OK';
-            });
+            if(filtered.length === 0) return container.innerHTML = `<div class="text-center py-10 text-slate-500">Tidak ada data unit ${activeFilter}</div>`;
 
-            // Sort newest first
-            filteredUnits.sort((a,b) => b.id - a.id);
-
-            if(filteredUnits.length === 0) {
-                container.innerHTML = `<div class="text-center text-gray-500 mt-10"><i class="fas fa-folder-open text-4xl mb-3"></i><br>Tidak ada data unit ${activeTab}.</div>`;
-                return;
-            }
-
-            filteredUnits.forEach(u => {
-                let statusColor = u.status === 'OK' ? 'border-green-500 text-green-400' : 
-                                 (u.status === 'KONFIRMASI' ? 'border-yellow-500 text-yellow-400' : 'border-red-500 text-red-400');
+            filtered.reverse().forEach(unit => {
+                let col = unit.status === 'NG' ? 'text-red-500' : (unit.status === 'KONFIRMASI' ? 'text-yellow-500' : 'text-green-500');
+                let act = unit.status === 'NG' ? `onclick="if(!isLongPress) bukaModalAksi(${unit.id})"` : (unit.status === 'KONFIRMASI' ? `onclick="if(!isLongPress) lanjutkanKonfirmasi(${unit.id})"` : '');
                 
-                let iconClass = u.status === 'OK' ? 'fa-check-circle' : 
-                               (u.status === 'KONFIRMASI' ? 'fa-spinner fa-spin' : 'fa-exclamation-circle');
-
-                let cardHTML = `
-                    <div class="glass p-4 rounded-xl mb-3 border-l-4 ${statusColor} relative cursor-pointer active:scale-95 transition-transform" 
-                         onclick="handleUnitClick(${u.id})">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="font-bold text-white text-lg tracking-wider">${u.noUnit}</h3>
-                            <span class="text-[10px] bg-slate-800 px-2 py-1 rounded text-gray-300 border border-gray-700">${u.shiftStr} | ${u.dateID}</span>
+                container.innerHTML += `
+                    <div class="glass rounded-xl p-4 flex items-center gap-4 transition active:scale-95"
+                         onmousedown="startPressUnit(${unit.id}, event)" ontouchstart="startPressUnit(${unit.id}, event)"
+                         onmouseup="cancelPress()" onmouseleave="cancelPress()" ontouchend="cancelPress()"
+                         ${act}>
+                        <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 shrink-0">
+                            <i class="fa-solid fa-car ${col} text-xl"></i>
                         </div>
-                        <p class="text-gray-300 text-sm mb-2">${u.problem}</p>
-                        <div class="flex justify-between items-center mt-2">
-                            <span class="text-xs font-semibold ${statusColor}"><i class="fas ${iconClass} mr-1"></i> ${u.status}</span>
+                        <div class="flex-1 min-w-0 pointer-events-none">
+                            <h4 class="font-bold text-lg font-mono text-white truncate">${unit.noUnit}</h4>
+                            <p class="text-xs text-slate-400 truncate">${unit.problem}</p>
+                            <p class="text-[10px] text-slate-500 mt-1">${unit.shift} | ${unit.timeStr}</p>
                         </div>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', cardHTML);
+                    </div>`;
             });
         }
 
-        function handleUnitClick(id) {
+        // --- INPUT UNIT ---
+        async function simpanUnitBaru() {
+            const no = document.getElementById('input-no-unit').value.trim();
+            const pr = document.getElementById('input-problem').value.trim();
+            if(!no || !pr) return alert('Isi lengkap!');
+            
+            const now = new Date();
+            appData.units.push({
+                id: Date.now(), noUnit: no.toUpperCase(), problem: pr, status: 'NG',
+                shiftStr: currentShiftData.shiftDateStr, shift: currentShiftData.shift,
+                timeStr: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+                displayDate: currentShiftData.displayDate
+            });
+            await saveDataToCloud();
+            document.getElementById('input-no-unit').value = '';
+            document.getElementById('input-problem').value = '';
+            setFilter('NG');
+        }
+
+        // --- KONFIRMASI DENGAN CHECKLIST DINAMIS ---
+        function bukaModalAksi(id) {
+            activeUnitId = id;
+            const u = appData.units.find(x => x.id === id);
+            document.getElementById('modal-aksi-desc').innerHTML = `<b>${u.noUnit}</b><br><span class="text-red-400">${u.problem}</span>`;
+            const m = document.getElementById('modal-aksi'), c = document.getElementById('modal-aksi-content');
+            m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeModalAksi() {
+            const m = document.getElementById('modal-aksi'), c = document.getElementById('modal-aksi-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); }, 300);
+        }
+
+        async function mulaiProsesKonfirmasi() {
+            appData.units.find(u => u.id === activeUnitId).status = 'KONFIRMASI';
+            await saveDataToCloud(); closeModalAksi(); setFilter('KONFIRMASI');
+        }
+
+        function lanjutkanKonfirmasi(id) {
+            activeUnitId = id;
             const unit = appData.units.find(u => u.id === id);
-            if(unit.status === 'NG') {
-                if(confirm(`Konfirmasi perbaikan untuk unit ${unit.noUnit}?\nProblem: ${unit.problem}`)) {
-                    unit.status = 'KONFIRMASI';
-                    saveToCloud();
-                    openKonfirmasiView(unit);
-                }
-            } else if (unit.status === 'KONFIRMASI') {
-                openKonfirmasiView(unit);
-            }
+            document.getElementById('konf-no-unit').innerText = unit.noUnit;
+            document.getElementById('konf-problem').innerText = unit.problem;
+            
+            const pr = unit.problem.toLowerCase();
+            const isBrake = ['rem blong', 'rem dalam', 'rem abn', 'rem magel'].some(k => pr.includes(k));
+            const isKopling = ['kopling blong', 'kopling dalam', 'kopling abnormal', 'kolking abnormal'].some(k => pr.includes(k));
+            const isIndikator = ['indikator', 'efi', 'abs', 'airbag', 'imoby', 'eps'].some(k => pr.includes(k));
+            
+            const area = document.getElementById('konf-checklist-area');
+            const items = document.getElementById('konf-checklist-items');
+            
+            let html = '', cat = [], count = 1;
+            const addItem = (t) => { html += `<label class="flex items-center gap-3 p-2 bg-slate-800/50 border border-slate-700 rounded-lg"><input type="checkbox" class="w-5 h-5 accent-cyan-500 rounded"><span class="text-sm">${count++}. ${t}</span></label>`; };
+
+            if(isBrake) { cat.push('Rem'); ['Cek reservoir minyak rem','Cek nepel rem','Running test cek fungsi rem','DS (Diagnostic System)','Cek modul ABS','Cek VSC'].forEach(addItem); }
+            if(isKopling) { cat.push('Kopling'); ['Cek fungsi kopling','Cek reservoir minyak rem','Running tes fungsi kopling'].forEach(addItem); }
+            if(isIndikator) { cat.push('Indikator'); ['Cek cover fuse box','Cek jump pro','Cek indikator efi','Cek indikator abs','Cek indikator airbag','Cek indikator eps','DS (Diagnostic System)'].forEach(addItem); }
+
+            if(html !== '') {
+                area.querySelector('h3').innerText = `CHECKLIST WAJIB (${cat.join(' & ')})`;
+                area.classList.remove('hidden'); items.innerHTML = html;
+            } else { area.classList.add('hidden'); items.innerHTML = ''; }
+
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('view-konfirmasi').classList.add('active');
         }
 
-        // ==========================================
-        // 8. INPUT DATA UNIT
-        // ==========================================
-        document.getElementById('btn-simpan-unit').addEventListener('click', async () => {
-            const inputNo = document.getElementById('input-no-unit');
-            const inputProb = document.getElementById('input-problem');
+        async function selesaikanUnit() {
+            const cb = document.querySelectorAll('#konf-checklist-items input');
+            let all = true; cb.forEach(c => { if(!c.checked) all = false; });
+            if(cb.length > 0 && !all) return alert('Selesaikan semua checklist!');
             
-            if(!inputNo.value.trim() || !inputProb.value.trim()) {
-                alert("No Unit dan Problem harus diisi!");
-                return;
-            }
-
-            const sData = getCurrentShiftData();
-            
-            const newUnit = {
-                id: Date.now(),
-                noUnit: inputNo.value.trim().toUpperCase(),
-                problem: inputProb.value.trim(),
-                status: 'NG',
-                shiftDateCode: sData.shiftDateCode,
-                dateID: sData.dateID,
-                shiftStr: sData.shift,
-                fullDateStr: sData.fullDateStr
-            };
-
-            appData.units.push(newUnit);
-            await saveToCloud();
-            
-            inputNo.value = '';
-            inputProb.value = '';
-            alert("Data berhasil disimpan!");
-            switchView('home');
-        });
-
-        // ==========================================
-        // 9. KONFIRMASI & CHECKLIST REM
-        // ==========================================
-        let requiredCheckboxes = 0;
-        let checkedBoxes = 0;
-
-        function openKonfirmasiView(unit) {
-            currentActiveUnit = unit;
-            switchView('konfirmasi');
-            
-            document.getElementById('konfirmasi-nounit').textContent = `UNIT ${unit.noUnit}`;
-            document.getElementById('konfirmasi-problem').textContent = `Problem: ${unit.problem}`;
-            
-            const probLower = unit.problem.toLowerCase();
-            const isRemProblem = KEYWORDS_REM.some(kw => probLower.includes(kw));
-            
-            const checklistArea = document.getElementById('konfirmasi-checklist-area');
-            const checklistContainer = document.getElementById('konfirmasi-checklist');
-            const btnSelesai = document.getElementById('btn-selesai-konfirmasi');
-            
-            checklistContainer.innerHTML = '';
-            requiredCheckboxes = 0;
-            checkedBoxes = 0;
-
-            if(isRemProblem) {
-                checklistArea.classList.remove('hidden');
-                requiredCheckboxes = DAFTAR_CEK_REM.length;
-                
-                DAFTAR_CEK_REM.forEach((item, index) => {
-                    const id = `chk-${index}`;
-                    checklistContainer.insertAdjacentHTML('beforeend', `
-                        <label class="flex items-center gap-3 p-2 rounded hover:bg-slate-700/50 cursor-pointer transition-colors">
-                            <input type="checkbox" id="${id}" class="w-5 h-5 accent-cyan-500 rounded chk-rem">
-                            <span class="text-sm text-gray-200 select-none">${item}</span>
-                        </label>
-                    `);
-                });
-
-                btnSelesai.classList.add('opacity-50', 'cursor-not-allowed');
-                btnSelesai.disabled = true;
-
-                document.querySelectorAll('.chk-rem').forEach(chk => {
-                    chk.addEventListener('change', function() {
-                        checkedBoxes = document.querySelectorAll('.chk-rem:checked').length;
-                        if(checkedBoxes === requiredCheckboxes) {
-                            btnSelesai.classList.remove('opacity-50', 'cursor-not-allowed');
-                            btnSelesai.disabled = false;
-                        } else {
-                            btnSelesai.classList.add('opacity-50', 'cursor-not-allowed');
-                            btnSelesai.disabled = true;
-                        }
-                    });
-                });
-
-            } else {
-                checklistArea.classList.add('hidden');
-                btnSelesai.classList.remove('opacity-50', 'cursor-not-allowed');
-                btnSelesai.disabled = false;
-            }
+            appData.units.find(u => u.id === activeUnitId).status = 'OK';
+            await saveDataToCloud(); activeUnitId = null; setFilter('OK'); switchView('home');
         }
 
-        document.getElementById('btn-selesai-konfirmasi').addEventListener('click', async () => {
-            if(!currentActiveUnit) return;
-            
-            // Ubah status
-            const index = appData.units.findIndex(u => u.id === currentActiveUnit.id);
-            if(index !== -1) {
-                appData.units[index].status = 'OK';
-                await saveToCloud();
-                
-                // Animasi centang sukses sederhana pakai alert / ganti UI
-                alert("Unit berhasil diselesaikan (OK)!");
-                switchView('home');
-            }
-        });
-
-
-        // ==========================================
-        // 10. DASHBOARD (PARETO >= 3 & WA EXPORT)
-        // ==========================================
+        // --- DASHBOARD ---
         function renderDashboard() {
-            const currentShiftInfo = getCurrentShiftData();
-            document.getElementById('dashboard-shift-info').textContent = `Shift Saat Ini: ${currentShiftInfo.fullDateStr} (Shift ${currentShiftInfo.shiftStr})`;
+            document.getElementById('pareto-shift-info').innerText = `${currentShiftData.displayDate} | ${currentShiftData.shift}`;
+            const sUnits = appData.units.filter(u => u.shiftStr === currentShiftData.shiftDateStr && u.shift === currentShiftData.shift);
             
-            // Filter unit khusus shift yang sedang berjalan SEKARANG
-            const currentUnits = appData.units.filter(u => u.shiftDateCode === currentShiftInfo.shiftDateCode);
+            const pc = {};
+            sUnits.forEach(u => { const p = u.problem.trim().toUpperCase(); if(!pc[p]) pc[p] = {count:0, units:[]}; pc[p].count++; pc[p].units.push(u.noUnit); });
             
-            // Grup berdasarkan Problem (Case Insensitive untuk grouping yang akurat)
-            const problemCounts = {};
-            currentUnits.forEach(u => {
-                const p = u.problem.trim().toUpperCase(); // Normalisasi string
-                if(!problemCounts[p]) problemCounts[p] = { count: 0, units: [], originalName: u.problem };
-                problemCounts[p].count++;
-                problemCounts[p].units.push(u.noUnit);
-            });
-
-            // Filter yang >= 3
-            const paretoArray = Object.values(problemCounts)
-                                      .filter(item => item.count >= 3)
-                                      .sort((a,b) => b.count - a.count);
-
-            document.getElementById('pareto-total-count').textContent = paretoArray.length;
+            paretoDataShift = Object.keys(pc).map(k => ({problem:k, ...pc[k]})).filter(i => i.count >= 3).sort((a,b) => b.count - a.count);
             
-            const container = document.getElementById('pareto-list-container');
-            container.innerHTML = '';
-
-            if(paretoArray.length === 0) {
-                container.innerHTML = `<div class="text-gray-500 text-sm italic text-center mt-4">Belum ada problem yang mencapai jumlah 3 pada shift ini.</div>`;
-                activeParetoData = null; // reset data WA
-                return;
-            }
-
-            // Simpan data pareto global untuk tombol WA (Semua Pareto >= 3)
-            activeParetoData = {
-                shiftInfo: currentShiftInfo,
-                paretoList: paretoArray,
-                totalUnitInPareto: paretoArray.reduce((sum, item) => sum + item.count, 0)
-            };
-
-            paretoArray.forEach((item, idx) => {
-                const btnHtml = `
-                    <div class="glass p-3 rounded-lg flex justify-between items-center border border-white/5 active:bg-slate-700 transition-colors"
-                         onclick='openParetoModal(${JSON.stringify(item).replace(/'/g, "&#39;")})'>
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-bold text-sm border border-red-500/30">${item.count}</div>
-                            <span class="text-white text-sm font-semibold">${item.originalName}</span>
-                        </div>
-                        <i class="fas fa-chevron-right text-gray-500 text-xs"></i>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', btnHtml);
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(document.getElementById('paretoChart').getContext('2d'), {
+                type: 'bar', data: { labels: paretoDataShift.map(d => d.problem.substring(0,15)), datasets: [{ data: paretoDataShift.map(d => d.count), backgroundColor: '#06b6d4' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
             });
             
-            // Tambah tombol WA di bawah daftar pareto
-            container.insertAdjacentHTML('beforeend', `
-                <button onclick="shareAllParetoWA()" class="mt-4 w-full bg-green-500/20 border border-green-500 hover:bg-green-500/40 text-green-400 font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
-                    <i class="fab fa-whatsapp text-lg"></i> Kirim Laporan Semua Pareto
-                </button>
-            `);
+            const list = document.getElementById('pareto-list'); list.innerHTML = '';
+            paretoDataShift.forEach((d, i) => {
+                list.innerHTML += `<div onclick="bukaModalPareto()" class="bg-slate-800 border border-slate-700 rounded-xl p-3 flex justify-between items-center"><div class="text-sm font-semibold">${i+1}. ${d.problem}</div><div class="bg-red-500/20 text-red-400 px-2 rounded">${d.count} Unit</div></div>`;
+            });
         }
+        function bukaModalPareto() { document.getElementById('modal-pareto').classList.remove('hidden'); document.getElementById('modal-pareto').classList.remove('opacity-0'); }
+        function closeModalPareto() { document.getElementById('modal-pareto').classList.add('hidden'); }
+        function kirimWhatsAppPareto() {
+            let totalProblemSama = paretoDataShift.length;
+            let totalUnit = paretoDataShift.reduce((sum, item) => sum + item.count, 0);
 
-        // Fungsi klik list pareto memunculkan modal detail 1 problem
-        function openParetoModal(itemData) {
-            document.getElementById('modal-pareto').classList.remove('hidden');
-            document.getElementById('modal-pareto-title').textContent = itemData.originalName;
-            
-            const unitListUl = document.getElementById('modal-pareto-unit-list');
-            unitListUl.innerHTML = '';
-            itemData.units.forEach(u => {
-                unitListUl.innerHTML += `<li>Unit: <span class="font-semibold text-cyan-300">${u}</span></li>`;
+            let textWA = `*DATA PROBLEM PARETO PADA ${currentShiftData.displayDate.toUpperCase()}, ${currentShiftData.shift.toUpperCase()}*\n`;
+            textWA += `TOTAL PROBLEM SAMA: ${totalProblemSama} PROBLEM\n`;
+            textWA += `TOTAL UNIT: ${totalUnit} UNIT\n\n`;
+            textWA += `*DETAIL*\n`;
+
+            paretoDataShift.forEach((item, i) => {
+                textWA += `${i+1}. *${item.problem}*\n`;
+                item.units.forEach(u => { textWA += `   - ${u}\n`; });
+                textWA += `\n`;
             });
 
-            // Set aksi WA per 1 problem (opsional jika user hanya mau share 1)
-            document.getElementById('btn-share-wa').onclick = () => shareSingleParetoWA(itemData);
+            window.open(`https://wa.me/?text=${encodeURIComponent(textWA)}`, '_blank');
         }
 
-        function closeParetoModal() {
-            document.getElementById('modal-pareto').classList.add('hidden');
-        }
-
-        function shareSingleParetoWA(itemData) {
-            const shift = getCurrentShiftData();
-            let text = `*DATA PROBLEM PARETO PADA ${shift.fullDateStr.toUpperCase()}, SHIFT ${shift.shift.toUpperCase()}*\n`;
-            text += `TOTAL PROBLEM SAMA: 1 PROBLEM\n`;
-            text += `TOTAL UNIT: ${itemData.count}\n\n`;
-            text += `DETAIL\n`;
-            text += `1. ${itemData.originalName.toUpperCase()}\n`;
-            itemData.units.forEach(u => { text += `    - ${u}\n`; });
-            
-            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-        }
-
-        function shareAllParetoWA() {
-            if(!activeParetoData) return;
-            const data = activeParetoData;
-            
-            let text = `*DATA PROBLEM PARETO PADA ${data.shiftInfo.fullDateStr.toUpperCase()}, SHIFT ${data.shiftInfo.shift.toUpperCase()}*\n`;
-            text += `TOTAL PROBLEM SAMA: ${data.paretoList.length} PROBLEM\n`;
-            text += `TOTAL UNIT: ${data.totalUnitInPareto}\n\n`;
-            text += `DETAIL\n`;
-            
-            data.paretoList.forEach((item, index) => {
-                text += `${index + 1}. ${item.originalName.toUpperCase()}\n`;
-                item.units.forEach(u => { text += `    - ${u}\n`; });
-            });
-            
-            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-        }
-
-        // ==========================================
-        // 11. HISTORY (PER SHIFT DATE)
-        // ==========================================
-        function renderHistory() {
-            const container = document.getElementById('history-list-container');
-            container.innerHTML = '';
-            
-            // Extract unique ShiftDateCodes
-            const shiftGroups = {};
+        // --- HISTORI ---
+        function renderHistoryGroups() {
+            const container = document.getElementById('history-group-list'); container.innerHTML = '';
+            document.getElementById('history-detail-view').classList.add('hidden'); container.classList.remove('hidden');
+            const groups = {};
             appData.units.forEach(u => {
-                if(!shiftGroups[u.shiftDateCode]) {
-                    shiftGroups[u.shiftDateCode] = {
-                        displayDate: `${u.fullDateStr} - Shift ${u.shiftStr}`,
-                        units: []
-                    };
-                }
-                shiftGroups[u.shiftDateCode].units.push(u);
+                const k = `${u.displayDate} - ${u.shift}`;
+                if(!groups[k]) groups[k] = { dateStr: u.shiftStr, shift: u.shift, label: k, count: 0 }; groups[k].count++;
             });
-
-            const keys = Object.keys(shiftGroups);
-            // Sort by date (descending string compare works roughly if formatted, but here we just reverse the keys based on creation if units are sequential)
-            keys.reverse(); 
-
-            if(keys.length === 0) {
-                container.innerHTML = `<div class="text-gray-500 text-sm italic text-center mt-4">Belum ada histori data.</div>`;
-                return;
-            }
-
-            keys.forEach(code => {
-                const group = shiftGroups[code];
-                const total = group.units.length;
-                const okCount = group.units.filter(u => u.status === 'OK').length;
-                
-                const btnHtml = `
-                    <div class="glass p-4 rounded-lg flex justify-between items-center border border-white/5 active:scale-95 transition-transform"
-                         onclick="openHistoryDetail('${code}')">
-                        <div>
-                            <div class="text-white text-sm font-semibold mb-1">${group.displayDate}</div>
-                            <div class="text-xs text-gray-400">Total: ${total} | Selesai: ${okCount}</div>
-                        </div>
-                        <i class="fas fa-chevron-right text-cyan-500"></i>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', btnHtml);
+            Object.keys(groups).reverse().forEach(k => {
+                const g = groups[k];
+                container.innerHTML += `
+                    <div onmousedown="startPressShift('${g.dateStr}', '${g.shift}', '${g.label}', event)" ontouchstart="startPressShift('${g.dateStr}', '${g.shift}', '${g.label}', event)" onmouseup="cancelPress()" onmouseleave="cancelPress()" ontouchend="cancelPress()"
+                         onclick="if(!isLongPress) bukaHistoryDetail('${g.dateStr}', '${g.shift}', '${g.label}')" class="glass rounded-xl p-4 flex justify-between items-center active:scale-95 transition cursor-pointer">
+                        <div class="pointer-events-none"><div class="font-bold text-cyan-400">${g.label}</div><div class="text-xs text-slate-400">Total Input: ${g.count} Unit</div></div>
+                        <i class="fa-solid fa-chevron-right text-slate-500 pointer-events-none"></i>
+                    </div>`;
             });
         }
 
-        function openHistoryDetail(shiftCode) {
-            const detailView = document.getElementById('view-history-detail');
-            const container = document.getElementById('history-detail-list');
-            const title = document.getElementById('history-detail-title');
+        function bukaHistoryDetail(dateStr, shift, label) {
+            document.getElementById('history-group-list').classList.add('hidden');
+            document.getElementById('history-detail-view').classList.remove('hidden');
+            document.getElementById('history-detail-title').innerText = label;
+            const list = document.getElementById('history-detail-list'); list.innerHTML = '';
             
-            const units = appData.units.filter(u => u.shiftDateCode === shiftCode).sort((a,b) => b.id - a.id);
-            
-            if(units.length > 0) {
-                title.textContent = `${units[0].fullDateStr} (Shift ${units[0].shiftStr})`;
-            }
-
-            container.innerHTML = '';
-            units.forEach(u => {
-                let statusColor = u.status === 'OK' ? 'text-green-400 border-green-500' : 'text-red-400 border-red-500';
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="glass p-3 rounded border-l-2 ${statusColor}">
-                        <div class="flex justify-between">
-                            <span class="font-bold text-white">${u.noUnit}</span>
-                            <span class="text-xs ${statusColor}">${u.status}</span>
-                        </div>
-                        <div class="text-sm text-gray-300 mt-1">${u.problem}</div>
-                    </div>
-                `);
+            appData.units.filter(u => u.shiftStr === dateStr && u.shift === shift).reverse().forEach(u => {
+                list.innerHTML += `
+                    <div onmousedown="startPressUnit(${u.id}, event)" ontouchstart="startPressUnit(${u.id}, event)" onmouseup="cancelPress()" onmouseleave="cancelPress()" ontouchend="cancelPress()" 
+                         class="bg-slate-800/80 border border-slate-700 rounded-xl p-3 flex justify-between items-center cursor-pointer">
+                        <div class="pointer-events-none"><div class="font-bold font-mono text-white">${u.noUnit}</div><div class="text-xs text-slate-400">${u.problem}</div></div>
+                        <div class="pointer-events-none text-right"><span class="text-xs font-bold ${u.status==='OK'?'text-green-400':'text-red-400'}">${u.status}</span><br><span class="text-[10px] text-slate-500">${u.timeStr}</span></div>
+                    </div>`;
             });
+        }
+        function closeHistoryDetail() { document.getElementById('history-detail-view').classList.add('hidden'); document.getElementById('history-group-list').classList.remove('hidden'); }
 
-            detailView.classList.remove('hidden');
+        // --- ADMIN FUNCTIONS (LONG PRESS) ---
+        function openAdminAction(id) {
+            activeUnitId = id;
+            const u = appData.units.find(x => x.id === id);
+            document.getElementById('admin-action-desc').innerText = `${u.noUnit} | Status: ${u.status}`;
+            const m = document.getElementById('modal-admin-action'), c = document.getElementById('modal-admin-action-content');
+            m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+        
+        function closeAdminAction() {
+            const m = document.getElementById('modal-admin-action'), c = document.getElementById('modal-admin-action-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); }, 300);
         }
 
-        function closeHistoryDetail() {
-            document.getElementById('view-history-detail').classList.add('hidden');
+        async function hapusDataUnit() {
+            if(!confirm("Yakin hapus data ini secara permanen?")) return;
+            appData.units = appData.units.filter(u => u.id !== activeUnitId);
+            await saveDataToCloud(); closeAdminAction();
+            
+            if(document.getElementById('view-home').classList.contains('active')) renderUnitList();
+            else if(document.getElementById('view-admin').classList.contains('active')) renderAdminShiftView();
+            else renderHistoryGroups();
         }
 
+        function bukaModalEdit() {
+            const u = appData.units.find(x => x.id === activeUnitId);
+            document.getElementById('edit-no-unit').value = u.noUnit;
+            document.getElementById('edit-problem').value = u.problem;
+            closeAdminAction();
+            
+            const m = document.getElementById('modal-admin-edit'), c = document.getElementById('modal-admin-edit-content');
+            setTimeout(() => { m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10); }, 300);
+        }
+        
+        function closeModalEdit() {
+            const m = document.getElementById('modal-admin-edit'), c = document.getElementById('modal-admin-edit-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); }, 300);
+        }
+
+        async function simpanEditUnit() {
+            const no = document.getElementById('edit-no-unit').value.trim();
+            const pr = document.getElementById('edit-problem').value.trim();
+            if(!no || !pr) return alert("Data tidak boleh kosong!");
+            
+            const index = appData.units.findIndex(u => u.id === activeUnitId);
+            appData.units[index].noUnit = no.toUpperCase();
+            appData.units[index].problem = pr;
+            
+            await saveDataToCloud(); closeModalEdit();
+            
+            if(document.getElementById('view-home').classList.contains('active')) renderUnitList();
+            else if(document.getElementById('view-admin').classList.contains('active')) renderAdminShiftView();
+            else renderHistoryGroups();
+        }
+
+        let adminCurrentShift = {};
+        function openAdminShift(dateStr, shift, label) {
+            adminCurrentShift = { dateStr, shift, label };
+            document.getElementById('admin-shift-title').innerText = label;
+            renderAdminShiftView();
+            
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('view-admin').classList.add('active');
+        }
+
+        function renderAdminShiftView() {
+            const list = document.getElementById('admin-unit-list'); list.innerHTML = '';
+            const units = appData.units.filter(u => u.shiftStr === adminCurrentShift.dateStr && u.shift === adminCurrentShift.shift);
+            
+            units.reverse().forEach(u => {
+                list.innerHTML += `
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 flex justify-between items-center">
+                        <div><div class="font-bold font-mono text-white">${u.noUnit}</div><div class="text-xs text-slate-400">${u.problem}</div></div>
+                        <div class="flex gap-2">
+                            <button onclick="openAdminAction(${u.id})" class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-cyan-400"><i class="fa-solid fa-edit"></i></button>
+                        </div>
+                    </div>`;
+            });
+        }
     </script>
 </body>
 </html>
