@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pengelola Unit App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .neon-text { text-shadow: 0 0 10px rgba(6, 182, 212, 0.8); }
+        .neon-border { box-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+        
+        /* Hide scrollbar for clean UI but allow scrolling */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- 1. LOADING SCREEN -->
+    <div id="loading-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900 transition-opacity duration-500">
+        <div class="relative w-20 h-20 mb-6">
+            <div class="absolute inset-0 border-4 border-slate-700 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-cyan-500 rounded-full border-t-transparent animate-spin shadow-[0_0_15px_rgba(6,182,212,0.6)]"></div>
+        </div>
+        <h2 class="text-xl font-bold text-white tracking-wider animate-pulse">Menyambungkan...</h2>
+        <p class="text-sm text-cyan-400 mt-2">Sinkronisasi JSONBin.io</p>
+    </div>
+
+    <!-- 2. LOGIN PAGE -->
+    <div id="login-page" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900 p-6">
+        <div class="glass rounded-2xl p-8 w-full max-w-sm neon-border">
+            <div class="text-center mb-8">
+                <i class="fas fa-car-side text-4xl text-cyan-400 mb-3 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]"></i>
+                <h1 class="text-2xl font-bold text-white tracking-wide">PENGELOLA UNIT</h1>
+            </div>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-400 mb-1">Username</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="text" id="login-username" class="w-full bg-slate-800 text-white rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Masukkan username">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm text-gray-400 mb-1">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="password" id="login-password" class="w-full bg-slate-800 text-white rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Masukkan password">
+                    </div>
+                </div>
+                <button type="button" id="btn-login" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 rounded-lg shadow-lg transition-transform active:scale-95">LOGIN</button>
+            </form>
+            <div class="mt-6 text-center text-xs text-gray-400 flex justify-between">
+                <a href="#" onclick="alert('Hubungi Administrator untuk mendaftarkan user baru.')" class="hover:text-cyan-400">User Baru?</a>
+                <a href="#" onclick="alert('Hubungi Administrator untuk mereset password.')" class="hover:text-cyan-400">Lupa Password?</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. MAIN APPLICATION -->
+    <div id="main-app" class="hidden flex flex-col h-full w-full relative bg-slate-900">
+        
+        <!-- TOP NAVBAR (Sticky) -->
+        <header class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center shadow-md">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-car-side text-cyan-400 text-xl"></i>
+                <h1 class="text-lg font-bold tracking-wider text-white neon-text">PENGELOLA UNIT</h1>
+            </div>
+            <button id="btn-logout" class="text-gray-400 hover:text-red-400 p-2"><i class="fas fa-sign-out-alt"></i></button>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 overflow-hidden relative">
+            
+            <!-- VIEW: HOME (List Unit) -->
+            <div id="view-home" class="h-full flex flex-col">
+                <!-- Live Clock & Shift -->
+                <div class="bg-slate-800/50 p-4 border-b border-white/5 text-center">
+                    <div id="clock-time" class="text-3xl font-bold text-cyan-400 tracking-wider mb-1">00:00:00</div>
+                    <div id="clock-date" class="text-sm text-gray-300">Hari, Tanggal Bulan Tahun</div>
+                    <div id="clock-shift" class="inline-block mt-2 px-4 py-1 rounded-full bg-cyan-900/50 text-cyan-300 text-xs font-semibold border border-cyan-700/50">Shift: -</div>
+                </div>
+
+                <!-- Switcher NG / OK Card -->
+                <div class="p-4 z-10">
+                    <div class="glass p-1 rounded-xl flex">
+                        <button id="tab-ng" class="flex-1 py-2 flex justify-center items-center gap-2 rounded-lg bg-red-500/20 border border-red-500/50 text-white transition-all">
+                            <i class="fas fa-car text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]"></i> <span class="font-semibold">Unit NG</span>
+                        </button>
+                        <button id="tab-ok" class="flex-1 py-2 flex justify-center items-center gap-2 rounded-lg text-gray-400 hover:text-white transition-all">
+                            <i class="fas fa-car text-green-500"></i> <span class="font-semibold">Unit OK</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scrollable List -->
+                <div class="flex-1 overflow-y-auto px-4 pb-24" id="unit-list-container">
+                    <!-- Unit items will be generated here by JS -->
+                </div>
+            </div>
+
+            <!-- VIEW: INPUT DATA UNIT -->
+            <div id="view-input" class="hidden h-full flex flex-col p-4 pb-24 overflow-y-auto">
+                <h2 class="text-xl font-bold text-white mb-6 border-b border-white/10 pb-2"><i class="fas fa-plus-circle text-cyan-400 mr-2"></i>Input Data Unit</h2>
+                
+                <div class="glass rounded-xl p-5 shadow-lg">
+                    <div class="mb-5">
+                        <label class="block text-sm text-gray-300 mb-2">Data Unit (No. Unit)</label>
+                        <input type="text" id="input-no-unit" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-3 px-4 text-white focus:border-cyan-500 focus:outline-none" placeholder="Masukkan Nomor Unit">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm text-gray-300 mb-2">Problem / Masalah</label>
+                        <textarea id="input-problem" rows="3" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-3 px-4 text-white focus:border-cyan-500 focus:outline-none" placeholder="Deskripsikan kerusakan"></textarea>
+                    </div>
+                    <button id="btn-simpan-unit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg transition-transform active:scale-95"><i class="fas fa-save mr-2"></i>SIMPAN (NG)</button>
+                </div>
+            </div>
+
+            <!-- VIEW: KONFIRMASI -->
+            <div id="view-konfirmasi" class="hidden h-full flex flex-col p-4 pb-24 overflow-y-auto">
+                <button onclick="switchView('home')" class="text-gray-400 mb-4 flex items-center gap-2 w-max"><i class="fas fa-arrow-left"></i> Kembali</button>
+                
+                <div class="glass rounded-xl p-5 border-l-4 border-yellow-500 mb-4">
+                    <h3 class="text-sm text-gray-400">Konfirmasi Perbaikan</h3>
+                    <div class="text-xl font-bold text-white mt-1" id="konfirmasi-nounit">UNIT -</div>
+                    <div class="text-red-400 mt-2 font-medium bg-red-900/30 p-2 rounded inline-block" id="konfirmasi-problem">Problem: -</div>
+                </div>
+
+                <div id="konfirmasi-checklist-area" class="hidden mb-6">
+                    <h4 class="text-white font-semibold mb-3"><i class="fas fa-list-check text-cyan-400 mr-2"></i>Checklist Wajib (Sistem Rem)</h4>
+                    <div class="glass rounded-xl p-4 flex flex-col gap-3" id="konfirmasi-checklist">
+                        <!-- Checklist rem generated by JS -->
+                    </div>
+                </div>
+
+                <button id="btn-selesai-konfirmasi" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg mt-auto opacity-50 cursor-not-allowed transition-all"><i class="fas fa-check-circle mr-2"></i>TANDAI SELESAI (OK)</button>
+            </div>
+
+            <!-- VIEW: DASHBOARD (Pareto) -->
+            <div id="view-dashboard" class="hidden h-full flex flex-col p-4 pb-24 overflow-y-auto">
+                <h2 class="text-xl font-bold text-white mb-2 border-b border-white/10 pb-2"><i class="fas fa-chart-pie text-cyan-400 mr-2"></i>Dashboard Pareto</h2>
+                <p class="text-xs text-gray-400 mb-4" id="dashboard-shift-info">Shift Saat Ini: -</p>
+                
+                <div class="glass rounded-xl p-4 text-center mb-6">
+                    <div class="text-sm text-gray-300">Total Problem Sama (≥3) Shift Ini</div>
+                    <div class="text-4xl font-bold text-cyan-400 my-2" id="pareto-total-count">0</div>
+                    <div class="text-xs text-gray-500">Masalah</div>
+                </div>
+
+                <h3 class="font-semibold text-white mb-3">Daftar Pareto Problem:</h3>
+                <div id="pareto-list-container" class="flex flex-col gap-3">
+                    <!-- Pareto list generated by JS -->
+                </div>
+            </div>
+
+            <!-- VIEW: HISTORI -->
+            <div id="view-history" class="hidden h-full flex flex-col p-4 pb-24 overflow-y-auto">
+                <h2 class="text-xl font-bold text-white mb-6 border-b border-white/10 pb-2"><i class="fas fa-history text-cyan-400 mr-2"></i>Histori Per Shift</h2>
+                <div id="history-list-container" class="flex flex-col gap-3">
+                    <!-- History dates generated by JS -->
+                </div>
+            </div>
+            
+            <!-- SUB-VIEW: DETAIL HISTORI SHIFT -->
+            <div id="view-history-detail" class="hidden absolute inset-0 bg-slate-900 z-20 flex flex-col p-4 pb-24 overflow-y-auto">
+                <button onclick="closeHistoryDetail()" class="text-gray-400 mb-4 flex items-center gap-2 w-max"><i class="fas fa-arrow-left"></i> Kembali ke Histori</button>
+                <h3 class="text-lg font-bold text-cyan-400 mb-4" id="history-detail-title">Tanggal Shift</h3>
+                <div id="history-detail-list" class="flex flex-col gap-2">
+                    <!-- Detail units generated by JS -->
+                </div>
+            </div>
+
+        </main>
+
+        <!-- BOTTOM NAVBAR (Sticky) -->
+        <nav class="glass absolute bottom-0 w-full px-6 py-4 flex justify-between items-center z-30">
+            <button onclick="switchView('home')" class="nav-btn text-cyan-400 flex flex-col items-center transition-transform active:scale-90" data-target="home">
+                <i class="fas fa-home text-xl mb-1"></i><span class="text-[10px]">Home</span>
+            </button>
+            <button onclick="switchView('input')" class="nav-btn text-gray-500 hover:text-cyan-400 flex flex-col items-center transition-transform active:scale-90" data-target="input">
+                <div class="bg-cyan-600 text-white w-12 h-12 rounded-full flex items-center justify-center -mt-6 shadow-[0_0_10px_rgba(6,182,212,0.6)] border-4 border-slate-900">
+                    <i class="fas fa-plus text-xl"></i>
+                </div>
+                <span class="text-[10px] mt-1 text-cyan-400">Input</span>
+            </button>
+            <button onclick="switchView('dashboard')" class="nav-btn text-gray-500 hover:text-cyan-400 flex flex-col items-center transition-transform active:scale-90" data-target="dashboard">
+                <i class="fas fa-chart-bar text-xl mb-1"></i><span class="text-[10px]">Dashboard</span>
+            </button>
+            <button onclick="switchView('history')" class="nav-btn text-gray-500 hover:text-cyan-400 flex flex-col items-center transition-transform active:scale-90" data-target="history">
+                <i class="fas fa-clock-rotate-left text-xl mb-1"></i><span class="text-[10px]">Histori</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- MODAL: PARETO DETAIL & WA SHARE -->
+    <div id="modal-pareto" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="glass w-full max-w-md rounded-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800">
+                <h3 class="font-bold text-white text-lg">Detail Problem</h3>
+                <button onclick="closeParetoModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1">
+                <div class="text-red-400 font-semibold mb-3 bg-red-900/20 p-2 rounded text-center" id="modal-pareto-title">Problem Name</div>
+                <div class="text-sm text-gray-400 mb-2">Daftar Unit:</div>
+                <ul id="modal-pareto-unit-list" class="list-disc pl-5 text-white text-sm space-y-1">
+                    <!-- Injected by JS -->
+                </ul>
+            </div>
+            <div class="p-4 bg-slate-800/80 border-t border-white/10">
+                <button id="btn-share-wa" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95">
+                    <i class="fab fa-whatsapp text-xl"></i> Bagikan ke WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT -->
+    <script>
+        // ==========================================
+        // 1. KONFIGURASI JSONBIN (WAJIB DIISI)
+        // ==========================================
+        const BIN_ID = '6ae72de3ffd5d160539d1d21';     // Contoh: '652a...'
+        const API_KEY = '$2a$10$V.OboC87dzzE6UjcNPtp6.5IM/o52syCC3x1D44TbjiXInMVdjm/W';  // Contoh: '$2a$10$...'
+        const BASE_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+        // ==========================================
+        // 2. VARIABEL GLOBAL & STATE
+        // ==========================================
+        let appData = { users: [], units: [] };
+        let activeTab = 'NG'; // NG or OK
+        let currentActiveUnit = null; // Untuk halaman konfirmasi
+        let activeParetoData = null; // Untuk WA share
+        
+        const KEYWORDS_REM = ["rem blong", "rem dalam", "rem abn", "rem magel"];
+        const DAFTAR_CEK_REM = [
+            "Cek reservoir minyak rem",
+            "Cek nepel rem",
+            "Runing test cek fungsi rem",
+            "DS",
+            "Cek abs",
+            "Cek vsc"
+        ];
+
+        // ==========================================
+        // 3. INISIALISASI & FETCH DATA (LOADING SCREEN)
+        // ==========================================
+        window.onload = async () => {
+            try {
+                // Jangan fetch jika BIN_ID belum diisi (Bypass untuk testing UI lokal, hapus IF ini saat API sudah benar)
+                if(BIN_ID.includes('MASUKKAN_BIN_ID_ANDA')){
+                    alert("PERHATIAN: JSONBin belum dikonfigurasi. Menggunakan data dummy lokal.");
+                    appData = {
+                        users: [{username:"admin", password:"123"}],
+                        units: []
+                    };
+                    setTimeout(() => checkLoginSession(), 1000);
+                    return;
+                }
+
+                const response = await fetch(BASE_URL, {
+                    method: 'GET',
+                    headers: { 'X-Master-Key': API_KEY }
+                });
+                
+                if (!response.ok) throw new Error('Network response was not ok');
+                const result = await response.json();
+                appData = result.record; 
+                setTimeout(() => checkLoginSession(), 800);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById('loading-screen').innerHTML = `
+                    <div class="text-red-500 mb-4"><i class="fas fa-wifi text-4xl"></i></div>
+                    <h2 class="text-xl font-bold text-red-400">Koneksi Gagal</h2>
+                    <p class="text-sm text-gray-400 mt-2">Periksa koneksi internet atau API Key.</p>
+                `;
+            }
+        };
+
+        async function saveToCloud() {
+            if(BIN_ID.includes('MASUKKAN')){ return; } // Bypass dummy
+            try {
+                await fetch(BASE_URL, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+                    body: JSON.stringify(appData)
+                });
+            } catch (error) {
+                console.error("Gagal simpan ke cloud:", error);
+            }
+        }
+
+        // ==========================================
+        // 4. AUTENTIKASI (LOGIN / LOGOUT)
+        // ==========================================
+        function checkLoginSession() {
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.classList.add('opacity-0');
+            
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                if (localStorage.getItem('isLoggedIn') === 'true') {
+                    document.getElementById('main-app').classList.remove('hidden');
+                    startClock();
+                    renderUnitList();
+                } else {
+                    document.getElementById('login-page').classList.remove('hidden');
+                }
+            }, 500);
+        }
+
+        document.getElementById('btn-login').addEventListener('click', () => {
+            const usn = document.getElementById('login-username').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+            
+            if(!usn || !pass) { alert("Isi Username dan Password"); return; }
+            
+            const userValid = appData.users.find(u => u.username === usn && u.password === pass);
+            if(userValid) {
+                localStorage.setItem('isLoggedIn', 'true');
+                document.getElementById('login-username').value = '';
+                document.getElementById('login-password').value = '';
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                startClock();
+                renderUnitList();
+            } else {
+                alert("Username atau Password Salah!");
+                document.getElementById('login-password').value = '';
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            if(confirm("Yakin ingin keluar?")) {
+                localStorage.removeItem('isLoggedIn');
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('login-page').classList.remove('hidden');
+                switchView('home'); // reset view
+            }
+        });
+
+        // ==========================================
+        // 5. NAVIGATION & VIEWS
+        // ==========================================
+        function switchView(viewName) {
+            // Hide all views
+            ['home', 'input', 'dashboard', 'history', 'konfirmasi'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+            });
+            
+            // Show target
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            document.getElementById('view-history-detail').classList.add('hidden'); // Selalu tutup sub-view
+            
+            // Reset Navbar styling
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target !== 'input') {
+                    btn.classList.remove('text-cyan-400');
+                    btn.classList.add('text-gray-500');
+                }
+            });
+
+            // Set active nav styling (kecuali konfirmasi yg ga ada di bottom nav)
+            if(viewName !== 'konfirmasi' && viewName !== 'input') {
+                const activeBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
+                if(activeBtn) {
+                    activeBtn.classList.remove('text-gray-500');
+                    activeBtn.classList.add('text-cyan-400');
+                }
+            }
+
+            // Trigger view specific logic
+            if(viewName === 'home') renderUnitList();
+            if(viewName === 'dashboard') renderDashboard();
+            if(viewName === 'history') renderHistory();
+        }
+
+        // ==========================================
+        // 6. CLOCK & SHIFT LOGIC
+        // ==========================================
+        function getCurrentShiftData() {
+            const now = new Date();
+            const h = now.getHours();
+            const m = now.getMinutes();
+            const time = h + m/60;
+            
+            let shift = '';
+            let shiftDate = new Date(now);
+
+            // Shift Day: 07:20 (7.33) -> 20:30 (20.5)
+            if (time >= 7.333 && time < 20.5) {
+                shift = 'Day';
+            } else {
+                shift = 'Night';
+                if (time < 7.333) {
+                    shiftDate.setDate(shiftDate.getDate() - 1); // Belongs to previous day's shift
+                }
+            }
+            
+            const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+            const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            
+            const dateID = `${shiftDate.getDate().toString().padStart(2,'0')}/${(shiftDate.getMonth()+1).toString().padStart(2,'0')}/${shiftDate.getFullYear()}`;
+            const fullDateID = `${days[shiftDate.getDay()]}, ${shiftDate.getDate()} ${months[shiftDate.getMonth()]} ${shiftDate.getFullYear()}`;
+
+            return {
+                shift: shift,
+                shiftDateCode: `${dateID}-${shift}`, // e.g., "15/10/2026-Day" (Unique key for grouping)
+                dateID: dateID,
+                fullDateStr: fullDateID,
+                shiftStr: shift
+            };
+        }
+
+        function startClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('clock-time').textContent = now.toLocaleTimeString('id-ID');
+                
+                const shiftData = getCurrentShiftData();
+                document.getElementById('clock-date').textContent = shiftData.fullDateStr;
+                document.getElementById('clock-shift').textContent = `Shift: ${shiftData.shiftStr}`;
+            }, 1000);
+        }
+
+        // ==========================================
+        // 7. HOME (UNIT LIST & SWITCHER)
+        // ==========================================
+        document.getElementById('tab-ng').addEventListener('click', () => {
+            activeTab = 'NG';
+            document.getElementById('tab-ng').className = "flex-1 py-2 flex justify-center items-center gap-2 rounded-lg bg-red-500/20 border border-red-500/50 text-white transition-all";
+            document.getElementById('tab-ok').className = "flex-1 py-2 flex justify-center items-center gap-2 rounded-lg text-gray-400 hover:text-white transition-all";
+            renderUnitList();
+        });
+
+        document.getElementById('tab-ok').addEventListener('click', () => {
+            activeTab = 'OK';
+            document.getElementById('tab-ok').className = "flex-1 py-2 flex justify-center items-center gap-2 rounded-lg bg-green-500/20 border border-green-500/50 text-white transition-all";
+            document.getElementById('tab-ng').className = "flex-1 py-2 flex justify-center items-center gap-2 rounded-lg text-gray-400 hover:text-white transition-all";
+            renderUnitList();
+        });
+
+        function renderUnitList() {
+            const container = document.getElementById('unit-list-container');
+            container.innerHTML = '';
+            
+            // Filter by active tab (NG tab shows both NG and KONFIRMASI)
+            const filteredUnits = appData.units.filter(u => {
+                if(activeTab === 'NG') return u.status === 'NG' || u.status === 'KONFIRMASI';
+                return u.status === 'OK';
+            });
+
+            // Sort newest first
+            filteredUnits.sort((a,b) => b.id - a.id);
+
+            if(filteredUnits.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-500 mt-10"><i class="fas fa-folder-open text-4xl mb-3"></i><br>Tidak ada data unit ${activeTab}.</div>`;
+                return;
+            }
+
+            filteredUnits.forEach(u => {
+                let statusColor = u.status === 'OK' ? 'border-green-500 text-green-400' : 
+                                 (u.status === 'KONFIRMASI' ? 'border-yellow-500 text-yellow-400' : 'border-red-500 text-red-400');
+                
+                let iconClass = u.status === 'OK' ? 'fa-check-circle' : 
+                               (u.status === 'KONFIRMASI' ? 'fa-spinner fa-spin' : 'fa-exclamation-circle');
+
+                let cardHTML = `
+                    <div class="glass p-4 rounded-xl mb-3 border-l-4 ${statusColor} relative cursor-pointer active:scale-95 transition-transform" 
+                         onclick="handleUnitClick(${u.id})">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-white text-lg tracking-wider">${u.noUnit}</h3>
+                            <span class="text-[10px] bg-slate-800 px-2 py-1 rounded text-gray-300 border border-gray-700">${u.shiftStr} | ${u.dateID}</span>
+                        </div>
+                        <p class="text-gray-300 text-sm mb-2">${u.problem}</p>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-xs font-semibold ${statusColor}"><i class="fas ${iconClass} mr-1"></i> ${u.status}</span>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        function handleUnitClick(id) {
+            const unit = appData.units.find(u => u.id === id);
+            if(unit.status === 'NG') {
+                if(confirm(`Konfirmasi perbaikan untuk unit ${unit.noUnit}?\nProblem: ${unit.problem}`)) {
+                    unit.status = 'KONFIRMASI';
+                    saveToCloud();
+                    openKonfirmasiView(unit);
+                }
+            } else if (unit.status === 'KONFIRMASI') {
+                openKonfirmasiView(unit);
+            }
+        }
+
+        // ==========================================
+        // 8. INPUT DATA UNIT
+        // ==========================================
+        document.getElementById('btn-simpan-unit').addEventListener('click', async () => {
+            const inputNo = document.getElementById('input-no-unit');
+            const inputProb = document.getElementById('input-problem');
+            
+            if(!inputNo.value.trim() || !inputProb.value.trim()) {
+                alert("No Unit dan Problem harus diisi!");
+                return;
+            }
+
+            const sData = getCurrentShiftData();
+            
+            const newUnit = {
+                id: Date.now(),
+                noUnit: inputNo.value.trim().toUpperCase(),
+                problem: inputProb.value.trim(),
+                status: 'NG',
+                shiftDateCode: sData.shiftDateCode,
+                dateID: sData.dateID,
+                shiftStr: sData.shift,
+                fullDateStr: sData.fullDateStr
+            };
+
+            appData.units.push(newUnit);
+            await saveToCloud();
+            
+            inputNo.value = '';
+            inputProb.value = '';
+            alert("Data berhasil disimpan!");
+            switchView('home');
+        });
+
+        // ==========================================
+        // 9. KONFIRMASI & CHECKLIST REM
+        // ==========================================
+        let requiredCheckboxes = 0;
+        let checkedBoxes = 0;
+
+        function openKonfirmasiView(unit) {
+            currentActiveUnit = unit;
+            switchView('konfirmasi');
+            
+            document.getElementById('konfirmasi-nounit').textContent = `UNIT ${unit.noUnit}`;
+            document.getElementById('konfirmasi-problem').textContent = `Problem: ${unit.problem}`;
+            
+            const probLower = unit.problem.toLowerCase();
+            const isRemProblem = KEYWORDS_REM.some(kw => probLower.includes(kw));
+            
+            const checklistArea = document.getElementById('konfirmasi-checklist-area');
+            const checklistContainer = document.getElementById('konfirmasi-checklist');
+            const btnSelesai = document.getElementById('btn-selesai-konfirmasi');
+            
+            checklistContainer.innerHTML = '';
+            requiredCheckboxes = 0;
+            checkedBoxes = 0;
+
+            if(isRemProblem) {
+                checklistArea.classList.remove('hidden');
+                requiredCheckboxes = DAFTAR_CEK_REM.length;
+                
+                DAFTAR_CEK_REM.forEach((item, index) => {
+                    const id = `chk-${index}`;
+                    checklistContainer.insertAdjacentHTML('beforeend', `
+                        <label class="flex items-center gap-3 p-2 rounded hover:bg-slate-700/50 cursor-pointer transition-colors">
+                            <input type="checkbox" id="${id}" class="w-5 h-5 accent-cyan-500 rounded chk-rem">
+                            <span class="text-sm text-gray-200 select-none">${item}</span>
+                        </label>
+                    `);
+                });
+
+                btnSelesai.classList.add('opacity-50', 'cursor-not-allowed');
+                btnSelesai.disabled = true;
+
+                document.querySelectorAll('.chk-rem').forEach(chk => {
+                    chk.addEventListener('change', function() {
+                        checkedBoxes = document.querySelectorAll('.chk-rem:checked').length;
+                        if(checkedBoxes === requiredCheckboxes) {
+                            btnSelesai.classList.remove('opacity-50', 'cursor-not-allowed');
+                            btnSelesai.disabled = false;
+                        } else {
+                            btnSelesai.classList.add('opacity-50', 'cursor-not-allowed');
+                            btnSelesai.disabled = true;
+                        }
+                    });
+                });
+
+            } else {
+                checklistArea.classList.add('hidden');
+                btnSelesai.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnSelesai.disabled = false;
+            }
+        }
+
+        document.getElementById('btn-selesai-konfirmasi').addEventListener('click', async () => {
+            if(!currentActiveUnit) return;
+            
+            // Ubah status
+            const index = appData.units.findIndex(u => u.id === currentActiveUnit.id);
+            if(index !== -1) {
+                appData.units[index].status = 'OK';
+                await saveToCloud();
+                
+                // Animasi centang sukses sederhana pakai alert / ganti UI
+                alert("Unit berhasil diselesaikan (OK)!");
+                switchView('home');
+            }
+        });
+
+
+        // ==========================================
+        // 10. DASHBOARD (PARETO >= 3 & WA EXPORT)
+        // ==========================================
+        function renderDashboard() {
+            const currentShiftInfo = getCurrentShiftData();
+            document.getElementById('dashboard-shift-info').textContent = `Shift Saat Ini: ${currentShiftInfo.fullDateStr} (Shift ${currentShiftInfo.shiftStr})`;
+            
+            // Filter unit khusus shift yang sedang berjalan SEKARANG
+            const currentUnits = appData.units.filter(u => u.shiftDateCode === currentShiftInfo.shiftDateCode);
+            
+            // Grup berdasarkan Problem (Case Insensitive untuk grouping yang akurat)
+            const problemCounts = {};
+            currentUnits.forEach(u => {
+                const p = u.problem.trim().toUpperCase(); // Normalisasi string
+                if(!problemCounts[p]) problemCounts[p] = { count: 0, units: [], originalName: u.problem };
+                problemCounts[p].count++;
+                problemCounts[p].units.push(u.noUnit);
+            });
+
+            // Filter yang >= 3
+            const paretoArray = Object.values(problemCounts)
+                                      .filter(item => item.count >= 3)
+                                      .sort((a,b) => b.count - a.count);
+
+            document.getElementById('pareto-total-count').textContent = paretoArray.length;
+            
+            const container = document.getElementById('pareto-list-container');
+            container.innerHTML = '';
+
+            if(paretoArray.length === 0) {
+                container.innerHTML = `<div class="text-gray-500 text-sm italic text-center mt-4">Belum ada problem yang mencapai jumlah 3 pada shift ini.</div>`;
+                activeParetoData = null; // reset data WA
+                return;
+            }
+
+            // Simpan data pareto global untuk tombol WA (Semua Pareto >= 3)
+            activeParetoData = {
+                shiftInfo: currentShiftInfo,
+                paretoList: paretoArray,
+                totalUnitInPareto: paretoArray.reduce((sum, item) => sum + item.count, 0)
+            };
+
+            paretoArray.forEach((item, idx) => {
+                const btnHtml = `
+                    <div class="glass p-3 rounded-lg flex justify-between items-center border border-white/5 active:bg-slate-700 transition-colors"
+                         onclick='openParetoModal(${JSON.stringify(item).replace(/'/g, "&#39;")})'>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-bold text-sm border border-red-500/30">${item.count}</div>
+                            <span class="text-white text-sm font-semibold">${item.originalName}</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-500 text-xs"></i>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', btnHtml);
+            });
+            
+            // Tambah tombol WA di bawah daftar pareto
+            container.insertAdjacentHTML('beforeend', `
+                <button onclick="shareAllParetoWA()" class="mt-4 w-full bg-green-500/20 border border-green-500 hover:bg-green-500/40 text-green-400 font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
+                    <i class="fab fa-whatsapp text-lg"></i> Kirim Laporan Semua Pareto
+                </button>
+            `);
+        }
+
+        // Fungsi klik list pareto memunculkan modal detail 1 problem
+        function openParetoModal(itemData) {
+            document.getElementById('modal-pareto').classList.remove('hidden');
+            document.getElementById('modal-pareto-title').textContent = itemData.originalName;
+            
+            const unitListUl = document.getElementById('modal-pareto-unit-list');
+            unitListUl.innerHTML = '';
+            itemData.units.forEach(u => {
+                unitListUl.innerHTML += `<li>Unit: <span class="font-semibold text-cyan-300">${u}</span></li>`;
+            });
+
+            // Set aksi WA per 1 problem (opsional jika user hanya mau share 1)
+            document.getElementById('btn-share-wa').onclick = () => shareSingleParetoWA(itemData);
+        }
+
+        function closeParetoModal() {
+            document.getElementById('modal-pareto').classList.add('hidden');
+        }
+
+        function shareSingleParetoWA(itemData) {
+            const shift = getCurrentShiftData();
+            let text = `*DATA PROBLEM PARETO PADA ${shift.fullDateStr.toUpperCase()}, SHIFT ${shift.shift.toUpperCase()}*\n`;
+            text += `TOTAL PROBLEM SAMA: 1 PROBLEM\n`;
+            text += `TOTAL UNIT: ${itemData.count}\n\n`;
+            text += `DETAIL\n`;
+            text += `1. ${itemData.originalName.toUpperCase()}\n`;
+            itemData.units.forEach(u => { text += `    - ${u}\n`; });
+            
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        function shareAllParetoWA() {
+            if(!activeParetoData) return;
+            const data = activeParetoData;
+            
+            let text = `*DATA PROBLEM PARETO PADA ${data.shiftInfo.fullDateStr.toUpperCase()}, SHIFT ${data.shiftInfo.shift.toUpperCase()}*\n`;
+            text += `TOTAL PROBLEM SAMA: ${data.paretoList.length} PROBLEM\n`;
+            text += `TOTAL UNIT: ${data.totalUnitInPareto}\n\n`;
+            text += `DETAIL\n`;
+            
+            data.paretoList.forEach((item, index) => {
+                text += `${index + 1}. ${item.originalName.toUpperCase()}\n`;
+                item.units.forEach(u => { text += `    - ${u}\n`; });
+            });
+            
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        // ==========================================
+        // 11. HISTORY (PER SHIFT DATE)
+        // ==========================================
+        function renderHistory() {
+            const container = document.getElementById('history-list-container');
+            container.innerHTML = '';
+            
+            // Extract unique ShiftDateCodes
+            const shiftGroups = {};
+            appData.units.forEach(u => {
+                if(!shiftGroups[u.shiftDateCode]) {
+                    shiftGroups[u.shiftDateCode] = {
+                        displayDate: `${u.fullDateStr} - Shift ${u.shiftStr}`,
+                        units: []
+                    };
+                }
+                shiftGroups[u.shiftDateCode].units.push(u);
+            });
+
+            const keys = Object.keys(shiftGroups);
+            // Sort by date (descending string compare works roughly if formatted, but here we just reverse the keys based on creation if units are sequential)
+            keys.reverse(); 
+
+            if(keys.length === 0) {
+                container.innerHTML = `<div class="text-gray-500 text-sm italic text-center mt-4">Belum ada histori data.</div>`;
+                return;
+            }
+
+            keys.forEach(code => {
+                const group = shiftGroups[code];
+                const total = group.units.length;
+                const okCount = group.units.filter(u => u.status === 'OK').length;
+                
+                const btnHtml = `
+                    <div class="glass p-4 rounded-lg flex justify-between items-center border border-white/5 active:scale-95 transition-transform"
+                         onclick="openHistoryDetail('${code}')">
+                        <div>
+                            <div class="text-white text-sm font-semibold mb-1">${group.displayDate}</div>
+                            <div class="text-xs text-gray-400">Total: ${total} | Selesai: ${okCount}</div>
+                        </div>
+                        <i class="fas fa-chevron-right text-cyan-500"></i>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', btnHtml);
+            });
+        }
+
+        function openHistoryDetail(shiftCode) {
+            const detailView = document.getElementById('view-history-detail');
+            const container = document.getElementById('history-detail-list');
+            const title = document.getElementById('history-detail-title');
+            
+            const units = appData.units.filter(u => u.shiftDateCode === shiftCode).sort((a,b) => b.id - a.id);
+            
+            if(units.length > 0) {
+                title.textContent = `${units[0].fullDateStr} (Shift ${units[0].shiftStr})`;
+            }
+
+            container.innerHTML = '';
+            units.forEach(u => {
+                let statusColor = u.status === 'OK' ? 'text-green-400 border-green-500' : 'text-red-400 border-red-500';
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="glass p-3 rounded border-l-2 ${statusColor}">
+                        <div class="flex justify-between">
+                            <span class="font-bold text-white">${u.noUnit}</span>
+                            <span class="text-xs ${statusColor}">${u.status}</span>
+                        </div>
+                        <div class="text-sm text-gray-300 mt-1">${u.problem}</div>
+                    </div>
+                `);
+            });
+
+            detailView.classList.remove('hidden');
+        }
+
+        function closeHistoryDetail() {
+            document.getElementById('view-history-detail').classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>
