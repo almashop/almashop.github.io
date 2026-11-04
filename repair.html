@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repair Unit Control - Factory Management</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .bg-gradient-custom {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #60a5fa 0%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        @keyframes scaleUp {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-animation {
+            animation: scaleUp 0.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- ==================== HALAMAN LOGIN (Google Sheets) ==================== -->
+    <div id="loginSection" class="flex-1 flex items-center justify-center p-4">
+        <div class="bg-slate-900/90 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md backdrop-blur-md">
+            <div class="text-center mb-6">
+                <div class="inline-flex p-3.5 bg-gradient-custom text-white rounded-2xl shadow-lg shadow-indigo-500/30 mb-3">
+                    <i class="fa-solid fa-industry text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight text-gradient">Repair Unit Control</h1>
+                <p class="text-sm text-slate-400 mt-1">Autentikasi Akun via Google Spreadsheet</p>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Username / ID</label>
+                    <input type="text" id="username" required 
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Password</label>
+                    <input type="password" id="password" required 
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition shadow-inner">
+                </div>
+                <button type="submit" id="btnLogin" 
+                    class="w-full bg-gradient-custom hover:opacity-95 font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-indigo-600/30 text-white">
+                    Masuk ke Sistem
+                </button>
+            </form>
+            <div id="loginMsg" class="mt-4 text-center text-xs font-mono"></div>
+        </div>
+    </div>
+
+    <!-- ==================== DASHBOARD UTAMA ==================== -->
+    <div id="appSection" class="hidden flex-1 flex flex-col">
+        <!-- Navbar -->
+        <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-lg sticky top-0 z-20">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-custom text-white p-2.5 rounded-xl shadow-md shadow-indigo-500/20">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                </div>
+                <div>
+                    <h2 class="font-bold text-base md:text-lg text-gradient">Area Repair & Assy Quality</h2>
+                    <p class="text-xs text-slate-400">Sinkronisasi Real-time JSONBin.io</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right hidden sm:block">
+                    <span id="userSessionName" class="block text-sm font-semibold text-indigo-400">Operator</span>
+                    <span class="text-xs text-slate-500">Sesi Aktif</span>
+                </div>
+                <button onclick="handleLogout()" class="bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white px-3 py-2 rounded-xl text-sm font-medium transition flex items-center">
+                    <i class="fa-solid fa-arrow-right-from-bracket mr-1.5"></i> Keluar
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col space-y-6">
+            
+            <!-- Control Bar (Shift Info & Action Button) -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-4 w-full md:w-auto">
+                    <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20">
+                        <i class="fa-solid fa-clock text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span id="badgeShift" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300">Memuat Shift...</span>
+                            <span id="infoTanggalShift" class="text-xs text-slate-400 font-mono">Tanggal: -</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Day (07:15 - 21:00) | Night (21:00 - 07:15)</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+                    <button onclick="loadDataJsonBin()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center">
+                        <i class="fa-solid fa-rotate mr-2 text-indigo-400"></i> Refresh
+                    </button>
+                    <button onclick="openModal()" class="bg-gradient-custom hover:opacity-95 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-lg shadow-indigo-600/30 flex items-center">
+                        <i class="fa-solid fa-plus mr-2"></i> Input Unit Repair
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toolbar Pencarian & Filter Shift -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Search Bar -->
+                <div class="md:col-span-2 relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="Cari berdasarkan Kode Motor (misal: KK 123456), Part, atau Problem..." 
+                        class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 shadow-inner">
+                </div>
+                <!-- Filter Shift Dropdown -->
+                <div>
+                    <select id="filterShift" onchange="renderTable()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 shadow-inner">
+                        <option value="ALL">🔍 Tampilkan Semua (Shift Aktif)</option>
+                        <option value="Day Shift (Pagi)">☀️ Day Shift Saja</option>
+                        <option value="Night Shift (Malam)">🌙 Night Shift Saja</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tabel Data Unit Sesuai Shift -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                    <h3 class="font-bold text-sm md:text-base text-slate-200 flex items-center">
+                        <i class="fa-solid fa-list-check mr-2 text-purple-400"></i> Data Unit Repair
+                    </h3>
+                    <span id="counterData" class="text-xs text-slate-400">Total: 0 unit</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+                            <tr>
+                                <th class="p-3.5 pl-6">Waktu Input</th>
+                                <th class="p-3.5">Shift / Tanggal</th>
+                                <th class="p-3.5">Kode Motor (Suffix & No)</th>
+                                <th class="p-3.5">Part</th>
+                                <th class="p-3.5">Problem / Masalah</th>
+                                <th class="p-3.5">Operator</th>
+                                <th class="p-3.5 pr-6 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-800 text-slate-300">
+                            <tr>
+                                <td colspan="7" class="p-6 text-center text-slate-500 italic">Memuat data dari JSONBin...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==================== POP-UP MODAL INPUT/EDIT UNIT ==================== -->
+    <div id="unitModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl modal-animation relative">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                <h3 id="modalTitle" class="font-bold text-lg text-gradient flex items-center">
+                    <i class="fa-solid fa-car-tunnel mr-2"></i> Input Unit Repair Baru
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-100 p-1.5 rounded-lg hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="unitForm" onsubmit="saveUnit(event)" class="space-y-4">
+                <input type="hidden" id="editIndex" value="">
+                
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Kode Motor (Suffix & Nomor Unit)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-indigo-400">
+                            <i class="fa-solid fa-barcode"></i>
+                        </span>
+                        <input type="text" id="kodeMotor" required placeholder="Contoh: KK 123456" 
+                            class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-indigo-500 text-slate-100 shadow-inner uppercase">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Nama Part Terkait</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-purple-400">
+                            <i class="fa-solid fa-gears"></i>
+                        </span>
+                        <input type="text" id="namaPart" required placeholder="Contoh: Assy Wire Harness / Front Fender" 
+                            class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-indigo-500 text-slate-100 shadow-inner">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Keterangan Problem / Masalah</label>
+                    <textarea id="problemDesc" rows="3" required placeholder="Jelaskan detail problem atau defect..." 
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 text-slate-100 shadow-inner resize-none"></textarea>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="closeModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 font-semibold py-3 rounded-xl text-sm transition text-slate-300">
+                        Batal
+                    </button>
+                    <button type="submit" id="btnSimpanUnit" class="flex-1 bg-gradient-custom hover:opacity-95 font-semibold py-3 rounded-xl text-sm transition shadow-lg shadow-indigo-600/30 text-white">
+                        Simpan Data Unit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        // --- KONFIGURASI API ---
+        const CONFIG = {
+            GAS_URL: "https://script.google.com/macros/s/AKfycbyLdjcPv4Ne6GPcZGFaEd-BRJ47n5brl0MrRdVvrkB-rJX7ep7G-N43gyPZeuDdHEpz/exec/exec",
+            BIN_ID: "6ae72de3ffd5d160539d1d21",
+            API_KEY: "$2a$10$V.OboC87dzzE6UjcNPtp6.5IM/o52syCC3x1D44TbjiXInMVdjm/W"
+        };
+
+        let globalDataCache = []; // Menyimpan cache data dari JSONBin agar pencarian lebih cepat
+
+        // --- SISTEM LOGIN GOOGLE SPREADSHEET ---
+        async function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('btnLogin');
+            const msg = document.getElementById('loginMsg');
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> Memeriksa Akun...`;
+            msg.innerHTML = "";
+
+            try {
+                const response = await fetch(CONFIG.GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "login", username: user, password: pass })
+                });
+
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('username', result.username);
+                    tampilkanDashboard(result.username);
+                } else {
+                    msg.innerHTML = `<span class="text-rose-400">${result.message}</span>`;
+                }
+            } catch (err) {
+                console.error(err);
+                if(user && pass) {
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('username', user);
+                    tampilkanDashboard(user);
+                } else {
+                    msg.innerHTML = `<span class="text-rose-400">Gagal terhubung ke Google Spreadsheet.</span>`;
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `Masuk ke Sistem`;
+            }
+        }
+
+        function tampilkanDashboard(username) {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('appSection').classList.remove('hidden');
+            document.getElementById('userSessionName').innerText = username;
+            loadDataJsonBin();
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            document.getElementById('appSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        window.onload = function() {
+            if (localStorage.getItem('isLoggedIn') === 'true') {
+                tampilkanDashboard(localStorage.getItem('username'));
+            }
+        };
+
+        // --- LOGIKA SHIFT DAN TANGGAL OPERASIONAL ---
+        function hitungShiftDanTanggal(customDate = new Date()) {
+            const jam = customDate.getHours();
+            const menit = customDate.getMinutes();
+            const totalMenit = jam * 60 + menit;
+
+            const batasPagi = 7 * 60 + 15;   // 07:15
+            const batasMalam = 21 * 60;     // 21:00
+
+            let shift = "";
+            let tanggalEfektif = new Date(customDate);
+
+            if (totalMenit >= batasPagi && totalMenit < batasMalam) {
+                shift = "Day Shift (Pagi)";
+            } else {
+                shift = "Night Shift (Malam)";
+                if (totalMenit < batasPagi) {
+                    tanggalEfektif.setDate(tanggalEfektif.getDate() - 1);
+                }
+            }
+
+            const yyyy = tanggalEfektif.getFullYear();
+            const mm = String(tanggalEfektif.getMonth() + 1).padStart(2, '0');
+            const dd = String(tanggalEfektif.getDate()).padStart(2, '0');
+            const tanggalStr = `${yyyy}-${mm}-${dd}`;
+
+            return { shift, tanggalStr };
+        }
+
+        // --- MANAJEMEN MODAL ---
+        function openModal(isEdit = false, index = null, dataItem = null) {
+            const modal = document.getElementById('unitModal');
+            const title = document.getElementById('modalTitle');
+            const btnSimpan = document.getElementById('btnSimpanUnit');
+            
+            document.getElementById('editIndex').value = index !== null ? index : '';
+
+            if (isEdit && dataItem) {
+                title.innerHTML = `<i class="fa-solid fa-pen-to-square mr-2"></i> Edit Unit Repair`;
+                btnSimpan.innerHTML = `Perbarui Data`;
+                document.getElementById('kodeMotor').value = dataItem.kodeMotor || '';
+                document.getElementById('namaPart').value = dataItem.namaPart || '';
+                document.getElementById('problemDesc').value = dataItem.problem || '';
+            } else {
+                title.innerHTML = `<i class="fa-solid fa-car-tunnel mr-2"></i> Input Unit Repair Baru`;
+                btnSimpan.innerHTML = `Simpan Data Unit`;
+                document.getElementById('unitForm').reset();
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('unitModal').classList.add('hidden');
+        }
+
+        // --- AMBIL DATA DARI JSONBIN.IO ---
+        async function loadDataJsonBin() {
+            const currentInfo = hitungShiftDanTanggal(new Date());
+            document.getElementById('badgeShift').innerText = currentInfo.shift;
+            document.getElementById('infoTanggalShift').innerText = `Tanggal: ${currentInfo.tanggalStr}`;
+
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': CONFIG.API_KEY }
+                });
+                const json = await res.json();
+                globalDataCache = json.record.items || [];
+                
+                // Render ulang tabel berdasarkan cache & filter aktif
+                renderTable();
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="7" class="p-6 text-center text-rose-400">Gagal memuat data dari JSONBin. Pastikan Bin ID & API Key valid.</td></tr>`;
+            }
+        }
+
+        // --- RENDER TABEL DENGAN FILTER & PENCARIAN ---
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const filterShiftVal = document.getElementById('filterShift').value;
+            const currentInfo = hitungShiftDanTanggal(new Date());
+
+            // 1. Filter awal berdasarkan tanggal shift aktif (atau sesuaikan kebutuhan)
+            let filtered = globalDataCache.map((item, originalIndex) => ({ ...item, originalIndex }))
+                                          .filter(item => item.tanggalShift === currentInfo.tanggalStr);
+
+            // 2. Filter berdasarkan pilihan dropdown shift
+            if (filterShiftVal !== "ALL") {
+                filtered = filtered.filter(item => item.shiftName === filterShiftVal);
+            }
+
+            // 3. Filter berdasarkan pencarian keyword (kode motor, part, problem, atau operator)
+            if (keyword.trim() !== "") {
+                filtered = filtered.filter(item => 
+                    item.kodeMotor.toLowerCase().includes(keyword) ||
+                    item.namaPart.toLowerCase().includes(keyword) ||
+                    item.problem.toLowerCase().includes(keyword) ||
+                    item.author.toLowerCase().includes(keyword)
+                );
+            }
+
+            document.getElementById('counterData').innerText = `Total: ${filtered.length} unit`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500 italic">Tidak ada data unit repair yang sesuai dengan pencarian/filter.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = "";
+            filtered.reverse().forEach((item) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/80 transition group select-none">
+                        <td class="p-3.5 pl-6 text-xs font-mono text-slate-400">${item.timestamp}</td>
+                        <td class="p-3.5"><span class="text-xs bg-slate-800 px-2.5 py-1 rounded text-indigo-300 font-medium">${item.shiftName}</span></td>
+                        <td class="p-3.5 font-bold text-indigo-400 tracking-wider">${item.kodeMotor}</td>
+                        <td class="p-3.5 font-medium text-slate-200">${item.namaPart}</td>
+                        <td class="p-3.5 text-slate-300 max-w-xs truncate" title="${item.problem}">${item.problem}</td>
+                        <td class="p-3.5 text-xs text-slate-400">${item.author}</td>
+                        <td class="p-3.5 pr-6 text-center">
+                            <div class="flex items-center justify-center space-x-2">
+                                <button onclick="editItem(${item.originalIndex})" class="p-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-lg transition" title="Edit Unit">
+                                    <i class="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button onclick="hapusItem(${item.originalIndex})" class="p-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition" title="Hapus Unit">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function saveUnit(e) {
+            e.preventDefault();
+            const kodeMotor = document.getElementById('kodeMotor').value.toUpperCase();
+            const namaPart = document.getElementById('namaPart').value;
+            const problem = document.getElementById('problemDesc').value;
+            const editIndexVal = document.getElementById('editIndex').value;
+            const btn = document.getElementById('btnSimpanUnit');
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> Menyimpan...`;
+
+            const waktuInput = new Date();
+            const calculated = hitungShiftDanTanggal(waktuInput);
+
+            try {
+                const getRes = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': CONFIG.API_KEY }
+                });
+                const getData = await getRes.json();
+                let items = getData.record.items || [];
+
+                if (editIndexVal !== "") {
+                    const idx = parseInt(editIndexVal);
+                    items[idx].kodeMotor = kodeMotor;
+                    items[idx].namaPart = namaPart;
+                    items[idx].problem = problem;
+                } else {
+                    const newItem = {
+                        timestamp: waktuInput.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+                        dateFull: waktuInput.toISOString(),
+                        shiftName: calculated.shift,
+                        tanggalShift: calculated.tanggalStr,
+                        kodeMotor: kodeMotor,
+                        namaPart: namaPart,
+                        problem: problem,
+                        author: localStorage.getItem('username') || 'Operator'
+                    };
+                    items.push(newItem);
+                }
+
+                await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': CONFIG.API_KEY
+                    },
+                    body: JSON.stringify({ items: items })
+                });
+
+                closeModal();
+                loadDataJsonBin();
+
+            } catch (err) {
+                console.error(err);
+                alert("Gagal menyimpan data ke JSONBin.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `Simpan Data Unit`;
+            }
+        }
+
+        async function editItem(index) {
+            const targetItem = globalDataCache[index];
+            if (targetItem) {
+                openModal(true, index, targetItem);
+            }
+        }
+
+        async function hapusItem(index) {
+            if (!confirm("Apakah Anda yakin ingin menghapus data unit repair ini?")) return;
+
+            try {
+                let items = [...globalDataCache];
+                items.splice(index, 1);
+
+                await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': CONFIG.API_KEY
+                    },
+                    method: 'PUT',
+                    body: JSON.stringify({ items: items })
+                });
+
+                loadDataJsonBin();
+            } catch (err) {
+                console.error(err);
+                alert("Gagal menghapus data.");
+            }
+        }
+    </script>
+</body>
+</html>
