@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YouTube Web Player - Mobile Responsive</title>
+    <title>YouTube Web Player - Kids & Shorts</title>
     <!-- Google Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -272,6 +272,14 @@
             width: 100%;
         }
 
+        /* Khusus Grid Shorts (Tampilan Vertikal) */
+        .video-grid.shorts-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        }
+        .video-grid.shorts-grid .thumbnail-container {
+            aspect-ratio: 9/16;
+        }
+
         .video-card {
             cursor: pointer;
             display: flex;
@@ -435,7 +443,7 @@
         .btn-cancel { background: transparent; color: #aaa; }
         .btn-submit { background: #3ea6ff; color: #0f0f0f; }
 
-        /* Watch Container (Full Responsif HP) */
+        /* Watch Container */
         .watch-container {
             display: none;
             flex-direction: column;
@@ -467,9 +475,27 @@
             flex-direction: column;
             gap: 10px;
             width: 100%;
+            position: relative;
         }
 
-        /* Mengunci rasio pemutar agar aman di layar kecil HP */
+        /* Tombol Kustom Fullscreen Auto-Landscape di HP */
+        .custom-fullscreen-btn {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 10px;
+            cursor: pointer;
+            z-index: 50;
+            font-size: 14px;
+        }
+        .custom-fullscreen-btn:hover {
+            background: rgba(50, 50, 50, 0.9);
+        }
+
         .player-wrapper {
             width: 100%;
             max-width: 100%;
@@ -556,7 +582,6 @@
             flex-shrink: 0;
         }
 
-        /* Penyesuaian Tampilan Mobile Kecil */
         @media (max-width: 480px) {
             .video-grid {
                 grid-template-columns: 1fr;
@@ -599,7 +624,7 @@
         <!-- Sidebar -->
         <sidebar id="sidebar">
             <a href="#" class="sidebar-item active" id="nav-home"><i class="fas fa-home"></i>Beranda</a>
-            <a href="#" class="sidebar-item"><i class="fas fa-bolt"></i>Shorts</a>
+            <a href="#" class="sidebar-item" id="nav-shorts"><i class="fas fa-bolt"></i>Shorts</a>
             <a href="#" class="sidebar-item"><i class="fas fa-subscriptions"></i>Subscription</a>
             <hr>
             <a href="#" class="sidebar-item" id="nav-history"><i class="fas fa-history"></i>Histori</a>
@@ -625,8 +650,10 @@
             <div class="watch-container" id="watch-container">
                 <div class="watch-layout">
                     <div class="player-main-area">
-                        <div class="player-wrapper">
+                        <div class="player-wrapper" id="player-container-box">
                             <div id="youtube-player"></div>
+                            <!-- Tombol Fullscreen Paksa Landscape -->
+                            <button class="custom-fullscreen-btn" id="btn-force-landscape" title="Layar Penuh Lanskap"><i class="fas fa-expand"></i></button>
                         </div>
                         <div class="player-meta">
                             <h3 id="watch-meta-title">Judul Video</h3>
@@ -752,9 +779,29 @@
             }
         }
 
+        // Fitur Auto-Landscape Otomatis saat Tombol Fullscreen Diklik
+        document.getElementById('btn-force-landscape').addEventListener('click', () => {
+            const playerBox = document.getElementById('player-container-box');
+            
+            if (playerBox.requestFullscreen) {
+                playerBox.requestFullscreen();
+            } else if (playerBox.webkitRequestFullscreen) {
+                playerBox.webkitRequestFullscreen();
+            } else if (playerBox.msRequestFullscreen) {
+                playerBox.msRequestFullscreen();
+            }
+
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(err => {
+                    console.log("Orientasi layar otomatis dibatasi oleh sistem browser:", err);
+                });
+            }
+        });
+
         async function renderHomeView() {
             showView('home');
             const grid = document.getElementById('video-grid');
+            grid.className = "video-grid";
             grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Memuat video...</p>`;
 
             const keywordToFetch = searchKeywordsHistory.length > 0 ? searchKeywordsHistory[0] : "lofi music";
@@ -803,20 +850,73 @@
                         });
                         grid.appendChild(card);
                     });
-                } else {
-                    grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Tidak ada video ditemukan.</p>`;
                 }
             } catch (error) {
                 console.error("Gagal memuat beranda:", error);
-                grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Gagal memuat video.</p>`;
+            }
+        }
+
+        // Fungsionalitas Menu Shorts Dibatasi Khusus: Lia Caca, Baby Bus, & Lagu Anak-anak
+        async function renderShortsView() {
+            showView('home');
+            document.getElementById('home-section-title').innerText = "YouTube Shorts (Lia Caca, Baby Bus & Lagu Anak)";
+            const grid = document.getElementById('video-grid');
+            grid.className = "video-grid shorts-grid";
+            grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Memuat konten anak dan shorts...</p>`;
+
+            // Query rotasi khusus untuk channel/konten yang diminta
+            const kidsQueries = ["lia caca shorts", "babybus shorts", "lagu anak anak shorts"];
+            const randomQuery = kidsQueries[Math.floor(Math.random() * kidsQueries.length)];
+
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${encodeURIComponent(randomQuery)}&type=video&key=${YT_API_KEY}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.items) {
+                    const shortsVideos = data.items.map(item => ({
+                        id: item.id.videoId,
+                        title: item.snippet.title,
+                        channel: item.snippet.channelTitle,
+                        category: "Shorts Anak",
+                        thumb: item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : item.snippet.thumbnails.default.url
+                    }));
+                    currentVideosList = shortsVideos;
+                    grid.innerHTML = "";
+
+                    shortsVideos.forEach((vid, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'video-card';
+                        card.innerHTML = `
+                            <div class="thumbnail-container">
+                                <img src="${vid.thumb}" alt="${vid.title}">
+                            </div>
+                            <div class="video-info">
+                                <div class="video-details" style="width:100%;">
+                                    <h3 style="-webkit-line-clamp: 1;">${vid.title}</h3>
+                                    <p>${vid.channel}</p>
+                                </div>
+                            </div>
+                        `;
+                        card.addEventListener('click', () => {
+                            recordVideoWatch(vid);
+                            queuePlaylist = [...shortsVideos];
+                            playVideo(vid, index);
+                        });
+                        grid.appendChild(card);
+                    });
+                }
+            } catch (error) {
+                console.error("Gagal memuat shorts anak:", error);
+                grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Gagal memuat konten anak.</p>`;
             }
         }
 
         function renderHistoryView() {
             showView('home');
             document.getElementById('home-section-title').innerText = "Histori Tontonan Anda";
-
             const grid = document.getElementById('video-grid');
+            grid.className = "video-grid";
             grid.innerHTML = "";
 
             if (watchHistory.length === 0) {
@@ -867,6 +967,12 @@
         document.getElementById('nav-home').addEventListener('click', (e) => {
             e.preventDefault();
             renderHomeView();
+            closeSidebarMobile();
+        });
+
+        document.getElementById('nav-shorts').addEventListener('click', (e) => {
+            e.preventDefault();
+            renderShortsView();
             closeSidebarMobile();
         });
 
@@ -938,6 +1044,7 @@
             showView('home');
             document.getElementById('home-section-title').innerText = `Playlist: ${playlistObj.name}`;
             const grid = document.getElementById('video-grid');
+            grid.className = "video-grid";
             grid.innerHTML = "";
             
             const plContainer = document.getElementById('custom-playlist-wrapper');
@@ -1160,6 +1267,7 @@
                     if (plContainer) plContainer.innerHTML = "";
 
                     const grid = document.getElementById('video-grid');
+                    grid.className = "video-grid";
                     grid.innerHTML = "";
 
                     searchResults.forEach((vid, index) => {
