@@ -21,7 +21,8 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
-                <div class="video-container mb-3">
+                <!-- Wrapper video yang akan di-fullscreen-kan -->
+                <div class="video-container mb-3" id="player-wrapper">
                     <div id="yt-player"></div>
                     <div class="placeholder-box text-center p-4" id="placeholder-video">
                         <i class="fa-brands fa-youtube text-danger fa-4x mb-3"></i>
@@ -61,7 +62,36 @@
         document.addEventListener("DOMContentLoaded", () => {
             fetchData();
             setInterval(fetchData, 4000);
+            initAutoLandscapeFullscreen();
         });
+
+        // Fitur Deteksi Fullscreen & Otomatis Ubah ke Landscape di HP
+        function initAutoLandscapeFullscreen() {
+            const wrapper = document.getElementById('player-wrapper');
+
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+            function handleFullscreenChange() {
+                let isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+
+                if (isFullscreen) {
+                    // Coba kunci orientasi ke landscape jika perangkat mendukung (khusus Mobile/Android)
+                    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                        screen.orientation.lock('landscape').catch(err => {
+                            console.log("Orientasi landscape tidak didukung otomatis atau perlu interaksi tambahan:", err);
+                        });
+                    }
+                } else {
+                    // Kembalikan orientasi layar seperti semula saat keluar dari fullscreen
+                    if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+                        try { screen.orientation.unlock(); } catch (e) {}
+                    }
+                }
+            }
+        }
 
         async function fetchData() {
             try {
@@ -87,7 +117,7 @@
                         } else {
                             pendingVideoId = vid.videoId;
                         }
-                        document.getElementById('current-video-titleinnerText' || 'current-video-title').innerText = vid.title;
+                        document.getElementById('current-video-title').innerText = vid.title;
                         document.getElementById('current-playlist-name').innerText = "Kategori: " + pl.title;
                     }
                 } else {
