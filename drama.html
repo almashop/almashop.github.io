@@ -1,274 +1,1212 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOVA TV + DRAMA CHINA • NO API KEY</title>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--bg:#05060f;--card:#0e1224;--card2:#151a32;--line:#232946;--muted:#8b93b8;--grad:linear-gradient(135deg,#ff3d68,#ff7a3d,#ffb800)}
-body{margin:0;font-family:'Outfit',sans-serif;background:var(--bg);color:#fff;min-height:100dvh;padding-bottom:84px}
-header{position:sticky;top:0;z-index:30;background:rgba(5,6,15,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--line);padding:12px 16px}
-.logo{font-family:'Space Grotesk';font-weight:700;font-size:21px}
-.logo i{font-style:normal;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.badge{font-size:10px;background:#1e2a4a;border:1px solid var(--line);padding:5px 9px;border-radius:20px;color:#a5b4fc}
-.search{margin-top:12px;display:flex;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 6px 6px 14px;align-items:center}
-.search input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:14px}
-.search button{background:var(--grad);border:none;color:#fff;font-weight:800;padding:10px 16px;border-radius:12px;cursor:pointer}
-.tabs{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;scrollbar-width:none}
-.tab{white-space:nowrap;padding:9px 16px;border-radius:20px;background:var(--card);border:1px solid var(--line);font-size:12px;font-weight:700;cursor:pointer}
-.tab.active{background:#fff;color:#000}
-.hero{margin:0 16px;border-radius:22px;overflow:hidden;position:relative;height:210px;border:1px solid var(--line)}
-.hero img{width:100%;height:100%;object-fit:cover}
-.hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,.92), transparent 60%)}
-.hero-txt{position:absolute;bottom:0;left:0;right:0;padding:16px;z-index:2}
-.hero-txt small{background:#e11d48;padding:4px 8px;border-radius:20px;font-size:10px;font-weight:800}
-.hero-txt h2{margin:8px 0 2px;font-size:20px;line-height:1.1}
-.hero-txt p{margin:0;font-size:12px;color:#cbd5e1}
-.hero-btn{margin-top:10px;display:flex;gap:8px}
-.hbtn{padding:9px 16px;border-radius:12px;border:none;font-weight:800;font-size:12px;cursor:pointer}
-.hbtn.play{background:#fff;color:#000}
-.hbtn.info{background:rgba(255,255,255,.22);color:#fff}
-main{padding:14px 16px}
-.sec-head{display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px}
-.sec-head h3{margin:0;font-size:15px}
-.sec-head a{font-size:12px;color:#ff7a3d;cursor:pointer;font-weight:700}
-.player-wrap{background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden}
-.player-box{aspect-ratio:16/9;background:#000}
-video{width:100%;height:100%}
-.resume-banner{display:none;background:linear-gradient(90deg,#ff3d68,#ff7a3d);padding:10px 14px;font-size:12px;font-weight:700;align-items:center;justify-content:space-between}
-.resume-banner.show{display:flex}
-.resume-banner button{background:#fff;color:#000;border:none;padding:7px 12px;border-radius:20px;font-weight:800;cursor:pointer;font-size:11px}
-.pinfo{padding:14px}
-.pinfo b{font-size:16px;display:block}
-.pinfo p{margin:4px 0 0;color:var(--muted);font-size:12px}
-.progress{height:6px;background:#1e293b;border-radius:10px;margin-top:12px;overflow:hidden}
-.progress i{display:block;height:100%;background:var(--grad);width:0%}
-.pactions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.pbtn{flex:1;min-width:100px;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:#fff;font-weight:700;font-size:12px;cursor:pointer}
-.pbtn.primary{background:#fff;color:#000}
-.continue-row{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none}
-.cont-card{min-width:200px;max-width:200px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;flex-shrink:0}
-.cont-card img{width:100%;height:110px;object-fit:cover;background:#000}
-.cont-card .ct{padding:10px}
-.cont-card b{font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cont-card small{color:var(--muted);font-size:11px}
-.cont-card .bar{height:4px;background:#1e293b;border-radius:10px;margin-top:8px;overflow:hidden}
-.cont-card .bar i{display:block;height:100%;background:var(--grad)}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.drama-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)} .drama-grid{grid-template-columns:repeat(5,1fr)}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;cursor:pointer;position:relative;overflow:hidden}
-.card:hover{transform:translateY(-3px);border-color:#ff3d68}
-.card img{width:100%;height:80px;object-fit:contain;background:#fff;border-radius:12px;padding:8px}
-.card.drama img{height:220px;object-fit:cover;padding:0;background:#111}
-.card b{display:block;margin-top:8px;font-size:12px;line-height:1.3;min-height:32px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.card small{color:var(--muted);font-size:11px}
-.live{position:absolute;top:10px;left:10px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:4px 7px;border-radius:20px;z-index:2}
-.favbtn{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.65);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
-.rating{position:absolute;top:10px;left:10px;background:#f59e0b;color:#000;font-size:10px;font-weight:800;padding:4px 7px;border-radius:20px;z-index:2}
-.history-item{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;align-items:center;cursor:pointer;margin-bottom:8px}
-.history-item img{width:72px;height:48px;object-fit:cover;background:#fff;border-radius:10px}
-.history-item b{font-size:12px;display:block}
-.history-item small{color:var(--muted);font-size:11px}
-.chip-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-top:10px}
-.chip{white-space:nowrap;padding:8px 14px;border-radius:20px;background:var(--card);border:1px solid var(--line);font-size:12px;cursor:pointer}
-.chip.active{background:var(--grad);border-color:transparent}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(5,6,15,.94);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:10px 0 calc(10px + env(safe-area-inset-bottom));z-index:40}
-.bottom-nav button{background:none;border:none;color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
-.bottom-nav button.active{color:#fff}
-.bottom-nav button span{font-size:20px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:60;display:none;align-items:flex-end;justify-content:center}
-.modal.open{display:flex}
-.sheet{background:var(--card);width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:18px;max-height:85dvh;overflow-y:auto;border:1px solid var(--line)}
-.ep-btn{padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:#fff;font-weight:700;cursor:pointer;font-size:12px}
-.ep-btn.watched{background:#16a34a;border-color:#16a34a}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YouTube Web Player - Mobile Responsive</title>
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            background-color: #0f0f0f;
+            color: #f1f1f1;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 56px;
+            background-color: #0f0f0f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 12px;
+            z-index: 1000;
+            border-bottom: 1px solid #222;
+        }
+
+        .header-left, .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tombol Hamburger */
+        .menu-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1100;
+        }
+
+        .menu-toggle span {
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: #f1f1f1;
+            border-radius: 2px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .menu-toggle.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+
+        .menu-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-toggle.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .logo i {
+            color: #ff0000;
+            font-size: 20px;
+        }
+
+        /* Search Box dengan Tombol Clear (X) */
+        .search-container {
+            display: flex;
+            flex-grow: 1;
+            max-width: 500px;
+            margin: 0 8px;
+            position: relative;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: #121212;
+            border: 1px solid #303030;
+            border-radius: 40px 0 0 40px;
+            padding: 0 12px;
+            width: 100%;
+            height: 38px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #fff;
+            outline: none;
+            font-size: 13px;
+            padding-right: 24px;
+        }
+
+        .clear-search-btn {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 13px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .clear-search-btn:hover {
+            color: #fff;
+            background: #333;
+        }
+
+        .search-btn {
+            background: #222;
+            border: 1px solid #303030;
+            border-left: none;
+            border-radius: 0 40px 40px 0;
+            width: 44px;
+            height: 38px;
+            cursor: pointer;
+            color: #aaa;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .search-btn:hover {
+            background: #333;
+            color: #fff;
+        }
+
+        /* Main Container */
+        .main-container {
+            display: flex;
+            margin-top: 56px;
+            min-height: calc(100vh - 56px);
+            position: relative;
+            width: 100%;
+        }
+
+        /* Sidebar Responsive */
+        sidebar {
+            position: fixed;
+            top: 56px;
+            left: -240px;
+            width: 240px;
+            height: calc(100vh - 56px);
+            background-color: #0f0f0f;
+            padding: 12px;
+            overflow-y: auto;
+            flex-shrink: 0;
+            z-index: 999;
+            transition: left 0.3s ease-in-out;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        }
+
+        sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #f1f1f1;
+            text-decoration: none;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-item:hover, .sidebar-item.active {
+            background-color: #272727;
+        }
+
+        .sidebar-item i {
+            font-size: 18px;
+            width: 24px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #3f3f3f;
+            margin: 12px 0;
+        }
+
+        .sidebar-section-title {
+            font-size: 12px;
+            color: #aaa;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+
+        /* Content Area */
+        .content {
+            flex-grow: 1;
+            padding: 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            max-width: 100%;
+            margin-left: 0;
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        @media (min-width: 769px) {
+            sidebar.open ~ .content {
+                margin-left: 240px;
+            }
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h2 {
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 22px;
+        }
+
+        /* Video Grid Responsive */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+            width: 100%;
+        }
+
+        .video-card {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .thumbnail-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: #222;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .thumbnail-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .video-details h3 {
+            font-size: 13px;
+            font-weight: 500;
+            color: #f1f1f1;
+            line-height: 18px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .video-details p {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 3px;
+        }
+
+        .btn-options {
+            background: none;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+        }
+
+        /* Playlist Grid View */
+        .playlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            width: 100%;
+        }
+
+        .playlist-card {
+            background: #1f1f1f;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .playlist-card-cover {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+            font-size: 24px;
+        }
+
+        .playlist-card-info {
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .playlist-card-info h4 {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .playlist-card-info p {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        /* Modal Popup */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            padding: 16px;
+        }
+
+        .modal-box {
+            background: #212121;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+        }
+
+        .modal-box h3 {
+            margin-bottom: 14px;
+            font-size: 16px;
+        }
+
+        .modal-box input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #121212;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 6px;
+            outline: none;
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+        }
+
+        .modal-buttons button {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .btn-cancel { background: transparent; color: #aaa; }
+        .btn-submit { background: #3ea6ff; color: #0f0f0f; }
+
+        /* Watch Container (Full Responsif HP) */
+        .watch-container {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .watch-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+
+        @media (min-width: 900px) {
+            .watch-layout {
+                display: grid;
+                grid-template-columns: 1fr 340px;
+                gap: 20px;
+                max-width: 1100px;
+                margin: 0 auto;
+            }
+        }
+
+        .player-main-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        /* Mengunci rasio pemutar agar aman di layar kecil HP */
+        .player-wrapper {
+            width: 100%;
+            max-width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #youtube-player {
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .player-meta h3 {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 3px;
+            line-height: 20px;
+        }
+
+        .player-meta p {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .queue-sidebar-panel {
+            background: #181818;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .queue-sidebar-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+        .queue-sidebar-panel::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 2px;
+        }
+
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px;
+            font-size: 11px;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #212121;
+        }
+
+        .playlist-item:hover {
+            background: #333;
+        }
+
+        .playlist-item.active {
+            background: #3f3f3f;
+            color: #3ea6ff;
+        }
+
+        .playlist-item-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+        }
+
+        .playlist-item img {
+            width: 50px;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        /* Penyesuaian Tampilan Mobile Kecil */
+        @media (max-width: 480px) {
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+            .header-right .fa-video, 
+            .header-right .fa-bell {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
-<header><div style="display:flex;justify-content:space-between;align-items:center"><div class="logo">NOVA<span> TV</span> <i>• NO API</i></div><div class="badge" id="apiBadge">✅ Tanpa API Key</div></div>
-<div class="search"><input id="q" placeholder="Cari channel / drama china..." onkeyup="if(event.key==='Enter')doSearch()"><button onclick="doSearch()">CARI</button></div></header>
-<div class="tabs">
-<button class="tab active" onclick="switchTab('home',this)">🏠 Beranda</button>
-<button class="tab" onclick="switchTab('live',this)">📺 Live TV</button>
-<button class="tab" onclick="switchTab('drama',this)">🎬 Drama China</button>
-<button class="tab" onclick="switchTab('continue',this)">▶ Lanjut Nonton</button>
-<button class="tab" onclick="switchTab('history',this)">🕒 Riwayat</button>
-<button class="tab" onclick="switchTab('fav',this)">⭐ Favorit</button>
-</div>
-<div id="view-home">
-<div class="hero"><img src="https://images.unsplash.com/photo-1593784991095-a205069470b3?w=1000&q=80"><div class="hero-txt"><small>✅ TANPA API KEY • GRATIS</small><h2>TV Dunia & Drama China<br>Tanpa Daftar & Tanpa Login</h2><p>IPTV-ORG + Drama Kurasi + TVmaze • Langsung Jalan</p><div class="hero-btn"><button class="hbtn play" onclick="playFirst()">▶ Nonton TV</button><button class="hbtn info" onclick="switchTab('drama',document.querySelectorAll('.tab')[2])">🎬 Lihat Drama China</button></div></div></div>
-<main>
-<div class="player-wrap" id="playerWrap" style="display:none">
-<div class="resume-banner" id="resumeBanner"><span id="resumeText">⏸ Terakhir di 00:00</span><button onclick="resumeLast()">▶ LANJUTKAN</button></div>
-<div class="player-box"><video id="video" controls playsinline></video></div>
-<div class="pinfo"><b id="nowTitle">Pilih channel / drama</b><p id="nowDesc">IPTV-ORG + TVmaze • Tanpa API Key</p><div class="progress"><i id="progressBar"></i></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px"><span id="progressText">Terakhir: -</span><span id="timeText">00:00</span></div><div class="pactions"><button class="pbtn primary" onclick="playCurrent()">▶ PLAY</button><button class="pbtn" onclick="toggleFavCurrent()">⭐ Favorit</button><button class="pbtn" onclick="copyLink()">🔗 Copy Link</button><button class="pbtn" onclick="clearHistoryOne()">🗑️ Hapus Riwayat</button></div></div>
-</div>
-<div class="sec-head"><h3>▶ Lanjut Nonton Terakhir</h3><a onclick="switchTab('continue',document.querySelectorAll('.tab')[3])">Lihat Semua ›</a></div>
-<div class="continue-row" id="continueRow"><div style="color:var(--muted);font-size:12px;padding:10px">Belum ada tontonan.</div></div>
-<div class="sec-head"><h3>🎬 Drama China Trending</h3><a onclick="switchTab('drama',document.querySelectorAll('.tab')[2])">Semua Drama ›</a></div>
-<div class="drama-grid" id="homeDramaGrid"></div>
-<div class="sec-head"><h3>🔥 Trending TV Hari Ini</h3><a onclick="switchTab('live',document.querySelectorAll('.tab')[1])">Semua ›</a></div>
-<div class="grid" id="trendingGrid"></div>
-<div class="sec-head"><h3>📰 News Dunia</h3><a onclick="switchTab('live',document.querySelectorAll('.tab')[1])">Lihat ›</a></div>
-<div class="grid" id="newsGrid"></div>
-</main>
-</div>
-<div id="view-live" style="display:none"><main>
-<div class="chip-row" id="catChips">
-<button class="chip active" onclick="setCat('ALL',this)">🌐 Semua</button>
-<button class="chip" onclick="setCat('News',this)">📰 News</button>
-<button class="chip" onclick="setCat('Movies',this)">🎬 Movies</button>
-<button class="chip" onclick="setCat('Sports',this)">⚽ Sports</button>
-<button class="chip" onclick="setCat('Entertainment',this)">🎭 Entertainment</button>
-<button class="chip" onclick="setCat('Kids',this)">🧒 Kids</button>
-<button class="chip" onclick="setCat('Music',this)">🎵 Music</button>
-</div>
-<div style="display:flex;gap:8px;margin-top:10px"><select id="countrySel" onchange="loadLive()" style="padding:9px;border-radius:10px;background:var(--card);color:#fff;border:1px solid var(--line)"><option value="ALL">🌍 Semua Negara</option><option value="ID">🇮🇩 Indonesia</option><option value="US">🇺🇸 USA</option><option value="GB">🇬🇧 UK</option><option value="CN">🇨🇳 China</option><option value="KR">🇰🇷 Korea</option><option value="JP">🇯🇵 Japan</option></select><span id="countLabel" style="font-size:12px;color:var(--muted);align-self:center"></span></div>
-<div class="grid" id="liveGrid" style="margin-top:14px"></div>
-</main></div>
-<div id="view-drama" style="display:none"><main>
-<div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;font-size:12px;color:var(--muted)">✅ <b style="color:#fff">Mode Tanpa API Key Aktif</b><br>Drama dari daftar kurasi + search dari TVmaze (gratis, tanpa login). Ketik judul di atas lalu Cari untuk search drama lain dari internet.</div>
-<div class="chip-row">
-<button class="chip active" onclick="setDramaCat('all',this)">🔥 Semua</button>
-<button class="chip" onclick="setDramaCat('romance',this)">💖 Romance</button>
-<button class="chip" onclick="setDramaCat('historical',this)">🏯 Historical / Wuxia</button>
-<button class="chip" onclick="setDramaCat('modern',this)">🏙️ Modern</button>
-<button class="chip" onclick="setDramaCat('fantasy',this)">✨ Fantasy</button>
-</div>
-<div class="drama-grid" id="dramaGrid" style="margin-top:14px"></div>
-<p id="dramaStatus" style="font-size:12px;color:var(--muted)"></p>
-</main></div>
-<div id="view-continue" style="display:none"><main><h3>▶ Lanjut Nonton</h3><p style="font-size:12px;color:var(--muted)">TV + Drama China yang belum selesai.</p><div class="grid" id="continueGrid"></div></main></div>
-<div id="view-history" style="display:none"><main><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">🕒 Histori (TV + Drama)</h3><button onclick="clearAllHistory()" style="background:#dc2626;border:none;color:#fff;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer">Hapus Semua</button></div><div id="historyList" style="margin-top:12px"></div></main></div>
-<div id="view-fav" style="display:none"><main><h3>⭐ Favorit TV</h3><div class="grid" id="favGrid" style="margin-top:14px"></div><h3 style="margin-top:20px">🎬 Drama Favorit</h3><div class="drama-grid" id="favDramaGrid" style="margin-top:14px"></div></main></div>
-<div class="bottom-nav">
-<button class="active" onclick="switchTab('home',this)"><span>🏠</span>Beranda</button>
-<button onclick="switchTab('live',this)"><span>📺</span>Live TV</button>
-<button onclick="switchTab('drama',this)"><span>🎬</span>Drama</button>
-<button onclick="switchTab('continue',this)"><span>▶</span>Lanjut</button>
-<button onclick="switchTab('history',this)"><span>🕒</span>Riwayat</button>
-</div>
-<div class="modal" id="detailModal" onclick="if(event.target===this)closeDetail()"><div class="sheet">
-<div style="display:flex;gap:12px"><img id="dPoster" style="width:90px;height:130px;object-fit:cover;border-radius:12px;background:#111"><div><h3 id="dTitle" style="margin:0">Detail</h3><p id="dMeta" style="color:var(--muted);font-size:12px;margin:6px 0"></p><p id="dDesc" style="color:#cbd5e1;font-size:12px;line-height:1.5"></p></div></div>
-<div style="margin-top:12px"><b style="font-size:13px">📺 Episode — Klik untuk tandai sudah nonton</b><div id="dEpisodes" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div></div>
-<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-<button class="hbtn play" style="flex:1" onclick="watchDramaTrailer()">▶ Trailer</button>
-<button class="hbtn info" style="flex:1" onclick="openPlatform('iqiyi')">iQIYI</button>
-<button class="hbtn info" style="flex:1" onclick="openPlatform('wetv')">WeTV</button>
-<button class="hbtn info" style="flex:1" onclick="openPlatform('viki')">Viki</button>
-<button class="hbtn info" style="flex:1" onclick="closeDetail()">Tutup</button>
-</div></div></div>
-<script>
-let allChannels=[], allStreams={}, currentCat='ALL', currentPlay=null, detailDrama=null, dramaCat='all', dramaList=[];
-let history=JSON.parse(localStorage.getItem('nova_history_v2')||'[]');
-let favs=JSON.parse(localStorage.getItem('nova_favs')||'[]');
-let favDrama=JSON.parse(localStorage.getItem('nova_fav_drama')||'[]');
-let lastState=JSON.parse(localStorage.getItem('nova_last_v2')||'null');
-const video=document.getElementById('video'); let hls=null, progressTimer=null;
-const P='https://image.tmdb.org/t/p/w342';
-const CURATED=[
-{id:101,name:'Hidden Love',cn:'偷偷藏不住',rating:8.5,year:2023,eps:25,cat:'romance',poster:P+'/y9ZgKf4aT5Y6Q3vQ6L9V5Z5Z5Z5.jpg',desc:'Sang Zhi jatuh cinta pada Duan Jia Xu, teman kakaknya. Romance modern paling manis, bikin senyum-senyum sendiri.'},
-{id:102,name:'Love Like the Galaxy',cn:'星汉灿烂',rating:8.6,year:2022,eps:56,cat:'historical',poster:'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&q=80',desc:'Cheng Shao Shang yang cerdas bertemu Jenderal Ling Bu Yi. Historical romance + politik kerajaan.'},
-{id:103,name:'The Untamed',cn:'陈情令',rating:8.8,year:2019,eps:50,cat:'historical',poster:'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80',desc:'Wei Wuxian dan Lan Wangji. Wuxia legendaris, persahabatan & misteri.'},
-{id:104,name:'Till the End of the Moon',cn:'长月烬明',rating:8.3,year:2023,eps:40,cat:'fantasy',poster:'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&q=80',desc:'Li Susu kembali ke masa lalu untuk menghentikan Tantai Jin menjadi raja iblis.'},
-{id:105,name:'When I Fly Towards You',cn:'当我飞奔向你',rating:8.4,year:2023,eps:24,cat:'romance',poster:'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=400&q=80',desc:'Su Zai Zai ceria mengejar Zhang Lu Rang yang dingin. Drama sekolah manis.'},
-{id:106,name:'Love Between Fairy and Devil',cn:'苍兰诀',rating:8.2,year:2022,eps:36,cat:'fantasy',poster:'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=400&q=80',desc:'Dongfang Qingcang raja iblis jatuh cinta pada peri kecil Xiao Lanhua.'},
-{id:107,name:'Story of Kunning Palace',cn:'宁安如梦',rating:8.1,year:2023,eps:38,cat:'historical',poster:'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?w=400&q=80',desc:'Jiang Xuening dapat kesempatan kedua hidup, ingin memperbaiki masa lalu.'},
-{id:108,name:'Sword and Fairy 4',cn:'仙剑四',rating:7.9,year:2024,eps:36,cat:'fantasy',poster:'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&q=80',desc:'Yun Tianhe dan petualangan dunia Xianxia mencari orang tuanya.'},
-{id:109,name:'The Legend of Shen Li',cn:'与凤行',rating:8.3,year:2024,eps:39,cat:'fantasy',poster:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80',desc:'Shen Li ratu phoenix kabur dari pernikahan, bertemu Xing Zhi sang dewa.'},
-{id:110,name:'You Are My Glory',cn:'你是我的荣耀',rating:8.4,year:2021,eps:32,cat:'modern',poster:'https://images.unsplash.com/photo-1493804714600-6edb1cd93080?w=400&q=80',desc:'Qiao Jingjing artis cantik & Yu Tu insinyur luar angkasa. Romance dewasa.'},
-{id:111,name:'Go Ahead',cn:'以家人之名',rating:8.5,year:2020,eps:40,cat:'modern',poster:'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80',desc:'Tiga anak dari keluarga berbeda tumbuh bersama seperti saudara.'},
-{id:112,name:'Eternal Love',cn:'三生三世十里桃花',rating:8.0,year:2017,eps:58,cat:'fantasy',poster:'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80',desc:'Bai Qian & Ye Hua, cinta 3 kehidupan. Drama Xianxia klasik.'},
-{id:113,name:'A Love So Beautiful',cn:'致我们单纯的小美好',rating:8.1,year:2017,eps:23,cat:'romance',poster:'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=400&q=80',desc:'Chen Xiaoxi mengejar Jiang Chen dari SMA sampai dewasa.'},
-{id:114,name:'The Long Ballad',cn:'长歌行',rating:8.2,year:2021,eps:49,cat:'historical',poster:'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?w=400&q=80',desc:'Li Changge putri kerajaan yang ingin balas dendam, bertemu Ashile Sun.'},
-{id:115,name:'My Journey to You',cn:'云之羽',rating:8.0,year:2023,eps:24,cat:'historical',poster:'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&q=80',desc:'Yun Weishan mata-mata yang menyusup ke keluarga Gong, jatuh cinta pada Gong Ziyu.'},
-{id:116,name:'Amidst a Snowstorm of Love',cn:'在暴雪时分',rating:8.2,year:2024,eps:30,cat:'romance',poster:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80',desc:'Lin Yiyang pemain biliar & Yin Guo. Bertemu di tengah badai salju.'},
-{id:117,name:'Derailment',cn:'脱轨',rating:8.0,year:2023,eps:30,cat:'modern',poster:'https://images.unsplash.com/photo-1493804714600-6edb1cd93080?w=400&q=80',desc:'Jiang Xiaoyuan kecelakaan & masuk dunia paralel, bertemu Qi Lian.'},
-{id:118,name:'Blossoms in Adversity',cn:'惜花芷',rating:8.1,year:2024,eps:40,cat:'historical',poster:'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?w=400&q=80',desc:'Hua Zhi harus menyelamatkan keluarganya setelah keluarga jatuh miskin.'},
-{id:119,name:'The Double',cn:'墨雨云间',rating:8.4,year:2024,eps:40,cat:'historical',poster:'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&q=80',desc:'Xue Fangfei bangkit dari pengkhianatan, balas dendam dengan identitas baru.'},
-{id:120,name:'Joy of Life 2',cn:'庆余年2',rating:8.7,year:2024,eps:36,cat:'historical',poster:'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&q=80',desc:'Fan Xian kembali, melanjutkan intrik kerajaan paling seru.'},
-];
-const DEMO=[{id:'demo1',name:'Big Buck Bunny - Test HLS',country:'US',category:'Movies',logo:'',url:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'}];
-function posterUrl(d){ return d.poster || d.poster_path || 'https://via.placeholder.com/300x450?text=C-Drama'; }
-async function loadAPI(){
- try{
-  const [chRes,stRes]=await Promise.all([fetch('https://iptv-org.github.io/api/channels.json'),fetch('https://iptv-org.github.io/api/streams.json')]);
-  const channels=await chRes.json(); const streams=await stRes.json();
-  streams.forEach(s=>{if(!allStreams[s.channel]) allStreams[s.channel]=s.url});
-  allChannels=channels.map(c=>({id:c.id,name:c.name,country:c.country||'XX',category:(c.categories&&c.categories[0])||'General',logo:c.logo||'',url:allStreams[c.id]||''})).filter(c=>c.url);
-  document.getElementById('apiBadge').textContent=`✅ ${allChannels.length.toLocaleString()} channel`;
- }catch(e){ allChannels=DEMO; }
- renderAll(); checkLast();
-}
-function loadDrama(){
- let list=[...CURATED];
- if(dramaCat!=='all') list=list.filter(d=>d.cat===dramaCat);
- dramaList=list;
- document.getElementById('dramaGrid').innerHTML=list.map(dramaCard).join('');
- document.getElementById('homeDramaGrid').innerHTML=CURATED.slice(0,6).map(dramaCard).join('');
- document.getElementById('dramaStatus').textContent=`✅ ${list.length} drama China (tanpa API Key) • Search untuk cari drama lain via TVmaze`;
-}
-async function searchDramaOnline(q){
- try{
-  const res=await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`);
-  const data=await res.json();
-  let list=data.map((x,i)=>({id:9000+i,name:x.show.name,cn:x.show.name,rating:x.show.rating?.average||7.5,year:(x.show.premiered||'2020').slice(0,4),eps:20,cat:'romance',poster:x.show.image?.medium||'',desc:x.show.summary?x.show.summary.replace(/<[^>]*>/g,'').slice(0,200):'Drama dari TVmaze, tanpa API Key.'}));
-  if(list.length===0) throw new Error('empty');
-  dramaList=list;
-  document.getElementById('dramaGrid').innerHTML=list.map(dramaCard).join('');
-  document.getElementById('dramaStatus').textContent=`✅ ${list.length} hasil search dari TVmaze untuk "${q}" (tanpa API Key)`;
- }catch(e){
-  let list=CURATED.filter(d=>d.name.toLowerCase().includes(q.toLowerCase()));
-  dramaList=list;
-  document.getElementById('dramaGrid').innerHTML=list.map(dramaCard).join('')||'<p style="color:var(--muted)">Tidak ketemu, coba kata lain.</p>';
- }
-}
-function dramaCard(d){
- const h=history.find(x=>x.id==='drama-'+d.id);
- const ep=h?h.episode||0:0;
- return `<div class="card drama" onclick="openDrama(${d.id})"><span class="rating">⭐ ${(d.rating||0).toFixed(1)}</span><div class="favbtn" onclick="event.stopPropagation();toggleFavDrama(${d.id})">${favDrama.includes(d.id)?'⭐':'☆'}</div><img src="${posterUrl(d)}" onerror="this.src='https://via.placeholder.com/300x450?text=C-Drama'"><b>${d.name}</b><small>${d.year} • 🇨🇳 ${d.cn||''}</small>${h?`<div style="height:4px;background:#1e293b;border-radius:10px;margin-top:8px;overflow:hidden"><i style="display:block;height:100%;width:${Math.min(100,ep*5)}%;background:linear-gradient(90deg,#ff3d68,#ffb800)"></i></div><small>Terakhir: Episode ${ep} • ${h.date}</small>`:''}</div>`;
-}
-function flag(code){ if(!code||code.length!==2) return '🌍'; return String.fromCodePoint(...[...code.toUpperCase()].map(c=>127397+c.charCodeAt())); }
-function fmtTime(sec){ sec=Math.floor(sec||0); const m=Math.floor(sec/60), s=sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
-function cardHTML(c){
- const h=history.find(x=>x.id===c.id);
- const prog=h?Math.min(100, Math.round((h.position/(h.duration||100))*100)):0;
- return `<div class="card" onclick="playChannel('${c.id}')"><span class="live">LIVE</span><div class="favbtn" onclick="event.stopPropagation();toggleFav('${c.id}')">${favs.includes(c.id)?'⭐':'☆'}</div><img src="${c.logo||'https://via.placeholder.com/200x100?text=TV'}"><b>${c.name}</b><small>${flag(c.country)} ${c.country} • ${c.category}</small>${h?`<div style="height:4px;background:#1e293b;border-radius:10px;margin-top:8px;overflow:hidden"><i style="display:block;height:100%;width:${prog}%;background:linear-gradient(90deg,#ff3d68,#ffb800)"></i></div><small>Terakhir: ${fmtTime(h.position)} • ${h.date}</small>`:''}</div>`;
-}
-function renderAll(){ document.getElementById('trendingGrid').innerHTML=allChannels.slice(0,8).map(cardHTML).join(''); document.getElementById('newsGrid').innerHTML=allChannels.filter(c=>c.category.toLowerCase().includes('news')).slice(0,8).map(cardHTML).join(''); loadLive(); renderHistory(); renderContinue(); renderFav(); loadDrama(); }
-function getFiltered(){ let q=document.getElementById('q').value.toLowerCase().trim(); let country=document.getElementById('countrySel')?.value||'ALL'; let list=[...allChannels]; if(currentCat!=='ALL') list=list.filter(c=>c.category.toLowerCase().includes(currentCat.toLowerCase())); if(country!=='ALL') list=list.filter(c=>c.country===country); if(q && document.getElementById('view-live').style.display==='block') list=list.filter(c=>c.name.toLowerCase().includes(q)); return list.slice(0,100); }
-function loadLive(){ let list=getFiltered(); document.getElementById('countLabel').textContent=`${list.length} channel`; document.getElementById('liveGrid').innerHTML=list.map(cardHTML).join(''); }
-function switchTab(tab,el){ ['home','live','drama','history','fav','continue'].forEach(t=>document.getElementById('view-'+t).style.display=t===tab?'block':'none'); document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.remove('active')); document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.remove('active')); if(el&&el.classList.contains('tab')) el.classList.add('active'); if(tab==='history') renderHistory(); if(tab==='continue') renderContinue(); if(tab==='fav') renderFav(); if(tab==='live') loadLive(); if(tab==='drama') loadDrama(); window.scrollTo({top:0,behavior:'smooth'}); }
-function setCat(cat,el){ currentCat=cat; document.querySelectorAll('#catChips .chip').forEach(c=>c.classList.remove('active')); if(el) el.classList.add('active'); loadLive(); }
-function setDramaCat(cat,el){ dramaCat=cat; document.querySelectorAll('#view-drama .chip').forEach(c=>c.classList.remove('active')); if(el) el.classList.add('active'); loadDrama(); }
-function doSearch(){ const q=document.getElementById('q').value.trim(); if(!q) return; const isDrama=CURATED.some(d=>d.name.toLowerCase().includes(q.toLowerCase())) || document.getElementById('view-drama').style.display==='block'; if(isDrama){ switchTab('drama',document.querySelectorAll('.tab')[2]); searchDramaOnline(q); } else { switchTab('live',document.querySelectorAll('.tab')[1]); loadLive(); } }
-function playChannel(id, resumeTime=0){ let c=allChannels.find(x=>x.id===id); if(!c) return; currentPlay=c; document.getElementById('playerWrap').style.display='block'; document.getElementById('nowTitle').textContent=`▶ ${c.name}`; document.getElementById('nowDesc').textContent=`${flag(c.country)} ${c.country} • ${c.category}`; const h=history.find(x=>x.id===id); if(h&&h.position>5&&!resumeTime){ document.getElementById('resumeBanner').classList.add('show'); document.getElementById('resumeText').textContent=`⏸ Terakhir di ${fmtTime(h.position)} • ${h.date}`; } else document.getElementById('resumeBanner').classList.remove('show'); playUrl(c.url, resumeTime||0); addToHistory({id:c.id,name:c.name,country:c.country,category:c.category,logo:c.logo,url:c.url,type:'TV'}, resumeTime||0, 0); document.getElementById('playerWrap').scrollIntoView({behavior:'smooth'}); startProgressTracker(); }
-function playUrl(url, startAt=0){ if(hls){hls.destroy();hls=null} if(Hls.isSupported()){ hls=new Hls(); hls.loadSource(url); hls.attachMedia(video); hls.on(Hls.Events.MANIFEST_PARSED,()=>{ if(startAt>0) video.currentTime=startAt; video.play().catch(()=>{}); }); } else { video.src=url; video.play().catch(()=>{}); } }
-function playFirst(){ if(allChannels[0]) playChannel(allChannels[0].id); }
-function playCurrent(){ if(currentPlay) playUrl(currentPlay.url, video.currentTime||0); }
-function resumeLast(){ if(lastState){ if(lastState.type==='drama'){ openDrama(lastState.dramaId); } else { playChannel(lastState.id, lastState.position); } } }
-function checkLast(){ if(lastState&&lastState.id){ const c=allChannels.find(x=>x.id===lastState.id); if(c&&lastState.type!=='drama'){ document.getElementById('playerWrap').style.display='block'; document.getElementById('nowTitle').textContent=`▶ ${c.name} (terakhir ditonton)`; document.getElementById('nowDesc').textContent=`Lanjut dari ${fmtTime(lastState.position)}`; document.getElementById('resumeBanner').classList.add('show'); document.getElementById('resumeText').textContent=`⏸ Terakhir di ${fmtTime(lastState.position)} • Klik untuk lanjut`; currentPlay=c; } } }
-function addToHistory(item, pos=0, episode=0){ const now=new Date(); const dateStr=now.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' • '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}); const key=item.type==='drama'?'drama-'+item.dramaId:item.id; history=history.filter(x=>x.id!==key); history.unshift({id:key,name:item.name,country:item.country||'CN',category:item.category||'Drama China',logo:item.logo,url:item.url||'',type:item.type||'TV',dramaId:item.dramaId||null,episode:episode||0,position:pos,duration:0,date:dateStr,ts:Date.now()}); history=history.slice(0,60); localStorage.setItem('nova_history_v2',JSON.stringify(history)); lastState={id:key,name:item.name,type:item.type||'TV',dramaId:item.dramaId||null,episode:episode||0,position:pos,ts:Date.now()}; localStorage.setItem('nova_last_v2',JSON.stringify(lastState)); renderHistory(); renderContinue(); }
-function startProgressTracker(){ if(progressTimer) clearInterval(progressTimer); progressTimer=setInterval(()=>{ if(!currentPlay||video.paused) return; const pos=video.currentTime, dur=video.duration||0; if(pos>3){ let idx=history.findIndex(x=>x.id===currentPlay.id); if(idx>=0){ history[idx].position=pos; history[idx].duration=dur; localStorage.setItem('nova_history_v2',JSON.stringify(history)); } lastState={id:currentPlay.id,name:currentPlay.name,type:'TV',position:pos,ts:Date.now()}; localStorage.setItem('nova_last_v2',JSON.stringify(lastState)); if(dur>0) document.getElementById('progressBar').style.width=Math.min(100,(pos/dur)*100)+'%'; document.getElementById('timeText').textContent=`${fmtTime(pos)} / ${dur?fmtTime(dur):'LIVE'}`; document.getElementById('progressText').textContent=`Terakhir: ${fmtTime(pos)} • Tersimpan otomatis`; } },2000); }
-video.addEventListener('pause',()=>{ if(currentPlay&&video.currentTime>3) addToHistory({id:currentPlay.id,name:currentPlay.name,country:currentPlay.country,category:currentPlay.category,logo:currentPlay.logo,url:currentPlay.url,type:'TV'}, video.currentTime, 0); });
-function openDrama(id){ let d=dramaList.find(x=>x.id===id)||CURATED.find(x=>x.id===id); if(!d) return; detailDrama=d; document.getElementById('dPoster').src=posterUrl(d); document.getElementById('dTitle').textContent=d.name; document.getElementById('dMeta').textContent=`⭐ ${d.rating} • ${d.year} • ${d.eps} episode • 🇨🇳 China • ${d.cn||''}`; document.getElementById('dDesc').textContent=d.desc; const h=history.find(x=>x.id==='drama-'+id); const lastEp=h?h.episode||0:0; let epHTML=''; for(let i=1;i<=Math.min(d.eps,40);i++){ const watched=i<=lastEp; epHTML+=`<button class="ep-btn ${watched?'watched':''}" onclick="watchEpisode(${id},${i},'${d.name.replace(/'/g,"")}')">${watched?'✓ ':''}Ep ${i}</button>`; } document.getElementById('dEpisodes').innerHTML=epHTML; document.getElementById('detailModal').classList.add('open'); }
-function watchEpisode(dramaId, ep, name){ addToHistory({name:name,category:'Drama China',logo:posterUrl(detailDrama||{}),type:'drama',dramaId:dramaId}, 0, ep); closeDetail(); alert(`✅ "${name}" Episode ${ep} tersimpan di Riwayat / Lanjut Nonton.\nUntuk nonton videonya klik iQIYI / WeTV / Viki di detail.`); }
-function watchDramaTrailer(){ if(detailDrama) window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(detailDrama.name+' trailer sub indo')}`,'_blank'); }
-function openPlatform(p){ if(!detailDrama) return; const q=encodeURIComponent(detailDrama.name); const urls={iqiyi:`https://www.iq.com/search?query=${q}`,wetv:`https://wetv.vip/search?query=${q}`,viki:`https://www.viki.com/search?query=${q}`}; window.open(urls[p],'_blank'); }
-function closeDetail(){ document.getElementById('detailModal').classList.remove('open'); }
-function renderHistory(){ const box=document.getElementById('historyList'); if(history.length===0){ box.innerHTML='<p style="color:var(--muted)">Belum ada riwayat.</p>'; return; } box.innerHTML=history.map(h=>{ const isDrama=h.type==='drama'; const click=isDrama?`openDrama(${h.dramaId})`:`playChannel('${h.id}',${Math.floor(h.position||0)})`; return `<div class="history-item" onclick="${click}"><img src="${h.logo||'https://via.placeholder.com/100x60?text=TV'}"><div style="flex:1"><b>${isDrama?'🎬 ':''}${h.name}</b><small>${h.category} • ${h.date} ${isDrama?`• Episode ${h.episode||1}`:''}</small><small>${isDrama?`Lanjut Episode ${h.episode||1}`:`Lanjut dari ${fmtTime(h.position)}`}</small></div><button style="background:#fff;border:none;padding:8px 12px;border-radius:10px;font-weight:800;cursor:pointer">▶</button></div>`; }).join(''); }
-function renderContinue(){ const withPos=history.filter(h=>h.position>3||(h.type==='drama'&&h.episode>0)); const row=document.getElementById('continueRow'); const grid=document.getElementById('continueGrid'); if(withPos.length===0){ row.innerHTML='<div style="color:var(--muted);font-size:12px;padding:10px">Belum ada yang bisa dilanjutkan.</div>'; grid.innerHTML='<p style="color:var(--muted)">Belum ada.</p>'; return; } row.innerHTML=withPos.slice(0,10).map(h=>{ const click=h.type==='drama'?`openDrama(${h.dramaId})`:`playChannel('${h.id}',${Math.floor(h.position)})`; return `<div class="cont-card" onclick="${click}"><img src="${h.logo||'https://via.placeholder.com/200x100?text=TV'}"><div class="ct"><b>${h.type==='drama'?'🎬 ':''}${h.name}</b><small>${h.date}</small><div class="bar"><i style="width:${h.episode?Math.min(100,h.episode*5):10}%"></i></div><small>${h.type==='drama'?`Lanjut Ep ${h.episode}`:`Lanjut dari ${fmtTime(h.position)}`}</small></div></div>`; }).join(''); grid.innerHTML=withPos.map(h=>{ const click=h.type==='drama'?`openDrama(${h.dramaId})`:`playChannel('${h.id}',${Math.floor(h.position)})`; return `<div class="card" onclick="${click}"><span class="live">▶ LANJUT</span><img src="${h.logo||'https://via.placeholder.com/200x100?text=TV'}" style="height:80px;object-fit:cover"><b>${h.type==='drama'?'🎬 ':''}${h.name}</b><small>${h.category} • ${h.date}</small><small>${h.type==='drama'?`Episode ${h.episode}`:`Lanjut dari ${fmtTime(h.position)}`}</small></div>`; }).join(''); }
-function renderFav(){ const list=allChannels.filter(c=>favs.includes(c.id)); document.getElementById('favGrid').innerHTML=list.map(cardHTML).join('')||'<p style="color:var(--muted)">Belum ada favorit TV.</p>'; const dList=CURATED.filter(d=>favDrama.includes(d.id)); document.getElementById('favDramaGrid').innerHTML=dList.map(dramaCard).join('')||'<p style="color:var(--muted)">Belum ada drama favorit.</p>'; }
-function toggleFav(id){ if(favs.includes(id)) favs=favs.filter(f=>f!==id); else favs.push(id); localStorage.setItem('nova_favs',JSON.stringify(favs)); renderAll(); }
-function toggleFavDrama(id){ if(favDrama.includes(id)) favDrama=favDrama.filter(f=>f!==id); else favDrama.push(id); localStorage.setItem('nova_fav_drama',JSON.stringify(favDrama)); renderAll(); }
-function toggleFavCurrent(){ if(currentPlay) toggleFav(currentPlay.id); }
-function copyLink(){ if(!currentPlay){alert('Pilih channel dulu');return} navigator.clipboard.writeText(currentPlay.url).then(()=>alert('Link dicopy!')); }
-function clearAllHistory(){ if(!confirm('Hapus semua riwayat TV + Drama?')) return; history=[]; lastState=null; localStorage.removeItem('nova_history_v2'); localStorage.removeItem('nova_last_v2'); renderHistory(); renderContinue(); renderAll(); }
-function clearHistoryOne(){ if(currentPlay){ history=history.filter(x=>x.id!==currentPlay.id); localStorage.setItem('nova_history_v2',JSON.stringify(history)); renderHistory(); renderContinue(); } }
-loadAPI();
-</script>
+
+    <!-- Header -->
+    <header>
+        <div class="header-left">
+            <button class="menu-toggle" id="menu-toggle-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="#" class="logo" id="logo-home"><i class="fab fa-youtube"></i>YouTube</a>
+        </div>
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Telusuri...">
+                <button class="clear-search-btn" id="clear-search-btn" title="Hapus teks"><i class="fas fa-times-circle"></i></button>
+            </div>
+            <button class="search-btn" id="search-submit"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="header-right">
+            <i class="fas fa-video" style="cursor:pointer; font-size: 15px;"></i>
+            <i class="fas fa-bell" style="cursor:pointer; font-size: 15px;"></i>
+            <div class="channel-avatar" style="width: 26px; height: 26px; background:#555; border-radius:50%;"></div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <sidebar id="sidebar">
+            <a href="#" class="sidebar-item active" id="nav-home"><i class="fas fa-home"></i>Beranda</a>
+            <a href="#" class="sidebar-item"><i class="fas fa-bolt"></i>Shorts</a>
+            <a href="#" class="sidebar-item"><i class="fas fa-subscriptions"></i>Subscription</a>
+            <hr>
+            <a href="#" class="sidebar-item" id="nav-history"><i class="fas fa-history"></i>Histori</a>
+            <a href="#" class="sidebar-item"><i class="fas fa-play-circle"></i>Video Anda</a>
+            <a href="#" class="sidebar-item" id="nav-clock"><i class="fas fa-clock"></i>Tonton Nanti</a>
+            <hr>
+            <div class="sidebar-section-title">DAFTAR PUTAR</div>
+            <a href="#" class="sidebar-item" id="nav-playlists"><i class="fas fa-list"></i>Semua Playlist</a>
+            <a href="#" class="sidebar-item" id="nav-create-playlist"><i class="fas fa-plus-circle"></i>Buat Playlist Baru</a>
+        </sidebar>
+
+        <!-- Dynamic Content Area -->
+        <div class="content" id="main-content-area">
+            <!-- Tampilan Beranda / List Video -->
+            <div id="home-view" style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+                <div class="section-header">
+                    <h2 id="home-section-title">Video Berdasarkan Riwayat Pencarian</h2>
+                </div>
+                <div class="video-grid" id="video-grid"></div>
+            </div>
+
+            <!-- Tampilan Halaman Nonton Video -->
+            <div class="watch-container" id="watch-container">
+                <div class="watch-layout">
+                    <div class="player-main-area">
+                        <div class="player-wrapper">
+                            <div id="youtube-player"></div>
+                        </div>
+                        <div class="player-meta">
+                            <h3 id="watch-meta-title">Judul Video</h3>
+                            <p id="watch-meta-channel">Nama Channel</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 13px; margin-bottom: 6px; color: #aaa; font-weight: 500;">Daftar Putar Antrean</h4>
+                        <div class="queue-sidebar-panel" id="playlist-queue-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Buat Playlist Baru -->
+    <div class="modal-overlay" id="modal-create-playlist">
+        <div class="modal-box">
+            <h3>Buat Playlist Baru</h3>
+            <input type="text" id="playlist-name-input" placeholder="Nama Playlist...">
+            <div class="modal-buttons">
+                <button class="btn-submit" id="modal-create-btn">Buat</button>
+                <button class="btn-cancel" id="modal-cancel-btn">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pilih Playlist saat video ingin ditambahkan -->
+    <div class="modal-overlay" id="modal-add-to-playlist">
+        <div class="modal-box">
+            <h3>Simpan video ke...</h3>
+            <div id="modal-playlist-options" style="max-height: 140px; overflow-y: auto; margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px;"></div>
+
+            <div class="modal-buttons">
+                <button class="btn-submit" id="modal-confirm-save-btn"><i class="fas fa-plus"></i> Simpan</button>
+                <button class="btn-cancel" id="modal-add-cancel-btn">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script JavaScript -->
+    <script>
+        const YT_API_KEY = "AIzaSyDgu2BS4TTqCPNJV6GgkkHr7k9IzLIActo";
+
+        let currentVideosList = [];
+        let queuePlaylist = [];
+        let currentIndex = 0;
+        let player;
+
+        let watchHistory = JSON.parse(localStorage.getItem('yt_watch_history_items')) || [];
+        let searchKeywordsHistory = JSON.parse(localStorage.getItem('yt_search_keywords_history')) || ["lofi music", "pop songs"];
+
+        function recordSearchKeyword(query) {
+            if (!query.trim()) return;
+            searchKeywordsHistory = searchKeywordsHistory.filter(k => k.toLowerCase() !== query.toLowerCase());
+            searchKeywordsHistory.unshift(query);
+            if (searchKeywordsHistory.length > 10) searchKeywordsHistory.pop();
+            localStorage.setItem('yt_search_keywords_history', JSON.stringify(searchKeywordsHistory));
+        }
+
+        function recordVideoWatch(videoObj) {
+            if (!videoObj) return;
+            watchHistory = watchHistory.filter(v => v.id !== videoObj.id);
+            watchHistory.unshift(videoObj);
+            if (watchHistory.length > 50) watchHistory.pop();
+            localStorage.setItem('yt_watch_history_items', JSON.stringify(watchHistory));
+        }
+
+        let customPlaylists = JSON.parse(localStorage.getItem('yt_custom_playlists')) || [];
+
+        function savePlaylists() {
+            localStorage.setItem('yt_custom_playlists', JSON.stringify(customPlaylists));
+        }
+
+        let activeVideoToSave = null;
+        let selectedPlaylistIndex = null;
+
+        const menuToggleBtn = document.getElementById('menu-toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+
+        menuToggleBtn.addEventListener('click', () => {
+            menuToggleBtn.classList.toggle('active');
+            sidebar.classList.toggle('open');
+        });
+
+        function closeSidebarMobile() {
+            if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                menuToggleBtn.classList.remove('active');
+            }
+        }
+
+        const searchInput = document.getElementById('search-input');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+
+        searchInput.addEventListener('input', () => {
+            if (searchInput.value.trim().length > 0) {
+                clearSearchBtn.style.display = 'flex';
+            } else {
+                clearSearchBtn.style.display = 'none';
+            }
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearSearchBtn.style.display = 'none';
+            searchInput.focus();
+        });
+
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        function onYouTubeIframeAPIReady() {}
+
+        function showView(viewName) {
+            document.getElementById('home-view').style.display = (viewName === 'home') ? 'flex' : 'none';
+            document.getElementById('watch-container').style.display = (viewName === 'watch') ? 'flex' : 'none';
+            
+            if (viewName !== 'watch' && player && typeof player.stopVideo === 'function') {
+                player.stopVideo();
+            }
+        }
+
+        async function renderHomeView() {
+            showView('home');
+            const grid = document.getElementById('video-grid');
+            grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Memuat video...</p>`;
+
+            const keywordToFetch = searchKeywordsHistory.length > 0 ? searchKeywordsHistory[0] : "lofi music";
+            document.getElementById('home-section-title').innerText = `Rekomendasi: "${keywordToFetch}"`;
+
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${encodeURIComponent(keywordToFetch)}&type=video&key=${YT_API_KEY}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.items) {
+                    const fetchedVideos = data.items.map(item => ({
+                        id: item.id.videoId,
+                        title: item.snippet.title,
+                        channel: item.snippet.channelTitle,
+                        category: keywordToFetch,
+                        thumb: item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : item.snippet.thumbnails.default.url
+                    }));
+                    currentVideosList = fetchedVideos;
+                    grid.innerHTML = "";
+
+                    fetchedVideos.forEach((vid, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'video-card';
+                        card.innerHTML = `
+                            <div class="thumbnail-container">
+                                <img src="${vid.thumb}" alt="${vid.title}">
+                            </div>
+                            <div class="video-info">
+                                <div style="display:flex; gap:8px; overflow:hidden;">
+                                    <div style="width:28px; height:28px; background:#555; border-radius:50%; flex-shrink:0;"></div>
+                                    <div class="video-details">
+                                        <h3>${vid.title}</h3>
+                                        <p>${vid.channel}</p>
+                                    </div>
+                                </div>
+                                <button class="btn-options" title="Opsi" onclick="event.stopPropagation(); openAddToPlaylistModal('${vid.id}')">
+                                    <i class="fas fa-ellipsis-vertical"></i>
+                                </button>
+                            </div>
+                        `;
+                        card.addEventListener('click', () => {
+                            recordVideoWatch(vid);
+                            queuePlaylist = [...fetchedVideos];
+                            playVideo(vid, index);
+                        });
+                        grid.appendChild(card);
+                    });
+                } else {
+                    grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Tidak ada video ditemukan.</p>`;
+                }
+            } catch (error) {
+                console.error("Gagal memuat beranda:", error);
+                grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Gagal memuat video.</p>`;
+            }
+        }
+
+        function renderHistoryView() {
+            showView('home');
+            document.getElementById('home-section-title').innerText = "Histori Tontonan Anda";
+
+            const grid = document.getElementById('video-grid');
+            grid.innerHTML = "";
+
+            if (watchHistory.length === 0) {
+                grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Belum ada video dalam histori.</p>`;
+                return;
+            }
+
+            watchHistory.forEach((vid, index) => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="thumbnail-container">
+                        <img src="${vid.thumb}" alt="${vid.title}">
+                    </div>
+                    <div class="video-info">
+                        <div style="display:flex; gap:8px; overflow:hidden;">
+                            <div style="width:28px; height:28px; background:#555; border-radius:50%; flex-shrink:0;"></div>
+                            <div class="video-details">
+                                <h3>${vid.title}</h3>
+                                <p>${vid.channel}</p>
+                            </div>
+                        </div>
+                        <button class="btn-options" title="Hapus dari Histori" onclick="event.stopPropagation(); removeHistoryItem('${vid.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    queuePlaylist = [...watchHistory];
+                    playVideo(vid, index);
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        window.removeHistoryItem = function(videoId) {
+            watchHistory = watchHistory.filter(v => v.id !== videoId);
+            localStorage.setItem('yt_watch_history_items', JSON.stringify(watchHistory));
+            renderHistoryView();
+        };
+
+        document.getElementById('logo-home').addEventListener('click', (e) => {
+            e.preventDefault();
+            renderHomeView();
+            closeSidebarMobile();
+        });
+
+        document.getElementById('nav-home').addEventListener('click', (e) => {
+            e.preventDefault();
+            renderHomeView();
+            closeSidebarMobile();
+        });
+
+        document.getElementById('nav-history').addEventListener('click', (e) => {
+            e.preventDefault();
+            renderHistoryView();
+            closeSidebarMobile();
+        });
+
+        document.getElementById('nav-playlists').addEventListener('click', (e) => {
+            e.preventDefault();
+            renderPlaylistsView();
+            closeSidebarMobile();
+        });
+
+        document.getElementById('nav-create-playlist').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('modal-create-playlist').style.display = 'flex';
+            document.getElementById('playlist-name-input').value = '';
+            closeSidebarMobile();
+        });
+
+        function renderPlaylistsView() {
+            showView('home');
+            document.getElementById('home-section-title').innerText = "Daftar Playlist Anda";
+            
+            const mainArea = document.getElementById('home-view');
+            document.getElementById('video-grid').innerHTML = "";
+            
+            let plContainer = document.getElementById('custom-playlist-wrapper');
+            if (!plContainer) {
+                plContainer = document.createElement('div');
+                plContainer.id = 'custom-playlist-wrapper';
+                plContainer.className = 'playlist-grid';
+                mainArea.appendChild(plContainer);
+            }
+            plContainer.innerHTML = "";
+
+            if (customPlaylists.length === 0) {
+                plContainer.innerHTML = `<p style="color: #aaa; font-size: 13px;">Belum ada playlist.</p>`;
+                return;
+            }
+
+            customPlaylists.forEach((pl, idx) => {
+                const card = document.createElement('div');
+                card.className = 'playlist-card';
+                card.innerHTML = `
+                    <div class="playlist-card-cover">
+                        <i class="fas fa-list-ul"></i>
+                    </div>
+                    <div class="playlist-card-info">
+                        <div>
+                            <h4>${pl.name}</h4>
+                            <p>${pl.videos.length} video</p>
+                        </div>
+                        <button class="btn-options" title="Hapus Playlist" onclick="event.stopPropagation(); deletePlaylist(${idx})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    renderSinglePlaylistDetail(pl);
+                });
+                plContainer.appendChild(card);
+            });
+        }
+
+        function renderSinglePlaylistDetail(playlistObj) {
+            showView('home');
+            document.getElementById('home-section-title').innerText = `Playlist: ${playlistObj.name}`;
+            const grid = document.getElementById('video-grid');
+            grid.innerHTML = "";
+            
+            const plContainer = document.getElementById('custom-playlist-wrapper');
+            if (plContainer) plContainer.innerHTML = "";
+
+            if (playlistObj.videos.length === 0) {
+                grid.innerHTML = `<p style="color: #aaa; font-size: 13px;">Playlist kosong.</p>`;
+                return;
+            }
+
+            playlistObj.videos.forEach((vid, index) => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="thumbnail-container">
+                        <img src="${vid.thumb}" alt="${vid.title}">
+                    </div>
+                    <div class="video-info">
+                        <div style="display:flex; gap:8px; overflow:hidden;">
+                            <div style="width:28px; height:28px; background:#555; border-radius:50%; flex-shrink:0;"></div>
+                            <div class="video-details">
+                                <h3>${vid.title}</h3>
+                                <p>${vid.channel}</p>
+                            </div>
+                        </div>
+                        <button class="btn-options" title="Hapus dari Playlist" onclick="event.stopPropagation(); removeVideoFromPlaylist('${playlistObj.name}', '${vid.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    recordVideoWatch(vid);
+                    queuePlaylist = [...playlistObj.videos];
+                    playVideo(vid, index);
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        document.getElementById('modal-create-btn').addEventListener('click', () => {
+            const name = document.getElementById('playlist-name-input').value.trim();
+            if (!name) return;
+
+            customPlaylists.push({ id: 'pl_' + Date.now(), name: name, videos: [] });
+            savePlaylists();
+            document.getElementById('modal-create-playlist').style.display = 'none';
+            renderPlaylistsView();
+        });
+
+        document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+            document.getElementById('modal-create-playlist').style.display = 'none';
+        });
+
+        window.openAddToPlaylistModal = function(videoId) {
+            let foundVid = currentVideosList.find(v => v.id === videoId) || watchHistory.find(v => v.id === videoId);
+            if (!foundVid) {
+                for(let pl of customPlaylists) {
+                    let v = pl.videos.find(item => item.id === videoId);
+                    if(v) { foundVid = v; break; }
+                }
+            }
+            activeVideoToSave = foundVid;
+            selectedPlaylistIndex = null;
+
+            const container = document.getElementById('modal-playlist-options');
+            container.innerHTML = "";
+
+            if (customPlaylists.length === 0) {
+                container.innerHTML = `<p style="font-size:12px; color:#aaa;">Belum ada playlist.</p>`;
+            } else {
+                customPlaylists.forEach((pl, idx) => {
+                    const isAlreadyIn = pl.videos.some(v => v.id === videoId);
+                    const item = document.createElement('div');
+                    item.className = 'playlist-option-row';
+                    item.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:#181818; padding:8px 10px; border-radius:6px; cursor:pointer; border: 1px solid transparent;";
+                    item.innerHTML = `
+                        <span style="font-size:12px;">${pl.name}</span>
+                        <span style="font-size:11px; color: ${isAlreadyIn ? '#3ea6ff' : '#aaa'};">${isAlreadyIn ? 'Ada' : 'Pilih'}</span>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        document.querySelectorAll('.playlist-option-row').forEach(el => el.style.borderColor = 'transparent');
+                        item.style.borderColor = '#3ea6ff';
+                        selectedPlaylistIndex = idx;
+                    });
+
+                    container.appendChild(item);
+                });
+            }
+
+            document.getElementById('modal-add-to-playlist').style.display = 'flex';
+        };
+
+        document.getElementById('modal-confirm-save-btn').addEventListener('click', () => {
+            if (selectedPlaylistIndex === null) return;
+
+            const targetPl = customPlaylists[selectedPlaylistIndex];
+            const isAlreadyIn = targetPl.videos.some(v => v.id === activeVideoToSave.id);
+
+            if (!isAlreadyIn && activeVideoToSave) {
+                targetPl.videos.push(activeVideoToSave);
+                savePlaylists();
+                document.getElementById('modal-add-to-playlist').style.display = 'none';
+            }
+        });
+
+        document.getElementById('modal-add-cancel-btn').addEventListener('click', () => {
+            document.getElementById('modal-add-to-playlist').style.display = 'none';
+        });
+
+        window.deletePlaylist = function(index) {
+            customPlaylists.splice(index, 1);
+            savePlaylists();
+            renderPlaylistsView();
+        };
+
+        window.removeVideoFromPlaylist = function(playlistName, videoId) {
+            const pl = customPlaylists.find(p => p.name === playlistName);
+            if (pl) {
+                pl.videos = pl.videos.filter(v => v.id !== videoId);
+                savePlaylists();
+                renderSinglePlaylistDetail(pl);
+            }
+        };
+
+        function playVideo(videoObj, index = 0) {
+            currentIndex = index;
+            showView('watch');
+
+            document.getElementById('watch-meta-title').innerText = videoObj.title;
+            document.getElementById('watch-meta-channel').innerText = videoObj.channel;
+
+            renderPlaylistQueueUI();
+
+            if (!player) {
+                player = new YT.Player('youtube-player', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: videoObj.id,
+                    playerVars: { 
+                        'autoplay': 1, 
+                        'controls': 1,
+                        'modestbranding': 1,
+                        'rel': 0
+                    },
+                    events: { 
+                        'onStateChange': onPlayerStateChange,
+                        'onReady': onPlayerReady
+                    }
+                });
+            } else {
+                player.loadVideoById(videoObj.id);
+            }
+        }
+
+        function onPlayerReady(event) {
+            event.target.playVideo();
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.ENDED) {
+                currentIndex++;
+                if (currentIndex < queuePlaylist.length) {
+                    playVideo(queuePlaylist[currentIndex], currentIndex);
+                } else {
+                    currentIndex = 0;
+                    playVideo(queuePlaylist[currentIndex], currentIndex);
+                }
+            }
+        }
+
+        function renderPlaylistQueueUI() {
+            const container = document.getElementById('playlist-queue-container');
+            container.innerHTML = "";
+
+            queuePlaylist.forEach((item, idx) => {
+                const pItem = document.createElement('div');
+                pItem.className = `playlist-item ${idx === currentIndex ? 'active' : ''}`;
+                pItem.innerHTML = `
+                    <div class="playlist-item-left">
+                        <img src="${item.thumb}" alt="">
+                        <div style="overflow: hidden;">
+                            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;">${item.title}</div>
+                            <div style="color: #aaa; font-size: 10px;">${item.channel}</div>
+                        </div>
+                    </div>
+                `;
+                pItem.addEventListener('click', () => {
+                    recordVideoWatch(item);
+                    playVideo(item, idx);
+                });
+                container.appendChild(pItem);
+            });
+        }
+
+        async function searchYouTube(query) {
+            if (!query.trim()) return;
+            
+            recordSearchKeyword(query);
+
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${encodeURIComponent(query)}&type=video&key=${YT_API_KEY}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.items) {
+                    const searchResults = data.items.map(item => ({
+                        id: item.id.videoId,
+                        title: item.snippet.title,
+                        channel: item.snippet.channelTitle,
+                        category: query,
+                        thumb: item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : item.snippet.thumbnails.default.url
+                    }));
+                    currentVideosList = searchResults;
+
+                    showView('home');
+                    document.getElementById('home-section-title').innerText = `Hasil Pencarian: "${query}"`;
+                    
+                    const plContainer = document.getElementById('custom-playlist-wrapper');
+                    if (plContainer) plContainer.innerHTML = "";
+
+                    const grid = document.getElementById('video-grid');
+                    grid.innerHTML = "";
+
+                    searchResults.forEach((vid, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'video-card';
+                        card.innerHTML = `
+                            <div class="thumbnail-container">
+                                <img src="${vid.thumb}" alt="${vid.title}">
+                            </div>
+                            <div class="video-info">
+                                <div style="display:flex; gap:8px; overflow:hidden;">
+                                    <div style="width:28px; height:28px; background:#555; border-radius:50%; flex-shrink:0;"></div>
+                                    <div class="video-details">
+                                        <h3>${vid.title}</h3>
+                                        <p>${vid.channel}</p>
+                                    </div>
+                                </div>
+                                <button class="btn-options" title="Opsi" onclick="event.stopPropagation(); openAddToPlaylistModal('${vid.id}')">
+                                    <i class="fas fa-ellipsis-vertical"></i>
+                                </button>
+                            </div>
+                        `;
+                        card.addEventListener('click', () => {
+                            recordVideoWatch(vid);
+                            queuePlaylist = searchResults;
+                            playVideo(vid, index);
+                        });
+                        grid.appendChild(card);
+                    });
+
+                }
+            } catch (error) {
+                console.error("Gagal melakukan pencarian:", error);
+            }
+        }
+
+        document.getElementById('search-submit').addEventListener('click', () => {
+            searchYouTube(searchInput.value);
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchYouTube(e.target.value);
+            }
+        });
+
+        renderHomeView();
+    </script>
 </body>
 </html>
